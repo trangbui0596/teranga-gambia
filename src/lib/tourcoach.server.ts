@@ -581,10 +581,11 @@ export const twimlGoodbye = () => xml(`<Say>Thank you, goodbye</Say><Hangup/>`);
 
 /** One SMS per call, counted in the daily cap. */
 export async function sendCallSummary(callSid: string) {
+  const to = env("DEMO_SMS_NUMBER"), from = env("TWILIO_SMS_FROM"); // check secrets before marking the summary as sent
   const { data } = await supabaseAdmin.rpc("voice_call_claim_summary" as never, { _sid: callSid } as never);
   if (data === null || data === undefined) return false; // already sent for this call
   const n = Number(data) || 0;
-  return twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"),
+  return twilioSend(to, from,
     `TourCoach demo: Got ${n} of ${TOTAL_QUESTIONS} answers. The family helper will check them.`);
 }
 
