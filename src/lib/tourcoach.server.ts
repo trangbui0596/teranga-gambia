@@ -1,3 +1,4 @@
+import { guardCleanup, reviewLinkMessage, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, FEEDBACK_DELETED, FEEDBACK_SHARED, FEEDBACK_EMPTY } from "./feedback";
 // TourCoach backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
 // and /api/public/eval-match.
 import { createHash, createHmac, timingSafeEqual } from "crypto";
@@ -154,7 +155,7 @@ const TRANSLATE_RULES = [
 /* ---------------- Phase 2A implementations ---------------- */
 
 /** Downloads the Twilio media (via the Twilio connector) and transcribes it with ElevenLabs scribe_v2 in Wolof. */
-export async function transcribe(mediaUrl: string): Promise<{ text: string; confidence: number | null } | null> {
+export async function transcribe(mediaUrl: string, languageCode: string | null = "wol"): Promise<{ text: string; confidence: number | null } | null> {
   try {
     const u = new URL(mediaUrl);
     const m = /\/Accounts\/[^/]+\/(.+)$/.exec(u.pathname);
@@ -168,7 +169,7 @@ export async function transcribe(mediaUrl: string): Promise<{ text: string; conf
     const form = new FormData();
     form.append("file", blob, `voice.${ext}`);
     form.append("model_id", "scribe_v2");
-    form.append("language_code", "wol");
+    if (languageCode) form.append("language_code", languageCode); // null = auto-detect (visitor reviews)
     form.append("tag_audio_events", "false");
     const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
       method: "POST", headers: { "xi-api-key": env("ELEVENLABS_API_KEY") }, body: form,
@@ -297,7 +298,7 @@ type Conv = {
   pending_action?: { answer_id: string; status: "approved" | "rerecord" | "needs_bilingual" } | null;
   agent_history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
-type Reply = { text: string; audioUrl?: string | undefined };
+type Reply = { text: string; audioUrl?: string | undefined; secondText?: string | undefined };
 type Save = (p: Partial<Conv>) => unknown;
 
 export async function handleWhatsApp(input: { from: string; body: string; mediaUrl: string | null }) {
@@ -316,6 +317,7 @@ export async function handleWhatsApp(input: { from: string; body: string; mediaU
   // At most one text + one audio per inbound message. No loops.
   const sent = await sendWhatsApp(input.from, reply.text);
   if (sent && reply.audioUrl) await sendWhatsApp(input.from, "AI-generated voice — Machine-translated", reply.audioUrl);
+  else if (sent && reply.secondText) await sendWhatsApp(input.from, reply.secondText); // only the review POST step
 }
 
 async function route(c: Conv, input: { from: string; body: string; mediaUrl: string | null }, save: Save): Promise<string | Reply> {
@@ -335,7 +337,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
     return "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.";
   }
-  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save);
+  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save, input.mediaUrl);
 }
 
 /* ---------------- Visitor ---------------- */
@@ -345,8 +347,9 @@ const CLEAR_Q: Record<Lang, string> = {
   nl: "Was dit duidelijk? Antwoord YES of NO",
 };
 
-async function visitor(c: Conv, text: string, upper: string, save: Save): Promise<string | Reply> {
+async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null): Promise<string | Reply> {
   const db = supabaseAdmin;
+  if (upper === "FEEDBACK" || c.state.startsWith("feedback_")) return visitorFeedback(c, text, upper, save, mediaUrl);
   if (upper === "EN" || upper === "DE" || upper === "NL") {
     await save({ lang: upper.toLowerCase() as Lang });
     return { EN: "Language: English", DE: "Sprache: Deutsch", NL: "Taal: Nederlands" }[upper];
@@ -399,6 +402,100 @@ async function visitor(c: Conv, text: string, upper: string, save: Save): Promis
     ].join("\n"),
     audioUrl,
   };
+}
+
+/* ---------------- Visitor reviews (phase 2C) ----------------
+ * No rating is asked, everyone gets the same link, text is only lightly cleaned (guardCleanup falls back to raw).
+ * Stored only for the visitor's own use; shared with Noor only after SHARE; deleted on NO or after 24h (purgeFeedback). */
+async function deleteTwilioMedia(mediaUrl: string | null) {
+  if (!mediaUrl) return;
+  try {
+    const m = /\/Accounts\/[^/]+\/(Messages\/[^/]+\/Media\/[^/.]+)/.exec(new URL(mediaUrl).pathname);
+    if (!m) return;
+    const r = await fetch(`${GATEWAY_URL}/${m[1]}.json`, { method: "DELETE", headers: twilioHeaders() });
+    if (!r.ok && r.status !== 404) console.error(`Twilio media delete failed [${r.status}]: ${(await r.text()).slice(0, 200)}`);
+  } catch (e) { console.error("Twilio media delete failed", e); }
+}
+
+async function deleteFeedback(id: string) {
+  const db = supabaseAdmin;
+  const { data } = await db.from("visitor_feedback" as never).select("media_url").eq("id", id).maybeSingle();
+  await deleteTwilioMedia((data as { media_url: string | null } | null)?.media_url ?? null);
+  await db.from("visitor_feedback" as never).delete().eq("id", id);
+}
+
+export async function cleanReview(raw: string): Promise<{ text: string; usedRaw: boolean; reason?: string }> {
+  let cleaned: string | null = null;
+  try { cleaned = await aiText(CLEANUP_INSTRUCTIONS, raw.slice(0, 2000)); } catch (e) { console.error("cleanup failed", e); }
+  return guardCleanup(raw, cleaned);
+}
+
+async function visitorFeedback(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null): Promise<string | Reply> {
+  const db = supabaseAdmin;
+  const L = c.lang;
+  const fid = c.current_feedback_id ?? null;
+  const done = () => save({ state: "idle", current_feedback_id: null } as Partial<Conv>);
+
+  if (upper === "FEEDBACK") {
+    if (fid) await deleteFeedback(fid); // a new one replaces any unfinished one
+    const { data } = await db.from("visitor_feedback" as never).insert({ lang: L, status: "awaiting" } as never).select("id").single();
+    await save({ state: "feedback_wait", current_feedback_id: (data as { id: string } | null)?.id ?? null } as Partial<Conv>);
+    return FEEDBACK_PROMPT[L];
+  }
+  if (!fid) { await done(); return FEEDBACK_PROMPT[L]; }
+
+  if (upper === "NO") {
+    await deleteFeedback(fid);
+    await done();
+    return FEEDBACK_DELETED[L];
+  }
+  if (c.state === "feedback_ready") {
+    if (upper === "EDIT") {
+      const { data } = await db.from("visitor_feedback" as never).select("media_url").eq("id", fid).maybeSingle();
+      await deleteTwilioMedia((data as { media_url: string | null } | null)?.media_url ?? null);
+      await db.from("visitor_feedback" as never).update({ transcript_raw: null, text_cleaned: null, media_url: null, status: "awaiting" } as never).eq("id", fid);
+      await save({ state: "feedback_wait" });
+      return FEEDBACK_PROMPT[L];
+    }
+    if (upper === "SHARE") {
+      await db.from("visitor_feedback" as never).update({ shared_with_operator: true } as never).eq("id", fid);
+      return `${FEEDBACK_SHARED[L]}\n${FEEDBACK_OPTIONS[L]}`;
+    }
+    if (upper === "POST") {
+      const { data } = await db.from("visitor_feedback" as never).select("text_cleaned").eq("id", fid).maybeSingle();
+      const t = (data as { text_cleaned: string | null } | null)?.text_cleaned;
+      if (!t) { await done(); return FEEDBACK_PROMPT[L]; }
+      await db.from("visitor_feedback" as never).update({ status: "posted" } as never).eq("id", fid);
+      // Stays in feedback_ready so SHARE / NO still work; purged after 24h unless shared.
+      return { text: t, secondText: reviewLinkMessage(process.env.GOOGLE_REVIEW_URL) };
+    }
+    return FEEDBACK_OPTIONS[L];
+  }
+
+  // feedback_wait: take a voice note (auto-detect language) or text.
+  let raw = text;
+  if (mediaUrl) {
+    const t = await transcribe(mediaUrl, null);
+    raw = t?.text ?? "";
+  }
+  raw = raw.slice(0, 2000).trim();
+  if (!raw) return FEEDBACK_EMPTY[L];
+  const cleaned = await cleanReview(raw);
+  await db.from("visitor_feedback" as never)
+    .update({ transcript_raw: raw, text_cleaned: cleaned.text, media_url: mediaUrl, status: "ready" } as never).eq("id", fid);
+  await save({ state: "feedback_ready" });
+  return `${cleaned.text}\n\n${FEEDBACK_OPTIONS[L]}`;
+}
+
+/** Deletes unshared visitor reviews older than 24h (transcript + Twilio audio). Shared ones are kept for Noor. */
+export async function purgeFeedback(): Promise<{ purged: number }> {
+  const db = supabaseAdmin;
+  const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const { data } = await db.from("visitor_feedback" as never).select("id, media_url").eq("shared_with_operator", false).lt("created_at", cutoff);
+  const rows = (data ?? []) as Array<{ id: string; media_url: string | null }>;
+  for (const r of rows) await deleteTwilioMedia(r.media_url);
+  if (rows.length) await db.from("visitor_feedback" as never).delete().in("id", rows.map((r) => r.id));
+  return { purged: rows.length };
 }
 
 /* ---------------- Champion ---------------- */
