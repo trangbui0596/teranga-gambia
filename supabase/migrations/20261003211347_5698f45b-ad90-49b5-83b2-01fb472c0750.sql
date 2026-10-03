@@ -39,8 +39,8 @@ CREATE TRIGGER conversations_touch BEFORE UPDATE ON public.conversations FOR EAC
 
 -- Remove the made-up phone number from the sample "how to book" answer.
 UPDATE public.answers a SET
-  english = 'Send Fatou a WhatsApp message at least one day before the tour.',
-  german = 'Schicken Sie Fatou mindestens einen Tag vor der Tour eine WhatsApp-Nachricht.',
-  dutch = 'Stuur Fatou minstens een dag voor de tour een WhatsApp-bericht.'
+  english = 'Send Noor a WhatsApp message at least one day before the tour.',
+  german = 'Schicken Sie Noor mindestens einen Tag vor der Tour eine WhatsApp-Nachricht.',
+  dutch = 'Stuur Noor minstens een dag voor de tour een WhatsApp-bericht.'
 FROM public.recordings r JOIN public.questions q ON q.id = r.question_id
 WHERE a.recording_id = r.id AND q.topic = 'how to book' AND a.is_sample;
