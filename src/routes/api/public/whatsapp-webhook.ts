@@ -8,9 +8,12 @@ const Inbound = z.object({
   MediaUrl0: z.string().url().optional(),
 });
 
-const EMPTY_TWIML = new Response("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>", {
-  headers: { "Content-Type": "text/xml" },
-});
+// Built per request: Cloudflare Workers forbid creating a Response at module (global) scope,
+// which crashed every route on the published site.
+const emptyTwiml = () =>
+  new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+    headers: { "Content-Type": "text/xml" },
+  });
 
 export const Route = createFileRoute("/api/public/whatsapp-webhook")({
   server: {
