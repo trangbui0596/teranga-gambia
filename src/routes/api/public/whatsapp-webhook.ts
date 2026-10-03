@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
           console.error("whatsapp-webhook error", e);
         }
         // We reply via the Twilio API, so the TwiML response is empty.
-        return EMPTY_TWIML.clone();
+        return emptyTwiml();
       },
     },
   },
