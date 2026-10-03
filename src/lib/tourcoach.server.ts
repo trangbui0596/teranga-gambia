@@ -10,6 +10,7 @@ import { numbersHeard } from "./numbers";
 import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } from "./champion-commands";
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
+import { formatPendingQueue } from "./review-queue";
 
 type Lang = "en" | "de" | "nl";
 const FIELD = { en: "english", de: "german", nl: "dutch" } as const;
