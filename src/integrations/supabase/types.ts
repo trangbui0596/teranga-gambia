@@ -53,6 +53,7 @@ export type Database = {
           recording_id: string
           review_status: Database["public"]["Enums"]["review_status"]
           roundtrip_score: number | null
+          transcript_confidence: number | null
           transcript_src: string | null
         }
         Insert: {
@@ -67,6 +68,7 @@ export type Database = {
           recording_id: string
           review_status?: Database["public"]["Enums"]["review_status"]
           roundtrip_score?: number | null
+          transcript_confidence?: number | null
           transcript_src?: string | null
         }
         Update: {
@@ -81,6 +83,7 @@ export type Database = {
           recording_id?: string
           review_status?: Database["public"]["Enums"]["review_status"]
           roundtrip_score?: number | null
+          transcript_confidence?: number | null
           transcript_src?: string | null
         }
         Relationships: [
@@ -140,6 +143,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      eval_questions: {
+        Row: {
+          expected_topic: string
+          id: string
+          label: string
+          text: string
+        }
+        Insert: {
+          expected_topic: string
+          id?: string
+          label?: string
+          text: string
+        }
+        Update: {
+          expected_topic?: string
+          id?: string
+          label?: string
+          text?: string
+        }
+        Relationships: []
+      }
+      outbound_daily: {
+        Row: {
+          day: string
+          sent: number
+        }
+        Insert: {
+          day: string
+          sent?: number
+        }
+        Update: {
+          day?: string
+          sent?: number
+        }
+        Relationships: []
       }
       questions: {
         Row: {
@@ -293,6 +332,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_outbound: { Args: { _max: number }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
