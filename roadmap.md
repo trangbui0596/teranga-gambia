@@ -1,0 +1,3 @@
+- [x] Update call-summary and weekly-digest SMS to exact Teranga registration text and length rules.
+- [x] Add one WhatsApp fallback for failed SMS while preserving the outbound cap.
+- [x] Test templates, failure paths, and check the preview.
