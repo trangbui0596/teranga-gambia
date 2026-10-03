@@ -27,3 +27,17 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## TourCoach: Twilio WhatsApp sandbox setup
+
+There is no user web UI; everything happens over WhatsApp and SMS.
+
+1. In the Twilio Console open **Messaging → Try it out → Send a WhatsApp message → Sandbox settings**.
+2. Set **"When a message comes in"** to
+   `https://project--8698e7a7-7be2-4ef9-87d0-56f82e8d381d.lovable.app/api/public/whatsapp-webhook`
+   (published app; use `https://project--8698e7a7-7be2-4ef9-87d0-56f82e8d381d-dev.lovable.app/api/public/whatsapp-webhook` for the preview build), method **HTTP POST**.
+3. If Twilio signs a different URL than the server sees, set the secret `TWILIO_WEBHOOK_URL` to the exact URL from step 2.
+
+Weekly digest: `POST /api/public/weekly-digest` with header `x-digest-secret: <DIGEST_TRIGGER_SECRET>`.
+
+Secrets (Project Settings → Secrets, never in code): `DEMO_CHAMPION_PIN`, `DEMO_SMS_NUMBER`, `DEMO_WHATSAPP_NUMBER` (sandbox number), `TWILIO_AUTH_TOKEN` (signature check), `TWILIO_SMS_FROM` (Twilio SMS sender), `DIGEST_TRIGGER_SECRET`, optional `GOOGLE_REVIEW_URL`, optional `TWILIO_WEBHOOK_URL`. `PHONE_HASH_SALT` is generated automatically.

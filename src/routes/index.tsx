@@ -1,18 +1,20 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
-// Visitors use WhatsApp/SMS; the web app is champion-only.
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TourCoach Gambia — Champion" },
-      { name: "description", content: "Champion workspace for reviewing Fatou's tour answers." },
-      { property: "og:title", content: "TourCoach Gambia — Champion" },
-      { property: "og:description", content: "Review and approve Fatou's tour answers." },
+      { title: "TourCoach backend" },
+      { name: "description", content: "TourCoach Gambia WhatsApp and SMS backend status page." },
+      { property: "og:title", content: "TourCoach backend" },
+      { property: "og:description", content: "TourCoach Gambia WhatsApp and SMS backend." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
     ],
   }),
-  beforeLoad: () => {
-    throw redirect({ to: "/review" });
-  },
+  component: () => (
+    <main className="flex min-h-screen items-center justify-center p-6">
+      <p className="text-2xl font-bold">TourCoach backend is running</p>
+    </main>
+  ),
 });

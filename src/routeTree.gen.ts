@@ -10,105 +10,58 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated/channels'
-import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
-import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
-import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
-import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
+import { Route as ApiPublicWeeklyDigestRouteImport } from './routes/api/public/weekly-digest'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const ApiPublicWeeklyDigestRoute = ApiPublicWeeklyDigestRouteImport.update({
+  id: '/api/public/weekly-digest',
+  path: '/api/public/weekly-digest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedChannelsRoute = AuthenticatedChannelsRouteImport.update({
-  id: '/channels',
-  path: '/channels',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedImportRoute = AuthenticatedImportRouteImport.update({
-  id: '/import',
-  path: '/import',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
-  id: '/library',
-  path: '/library',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
-  id: '/review',
-  path: '/review',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
-  id: '/sync',
-  path: '/sync',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp-webhook',
+    path: '/api/public/whatsapp-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/channels': typeof AuthenticatedChannelsRoute
-  '/import': typeof AuthenticatedImportRoute
-  '/library': typeof AuthenticatedLibraryRoute
-  '/review': typeof AuthenticatedReviewRoute
-  '/sync': typeof AuthenticatedSyncRoute
+  '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/channels': typeof AuthenticatedChannelsRoute
-  '/import': typeof AuthenticatedImportRoute
-  '/library': typeof AuthenticatedLibraryRoute
-  '/review': typeof AuthenticatedReviewRoute
-  '/sync': typeof AuthenticatedSyncRoute
+  '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/_authenticated/channels': typeof AuthenticatedChannelsRoute
-  '/_authenticated/import': typeof AuthenticatedImportRoute
-  '/_authenticated/library': typeof AuthenticatedLibraryRoute
-  '/_authenticated/review': typeof AuthenticatedReviewRoute
-  '/_authenticated/sync': typeof AuthenticatedSyncRoute
+  '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    '/' | '/auth' | '/channels' | '/import' | '/library' | '/review' | '/sync'
+  fullPaths: '/' | '/api/public/weekly-digest' | '/api/public/whatsapp-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/channels' | '/import' | '/library' | '/review' | '/sync'
+  to: '/' | '/api/public/weekly-digest' | '/api/public/whatsapp-webhook'
   id:
     | '__root__'
     | '/'
-    | '/_authenticated'
-    | '/auth'
-    | '/_authenticated/channels'
-    | '/_authenticated/import'
-    | '/_authenticated/library'
-    | '/_authenticated/review'
-    | '/_authenticated/sync'
+    | '/api/public/weekly-digest'
+    | '/api/public/whatsapp-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  ApiPublicWeeklyDigestRoute: typeof ApiPublicWeeklyDigestRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -120,81 +73,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+    '/api/public/weekly-digest': {
+      id: '/api/public/weekly-digest'
+      path: '/api/public/weekly-digest'
+      fullPath: '/api/public/weekly-digest'
+      preLoaderRoute: typeof ApiPublicWeeklyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/api/public/whatsapp-webhook': {
+      id: '/api/public/whatsapp-webhook'
+      path: '/api/public/whatsapp-webhook'
+      fullPath: '/api/public/whatsapp-webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/channels': {
-      id: '/_authenticated/channels'
-      path: '/channels'
-      fullPath: '/channels'
-      preLoaderRoute: typeof AuthenticatedChannelsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/import': {
-      id: '/_authenticated/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof AuthenticatedImportRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/library': {
-      id: '/_authenticated/library'
-      path: '/library'
-      fullPath: '/library'
-      preLoaderRoute: typeof AuthenticatedLibraryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/review': {
-      id: '/_authenticated/review'
-      path: '/review'
-      fullPath: '/review'
-      preLoaderRoute: typeof AuthenticatedReviewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/sync': {
-      id: '/_authenticated/sync'
-      path: '/sync'
-      fullPath: '/sync'
-      preLoaderRoute: typeof AuthenticatedSyncRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedChannelsRoute: typeof AuthenticatedChannelsRoute
-  AuthenticatedImportRoute: typeof AuthenticatedImportRoute
-  AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
-  AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
-  AuthenticatedSyncRoute: typeof AuthenticatedSyncRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedChannelsRoute: AuthenticatedChannelsRoute,
-  AuthenticatedImportRoute: AuthenticatedImportRoute,
-  AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
-  AuthenticatedReviewRoute: AuthenticatedReviewRoute,
-  AuthenticatedSyncRoute: AuthenticatedSyncRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  ApiPublicWeeklyDigestRoute: ApiPublicWeeklyDigestRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
