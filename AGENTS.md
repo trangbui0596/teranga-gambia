@@ -10,4 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Champion screens live under src/routes/_authenticated and query via the browser client with RLS (has_role 'champion'); first signup gets the role via trigger — keeps write access server-enforced.
-- Visitor matching is client-side keyword matching in src/lib/tour.ts against approved answers only; low confidence never answers and logs to `unanswered` — no guessing until AI is added.
+- Visitors use WhatsApp/SMS only (no public web page). Matching lives in pure src/lib/match.ts, exposed via answerVisitorQuestion in src/lib/matching.functions.ts; approved answers only, below threshold returns "Not sure" and logs to `unanswered` — reusable by future channel handlers.

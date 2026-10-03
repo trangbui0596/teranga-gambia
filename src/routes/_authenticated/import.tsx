@@ -61,7 +61,7 @@ function ImportPage() {
     <ChampionShell title="Record" icon={<Upload className="h-8 w-8" />}>
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-sim/10 p-3">
         <Bluetooth className="h-6 w-6 text-sim" />
-        <span className="text-sm font-bold">Upload simulates Bluetooth transfer from the feature phone</span>
+        <span className="text-sm font-bold">Upload simulates Bluetooth transfer from the feature phone (demo: a smartphone in airplane mode stands in for it)</span>
         <SimBadge />
       </div>
       <input ref={inputRef} type="file" accept="audio/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />

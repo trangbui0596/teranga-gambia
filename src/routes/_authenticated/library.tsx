@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen } from "lucide-react";
+import { TryVisitorPanel } from "@/components/TryVisitorPanel";
 import { ChampionShell } from "@/components/ChampionNav";
 import { MtBadge, SampleBadge } from "@/components/Badges";
 import { Highlight } from "@/components/Highlight";
@@ -15,6 +16,7 @@ function LibraryPage() {
   const answers = useQuery({ queryKey: ["answers", "approved"], queryFn: () => fetchAnswers("approved") });
   return (
     <ChampionShell title="Library" icon={<BookOpen className="h-8 w-8" />}>
+      <TryVisitorPanel />
       {answers.data?.length === 0 && <p className="text-center text-5xl">📭</p>}
       <div className="space-y-4">
         {(answers.data ?? []).map((a) => {
