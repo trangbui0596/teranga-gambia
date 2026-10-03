@@ -5,6 +5,7 @@ import { guardCleanup, reviewLinkMessage, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT,
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
+import { gateApproval, STILL_PROCESSING } from "./approval";
 import { runInBackground } from "./background.server";
 import { numbersHeard } from "./numbers";
 import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } from "./champion-commands";
@@ -665,7 +666,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     if (/^(YES|OUI|WAAW)\b/.test(upper)) {
       const { data: still } = await db.from("answers").select("review_status").eq("id", pa.answer_id).maybeSingle();
       if (still?.review_status !== "pending") return "That answer is no longer pending. Nothing changed.";
-      await applyReview(pa.answer_id, pa.status);
+      if (!(await applyReview(pa.answer_id, pa.status))) return STILL_PROCESSING;
       return { approved: "Done: approved.", rerecord: "Done: marked for re-record.", needs_bilingual: "Done: sent to bilingual reviewer." }[pa.status];
     }
     // Anything else cancels the proposal and is handled as a new message below.
@@ -723,7 +724,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const m = /^([123])\b/.exec(upper);
     if (m) {
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
-    await applyReview(c.current_review_answer_id, status);
+    if (!(await applyReview(c.current_review_answer_id, status))) return STILL_PROCESSING;
     const label = { approved: "Approved", rerecord: "Marked for re-record", needs_bilingual: "Sent to bilingual reviewer" }[status];
     return `${label}.\n\n${await showNextPending(save)}`;
     }
@@ -732,7 +733,15 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   return championAgent(c, text, mediaUrl, save);
 }
 
-async function applyReview(id: string, status: "approved" | "rerecord" | "needs_bilingual") {
+/** Returns false (and changes nothing) when an approval is refused because the answer is not fully processed. */
+async function applyReview(id: string, status: "approved" | "rerecord" | "needs_bilingual"): Promise<boolean> {
+  if (status === "approved") {
+    const ok = await gateApproval(id, {
+      load: async (x) => (await supabaseAdmin.from("answers").select("stage, english, german, dutch").eq("id", x).maybeSingle()).data as never,
+      finish: (x, ms) => finishAnswers(ms, { firstId: x }),
+    }, 10000);
+    if (!ok) { console.log(`[approve ${id}] refused: not fully processed`); return false; }
+  }
   await supabaseAdmin.from("answers").update({
     review_status: status, approved_at: status === "approved" ? new Date().toISOString() : null,
   }).eq("id", id);
@@ -740,6 +749,7 @@ async function applyReview(id: string, status: "approved" | "rerecord" | "needs_
   if (status === "approved") {
     try { await ensureAnswerAudio(id, ["en", "de", "nl"], 10000); } catch (e) { console.error("[audio] error step=approve", e); }
   }
+  return true;
 }
 
 /** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
