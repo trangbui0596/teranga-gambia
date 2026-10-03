@@ -8,16 +8,21 @@ const Inbound = z.object({
   MediaUrl0: z.string().url().optional(),
 });
 
-const EMPTY_TWIML = new Response("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>", {
-  headers: { "Content-Type": "text/xml" },
-});
+// Built per request: Cloudflare Workers forbid creating a Response at module (global) scope,
+// which crashed every route on the published site.
+const emptyTwiml = () =>
+  new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+    headers: { "Content-Type": "text/xml" },
+  });
 
 export const Route = createFileRoute("/api/public/whatsapp-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const lib = await import("@/lib/tourcoach.server");
-        const form = await request.formData();
+        const form = await request.formData().catch(() => null);
+        // No/invalid form body cannot carry a valid Twilio signature: reject like a bad signature.
+        if (!form) return new Response("Invalid signature", { status: 403 });
         const params: Record<string, string> = {};
         form.forEach((v, k) => { if (typeof v === "string") params[k] = v; });
 
@@ -40,7 +45,7 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
           console.error("whatsapp-webhook error", e);
         }
         // We reply via the Twilio API, so the TwiML response is empty.
-        return EMPTY_TWIML.clone();
+        return emptyTwiml();
       },
     },
   },
