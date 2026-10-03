@@ -57,7 +57,9 @@ In the Twilio Console open **Phone Numbers → Manage → Active numbers → (yo
 1. **A call comes in** → Webhook `https://<published-url>/api/public/voice-incoming`, **HTTP POST**.
 2. **Call status changes** → `https://<published-url>/api/public/voice-status`, **HTTP POST** (sends the one summary SMS if the call ends before question 10).
 
-Only calls from the number in `DEMO_SMS_NUMBER` are accepted; everyone else hears "Sorry, this line is private." The bot says only "Question 1" … "Question 10" (Noor uses a printed card). Each answer goes through the same pipeline as WhatsApp voice notes and appears in the champion's WhatsApp REVIEW. After the call: one SMS "Teranga demo: Got N of 10 answers. The family helper will check them." (counts toward `MAX_OUTBOUND_PER_DAY`).
+Only calls from the number in `DEMO_SMS_NUMBER` are accepted; everyone else hears "Sorry, this line is private." The bot says only "Question 1" … "Question 10" (Noor uses a printed card). Each answer goes through the same pipeline as WhatsApp voice notes and appears in the champion's WhatsApp REVIEW. After the call: one SMS "Teranga: Got N of 10 answers from your call. Your family helper will check them. Reply STOP to opt out." (counts toward `MAX_OUTBOUND_PER_DAY`). If SMS sending fails, the same text is attempted once through WhatsApp to the demo number.
+
+The weekly digest SMS starts "Teranga weekly digest:", shows up to 3 topics and 3 unanswered questions, and ends "Reply STOP to opt out, HELP for help." It stays under 320 characters. An SMS send failure gets one WhatsApp attempt with identical text; both channels count toward `MAX_OUTBOUND_PER_DAY`.
 
 Secrets used (no new ones): `TWILIO_AUTH_TOKEN`, `DEMO_SMS_NUMBER`, `TWILIO_SMS_FROM`, optional `TWILIO_WEBHOOK_URL` (only its domain is used for the voice routes' signature check).
 

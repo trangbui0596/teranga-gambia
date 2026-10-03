@@ -6,6 +6,7 @@ import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
 import { runInBackground } from "./background.server";
+import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 
 type Lang = "en" | "de" | "nl";
 const FIELD = { en: "english", de: "german", nl: "dutch" } as const;
@@ -722,22 +723,16 @@ export async function sendWeeklyDigest() {
     counts[t] = (counts[t] ?? 0) + 1;
   }
   const { data: un } = await db.from("unanswered")
-    .select("visitor_questions(text, is_sample)").gte("created_at", since).limit(10);
+    .select("visitor_questions(text, is_sample)").gte("created_at", since).limit(3);
   const unList = ((un ?? []) as unknown as Array<{ visitor_questions: { text: string; is_sample: boolean } | null }>)
-    .map((u) => u.visitor_questions).filter(Boolean)
-    .map((v) => `- ${v!.text.slice(0, 80)}${v!.is_sample ? " (Sample)" : ""}`);
-  const hasSample = rows.some((r) => r.is_sample);
-
-  const body = [
-    "Teranga demo — weekly digest" + (hasSample ? " (includes Sample data)" : ""),
-    `Questions (7 days): ${rows.length}`,
-    ...Object.entries(counts).map(([k, v]) => `${k}: ${v}`),
-    "Unanswered:",
-    ...(unList.length ? unList : ["- none"]),
-  ].join("\n");
-
-  const sent = await twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"), body);
-  return { sent, questions: rows.length, unanswered: unList.length };
+    .map((u) => u.visitor_questions).filter((v): v is { text: string; is_sample: boolean } => !!v);
+  const body = weeklyDigestSms(rows.length, Object.entries(counts).map(([topic, count]) => ({ topic, count })),
+    unList.map((v) => ({ text: v.text, isSample: v.is_sample })));
+  const to = env("DEMO_SMS_NUMBER");
+  const result = await sendSmsWithFallback(body,
+    () => twilioSend(to, env("TWILIO_SMS_FROM"), body),
+    () => sendWhatsApp(to, body));
+  return { ...result, questions: rows.length, unanswered: unList.length };
 }
 
 /* ---------------- Phone-call input (Twilio Voice) for Noor's feature phone ---------------- */
@@ -776,14 +771,17 @@ export function twimlQuestion(n: number, opts: { greet?: boolean; retry?: boolea
 
 export const twimlGoodbye = () => xml(`<Say>Thank you, goodbye</Say><Hangup/>`);
 
-/** One SMS per call, counted in the daily cap. */
+/** One summary per call, with a single WhatsApp fallback if SMS fails. */
 export async function sendCallSummary(callSid: string) {
   const to = env("DEMO_SMS_NUMBER"), from = env("TWILIO_SMS_FROM"); // check secrets before marking the summary as sent
   const { data } = await supabaseAdmin.rpc("voice_call_claim_summary" as never, { _sid: callSid } as never);
   if (data === null || data === undefined) return false; // already sent for this call
   const n = Number(data) || 0;
-  return twilioSend(to, from,
-    `Teranga demo: Got ${n} of ${TOTAL_QUESTIONS} answers. The family helper will check them.`);
+  const body = callSummarySms(n);
+  const result = await sendSmsWithFallback(body,
+    () => twilioSend(to, from, body),
+    () => sendWhatsApp(to, body));
+  return result.sent;
 }
 
 /** Stores a call recording for question n and runs the same pipeline as WhatsApp voice notes. Returns answers so far. */
