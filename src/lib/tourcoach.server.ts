@@ -355,7 +355,7 @@ function audioDeps(): AudioDeps {
     },
     async listMissing(limit) {
       const { data } = await db.from("answers").select("id, english, german, dutch, answer_audio(lang)")
-        .eq("review_status", "approved").order("approved_at", { ascending: true, nullsFirst: true }).limit(200);
+        .eq("review_status", "approved").eq("is_sample", false).order("approved_at", { ascending: true, nullsFirst: true }).limit(200);
       const rows = (data ?? []) as unknown as Array<{ id: string; english: string | null; german: string | null; dutch: string | null; answer_audio: Array<{ lang: string }> }>;
       return rows.filter((r) => {
         const have = new Set(r.answer_audio.map((a) => a.lang));
