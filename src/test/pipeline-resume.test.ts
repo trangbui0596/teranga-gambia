@@ -35,7 +35,7 @@ function fakeDb(row: Partial<PipelineRow> = {}) {
 describe("resumable pipeline", () => {
   it("completes the remaining steps after a cut-off, without duplicate work or messages", async () => {
     const f = fakeDb();
-    f.cut(2); // steps 1-2 (transcript saved, translations saved) succeed, then the Worker dies
+    f.cut(1); // throws right after the 2nd saved step; // steps 1-2 (transcript saved, translations saved) succeed, then the Worker dies
     await expect(runAnswer(f.d, "a1", 60000, "champ")).rejects.toThrow("cut off");
     f.release(); // lease would expire on its own
     expect(f.r.stage).toBe("translated");
