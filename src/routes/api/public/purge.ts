@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/public/weekly-digest")({
+// Deletes unshared visitor reviews older than 24h. Protected by x-digest-secret (DIGEST_TRIGGER_SECRET).
+export const Route = createFileRoute("/api/public/purge")({
   server: {
     handlers: {
       POST: async ({ request }) => {
@@ -9,11 +10,10 @@ export const Route = createFileRoute("/api/public/weekly-digest")({
           return new Response("Unauthorized", { status: 401 });
         }
         try {
-          const purge = await lib.purgeFeedback(); // 24h review purge rides along
-          return Response.json({ ...(await lib.sendWeeklyDigest()), purge });
+          return Response.json(await lib.purgeFeedback());
         } catch (e) {
-          console.error("weekly-digest error", e);
-          return Response.json({ sent: false, error: (e as Error).message }, { status: 500 });
+          console.error("purge error", e);
+          return Response.json({ error: (e as Error).message }, { status: 500 });
         }
       },
     },

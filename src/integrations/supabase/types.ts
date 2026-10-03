@@ -99,6 +99,7 @@ export type Database = {
       conversations: {
         Row: {
           agent_history: Json
+          current_feedback_id: string | null
           current_question_position: number | null
           current_review_answer_id: string | null
           lang: string
@@ -111,6 +112,7 @@ export type Database = {
         }
         Insert: {
           agent_history?: Json
+          current_feedback_id?: string | null
           current_question_position?: number | null
           current_review_answer_id?: string | null
           lang?: string
@@ -123,6 +125,7 @@ export type Database = {
         }
         Update: {
           agent_history?: Json
+          current_feedback_id?: string | null
           current_question_position?: number | null
           current_review_answer_id?: string | null
           lang?: string
@@ -134,6 +137,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversations_current_feedback_id_fkey"
+            columns: ["current_feedback_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_feedback"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversations_current_review_answer_id_fkey"
             columns: ["current_review_answer_id"]
@@ -289,6 +299,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      visitor_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          is_test: boolean
+          lang: string
+          media_url: string | null
+          shared_with_operator: boolean
+          status: string
+          text_cleaned: string | null
+          transcript_raw: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          lang?: string
+          media_url?: string | null
+          shared_with_operator?: boolean
+          status?: string
+          text_cleaned?: string | null
+          transcript_raw?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          lang?: string
+          media_url?: string | null
+          shared_with_operator?: boolean
+          status?: string
+          text_cleaned?: string | null
+          transcript_raw?: string | null
         }
         Relationships: []
       }

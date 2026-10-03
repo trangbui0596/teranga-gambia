@@ -66,3 +66,10 @@ Secrets used (no new ones): `TWILIO_AUTH_TOKEN`, `DEMO_SMS_NUMBER`, `TWILIO_SMS_
 In champion mode, free-text or voice messages go to an AI assistant (Lovable AI, tool calling). It can only: list pending answers, show one (Wolof transcript, Numbers heard, flags), propose approve / re-record / bilingual reviewer (executed only after the champion replies YES; round-trip mismatches are called out), start a recording round, show week stats, list unanswered questions, show help. Max 3 tool calls and one reply per message; replies labelled AI-generated; Wolof replies labelled "machine-generated, unverified". START, REVIEW, 1/2/3 and EXIT still work as shortcuts. Visitor mode is unchanged.
 
 Evaluation: `POST /api/public/eval-agent` with header `x-digest-secret` (dry run, 15 scripted messages, nothing changed or sent).
+
+## Visitor voice reviews (phase 2C)
+Visitor sends FEEDBACK, then a voice note (language auto-detected) or text. The bot returns a lightly cleaned version
+(punctuation/fillers only; falls back to the raw transcript if numbers or names changed) with POST / EDIT / NO / SHARE.
+POST sends the text plus the GOOGLE_REVIEW_URL link (same link for everyone, no rating asked). We never post anything.
+Only SHARE lets Noor see it. NO deletes it at once; unshared reviews are deleted after 24h by
+`POST /api/public/purge` (header `x-digest-secret`), which also runs with every weekly digest.

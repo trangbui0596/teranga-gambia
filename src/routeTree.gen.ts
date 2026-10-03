@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval-agent'
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
+import { Route as ApiPublicPurgeRouteImport } from './routes/api/public/purge'
 import { Route as ApiPublicVoiceIncomingRouteImport } from './routes/api/public/voice-incoming'
 import { Route as ApiPublicVoiceRecordedRouteImport } from './routes/api/public/voice-recorded'
 import { Route as ApiPublicVoiceStatusRouteImport } from './routes/api/public/voice-status'
@@ -31,6 +32,11 @@ const ApiPublicEvalAgentRoute = ApiPublicEvalAgentRouteImport.update({
 const ApiPublicEvalMatchRoute = ApiPublicEvalMatchRouteImport.update({
   id: '/api/public/eval-match',
   path: '/api/public/eval-match',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPurgeRoute = ApiPublicPurgeRouteImport.update({
+  id: '/api/public/purge',
+  path: '/api/public/purge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicVoiceIncomingRoute = ApiPublicVoiceIncomingRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/purge'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/purge'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/purge'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiPublicEvalAgentRoute: typeof ApiPublicEvalAgentRoute
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
+  ApiPublicPurgeRoute: typeof ApiPublicPurgeRoute
   ApiPublicVoiceIncomingRoute: typeof ApiPublicVoiceIncomingRoute
   ApiPublicVoiceRecordedRoute: typeof ApiPublicVoiceRecordedRoute
   ApiPublicVoiceStatusRoute: typeof ApiPublicVoiceStatusRoute
@@ -156,6 +169,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/eval-match'
       fullPath: '/api/public/eval-match'
       preLoaderRoute: typeof ApiPublicEvalMatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/purge': {
+      id: '/api/public/purge'
+      path: '/api/public/purge'
+      fullPath: '/api/public/purge'
+      preLoaderRoute: typeof ApiPublicPurgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/voice-incoming': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiPublicEvalAgentRoute: ApiPublicEvalAgentRoute,
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
+  ApiPublicPurgeRoute: ApiPublicPurgeRoute,
   ApiPublicVoiceIncomingRoute: ApiPublicVoiceIncomingRoute,
   ApiPublicVoiceRecordedRoute: ApiPublicVoiceRecordedRoute,
   ApiPublicVoiceStatusRoute: ApiPublicVoiceStatusRoute,
