@@ -6,7 +6,9 @@ export const Route = createFileRoute("/api/public/voice-incoming")({
     handlers: {
       POST: async ({ request }) => {
         const lib = await import("@/lib/tourcoach.server");
-        const form = await request.formData();
+        const form = await request.formData().catch(() => null);
+        // No/invalid form body cannot carry a valid Twilio signature: reject like a bad signature.
+        if (!form) return new Response("Invalid signature", { status: 403 });
         const params: Record<string, string> = {};
         form.forEach((v, k) => { if (typeof v === "string") params[k] = v; });
         if (!lib.validTwilioSignature(lib.signedUrlFor(request), params, request.headers.get("x-twilio-signature"))) {
