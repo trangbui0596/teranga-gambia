@@ -244,12 +244,12 @@ export async function speak(text: string, lang: Lang, answerId: string): Promise
 
 /* ---------------- Background pipelines ---------------- */
 
-async function processRecording(answerId: string, mediaUrl: string, championPhone: string, n: number) {
+async function processRecording(answerId: string, mediaUrl: string, championPhone: string | null, n: number) {
   const db = supabaseAdmin;
   const t = await transcribe(mediaUrl);
   if (!t) {
     await db.from("answers").update({ flags: ["transcription failed"] }).eq("id", answerId);
-    await sendWhatsApp(championPhone, `Question ${n}: the voice note could not be heard (transcription failed). It stays pending.`);
+    if (championPhone) await sendWhatsApp(championPhone, `Question ${n}: the voice note could not be heard (transcription failed). It stays pending.`);
     return;
   }
   const flags = ["machine-translated", `wolof ${WOLOF_LABEL}`];
@@ -270,7 +270,8 @@ async function processRecording(answerId: string, mediaUrl: string, championPhon
   await db.from("answers").update({
     transcript_src: t.text, transcript_confidence: t.confidence, english, german, dutch, roundtrip_score: score, flags,
   } as never).eq("id", answerId);
-  await sendWhatsApp(championPhone, [
+  // Phone-call recordings have no WhatsApp sender to notify; the champion sees them in REVIEW.
+  if (championPhone) await sendWhatsApp(championPhone, [
     `Question ${n} heard. Wolof transcript (${WOLOF_LABEL}):`,
     t.text,
     `Numbers heard: ${numbersHeard(t.text)}`,
@@ -540,4 +541,65 @@ export async function sendWeeklyDigest() {
 
   const sent = await twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"), body);
   return { sent, questions: rows.length, unanswered: unList.length };
+}
+
+/* ---------------- Phone-call input (Twilio Voice) for Noor's feature phone ---------------- */
+
+/** URL Twilio signed: TWILIO_WEBHOOK_URL's origin (if set) + this route's path and query. */
+export function signedUrlFor(request: Request) {
+  const u = new URL(request.url);
+  const base = process.env["TWILIO_WEBHOOK_URL"];
+  const origin = base ? new URL(base).origin : `https://${u.host}`;
+  return origin + u.pathname + u.search;
+}
+
+/** Only the demo operator's phone (hash of DEMO_SMS_NUMBER) may use the voice line. */
+export function isOperatorCaller(from: string | undefined) {
+  return !!from && safeEqual(hashPhone(from), hashPhone(env("DEMO_SMS_NUMBER")));
+}
+
+const xml = (body: string) =>
+  new Response(`<?xml version="1.0" encoding="UTF-8"?><Response>${body}</Response>`, { headers: { "Content-Type": "text/xml" } });
+
+export const twimlPrivate = () => xml(`<Say>Sorry, this line is private.</Say><Hangup/>`);
+
+/** TwiML for question n (1..10). Says only the number; Noor uses a printed card in the same order. */
+export function twimlQuestion(n: number, opts: { greet?: boolean; retry?: boolean } = {}) {
+  const r = opts.retry ? 1 : 0;
+  const action = `/api/public/voice-recorded?n=${n}&amp;r=${r}`;
+  return xml([
+    opts.greet ? `<Say>Hello Noor. Please answer each question after the beep. Press hash when done.</Say>` : "",
+    opts.retry ? `<Say>Please answer again.</Say>` : "",
+    `<Say>Question ${n}</Say>`,
+    `<Record playBeep="true" maxLength="90" timeout="4" finishOnKey="#" action="${action}" method="POST"/>`,
+    // Reached only when nothing was recorded: Twilio skips the action and continues here.
+    `<Redirect method="POST">${action}&amp;empty=1</Redirect>`,
+  ].join(""));
+}
+
+export const twimlGoodbye = () => xml(`<Say>Thank you, goodbye</Say><Hangup/>`);
+
+/** One SMS per call, counted in the daily cap. */
+export async function sendCallSummary(callSid: string) {
+  const { data } = await supabaseAdmin.rpc("voice_call_claim_summary" as never, { _sid: callSid } as never);
+  if (data === null || data === undefined) return false; // already sent for this call
+  const n = Number(data) || 0;
+  return twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"),
+    `TourCoach demo: Got ${n} of ${TOTAL_QUESTIONS} answers. The family helper will check them.`);
+}
+
+/** Stores a call recording for question n and runs the same pipeline as WhatsApp voice notes. Returns answers so far. */
+export async function storeCallRecording(callSid: string, n: number, recordingUrl: string) {
+  const db = supabaseAdmin;
+  const { data: q } = await db.from("questions").select("id").eq("position", n).maybeSingle();
+  if (!q) return null;
+  const audio = recordingUrl + ".mp3";
+  const { data: rec } = await db.from("recordings")
+    .insert({ question_id: q.id, audio_path: audio, week: isoWeek(), status: "received" }).select("id").single();
+  if (!rec) return null;
+  const { data: ans } = await db.from("answers")
+    .insert({ recording_id: rec.id, review_status: "pending", flags: ["processing", "phone call"] }).select("id").single();
+  if (ans) runInBackground("call-recording", () => processRecording(ans.id, audio, null, n));
+  const { data: count } = await db.rpc("voice_call_answered" as never, { _sid: callSid } as never);
+  return Number(count) || 0;
 }
