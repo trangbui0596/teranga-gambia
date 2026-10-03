@@ -33,7 +33,8 @@ type PendingRow = {
 async function pendingRows(): Promise<PendingRow[]> {
   const { data } = await supabaseAdmin.from("answers")
     .select("id, transcript_src, flags, is_sample, recordings(questions(position, topic))")
-    .eq("review_status", "pending").order("created_at").limit(20);
+    .eq("review_status", "pending").eq("is_sample", false) // samples are never in the review queue
+    .order("created_at").limit(20);
   return (data ?? []) as unknown as PendingRow[];
 }
 

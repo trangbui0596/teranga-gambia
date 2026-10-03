@@ -769,32 +769,28 @@ async function showNextPending(save: Save) {
     .from("answers")
     .select("id, transcript_src, flags, is_sample, created_at, recordings(questions(position, topic))")
     .eq("review_status", "pending")
+    .eq("is_sample", false) // seeded sample answers are never in the champion's review queue
     .in("stage" as never, ["checked", "failed"] as never)
     .order("created_at");
   const { count: busy } = await supabaseAdmin.from("answers").select("id", { count: "exact", head: true })
-    .eq("review_status", "pending").in("stage" as never, UNFINISHED as never);
-  const still = busy ? `\n\n${busy} still processing, send REVIEW again in a minute.` : "";
+    .eq("review_status", "pending").eq("is_sample", false).in("stage" as never, UNFINISHED as never);
   const list = (data ?? []) as unknown as Array<{
     id: string; transcript_src: string | null; flags: string[]; is_sample: boolean;
     recordings: { questions: { position: number; topic: string } | null } | null;
   }>;
-  const item = list[0];
-  if (!item) {
-    await save({ state: "idle", current_review_answer_id: null });
-    return busy ? `No answers ready yet.${still}` : "No pending answers.";
-  }
-  await save({ state: "reviewing", current_review_answer_id: item.id });
-  const q = item.recordings?.questions;
+  const { text, answerId } = formatPendingQueue(
+    list.map((i) => ({
+      id: i.id, transcript_src: i.transcript_src, flags: i.flags, is_sample: i.is_sample,
+      position: i.recordings?.questions?.position, topic: i.recordings?.questions?.topic,
+    })),
+    busy ?? 0, WOLOF_LABEL, numbersHeard);
   // The champion does not speak English: only the Wolof transcript and numbers are shown, never English text.
-  return [
-    `Pending: ${list.length}. Now: question ${q?.position} (${q?.topic})${item.is_sample ? " (Sample answer)" : ""}`,
-    `Wolof transcript (${WOLOF_LABEL}):`,
-    item.transcript_src ?? (item.flags.includes("processing") ? "[still processing]" : "[no transcript]"),
-    `Numbers heard: ${numbersHeard(item.transcript_src)}`,
-    `Flags: ${item.flags.length ? item.flags.join(", ") : "none"}`,
-    "",
-    "Reply 1 approve, 2 re-record, 3 needs bilingual reviewer",
-  ].join("\n") + still;
+  if (!answerId) {
+    await save({ state: "idle", current_review_answer_id: null });
+    return text;
+  }
+  await save({ state: "reviewing", current_review_answer_id: answerId });
+  return text;
 }
 
 /* ---------------- Evaluation (keyword-match intent accuracy) ---------------- */
