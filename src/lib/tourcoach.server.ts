@@ -773,13 +773,13 @@ export const twimlGoodbye = () => xml(`<Say>Thank you, goodbye</Say><Hangup/>`);
 
 /** One summary per call, with a single WhatsApp fallback if SMS fails. */
 export async function sendCallSummary(callSid: string) {
-  const to = env("DEMO_SMS_NUMBER"), from = env("TWILIO_SMS_FROM"); // check secrets before marking the summary as sent
+  const to = env("DEMO_SMS_NUMBER");
   const { data } = await supabaseAdmin.rpc("voice_call_claim_summary" as never, { _sid: callSid } as never);
   if (data === null || data === undefined) return false; // already sent for this call
   const n = Number(data) || 0;
   const body = callSummarySms(n);
   const result = await sendSmsWithFallback(body,
-    () => twilioSend(to, from, body),
+    () => twilioSend(to, env("TWILIO_SMS_FROM"), body),
     () => sendWhatsApp(to, body));
   return result.sent;
 }

@@ -16,7 +16,7 @@ describe("Teranga A2P message formats", () => {
       { text: "Can children join?", isSample: false },
       { text: "Fourth question", isSample: false },
     ]);
-    expect(body).toBe("Teranga weekly digest: 6 visitor questions in 7 days. price: 3. duration: 2. meeting: 1. Unanswered: Can we meet at the market? (Sample); Are there benches?; Can children join?. Reply STOP to opt out, HELP for help.");
+    expect(body).toBe("Teranga weekly digest: 6 visitor questions in 7 days. price: 3. duration: 2. meeting: 1. Unanswered: Can we meet at the market? (Sample); Are there benches?; Can children join? Reply STOP to opt out, HELP for help.");
     expect(body).not.toContain("extra");
     expect(body).not.toContain("Fourth");
   });

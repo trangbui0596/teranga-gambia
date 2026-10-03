@@ -36,7 +36,8 @@ export function weeklyDigestSms(
     if ((body + candidate + "." + FOOTER).length > MAX_DIGEST_LENGTH) break;
     questions.push(label);
   }
-  body += `${questions.length ? questions.join("; ") : "none"}.${FOOTER}`;
+  const listed = questions.length ? questions.join("; ") : "none";
+  body += `${listed}${/[.!?]$/.test(listed) ? "" : "."}${FOOTER}`;
   return body;
 }
 
