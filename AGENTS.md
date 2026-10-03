@@ -11,3 +11,4 @@
 
 - No user web UI: all interaction is WhatsApp/SMS via TanStack server routes under src/routes/api/public/ (stack has no Supabase edge functions); logic in src/lib/tourcoach.server.ts, matching in pure src/lib/match.ts — single place for channel handlers.
 - Tables have RLS with no policies; only service-role server code touches them — no client data access exists.
+- Slow AI/voice work runs after the webhook reply via runInBackground (src/lib/background.server.ts, Worker waitUntil through AsyncLocalStorage set in src/server.ts) — keeps Twilio replies fast.

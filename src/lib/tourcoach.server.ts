@@ -1,26 +1,21 @@
-// TourCoach backend logic (server-only). Used by /api/public/whatsapp-webhook and /api/public/weekly-digest.
+// TourCoach backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
+// and /api/public/eval-match.
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
+import { runInBackground } from "./background.server";
 
 type Lang = "en" | "de" | "nl";
 const FIELD = { en: "english", de: "german", nl: "dutch" } as const;
+const LANG_NAME = { en: "English", de: "German", nl: "Dutch", wo: "Wolof" } as const;
 const TOTAL_QUESTIONS = 10;
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
-
-/* ---------------- Phase-2 placeholders (NOT implemented yet; no external calls) ---------------- */
-export async function transcribe(_mediaUrl: string): Promise<string | null> {
-  return null; // TODO phase 2: ElevenLabs speech-to-text (scribe_v2, language_code "wol")
-}
-export async function translate(_text: string, _to: Lang): Promise<string | null> {
-  return null; // TODO phase 2: Lovable AI translation (Wolof -> EN, EN -> DE/NL)
-}
-export async function roundtrip(_source: string, _translated: string): Promise<number | null> {
-  return null; // TODO phase 2: Lovable AI round-trip consistency score
-}
-export async function speak(_text: string, _lang: Lang): Promise<string | null> {
-  return null; // TODO phase 2: ElevenLabs text-to-speech with a neutral stock voice (labeled AI-generated)
-}
+const AI_URL = "https://ai.gateway.lovable.dev/v1/responses";
+const AI_MODEL = "openai/gpt-6-astra";
+const AUDIO_BUCKET = "answer-audio";
+const TTS_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"; // ElevenLabs stock voice "Sarah" (neutral, no cloning)
+const WOLOF_LABEL = "unverified (no native reviewer yet)";
+const ROUNDTRIP_MIN = 0.7;
 
 /* ---------------- Helpers ---------------- */
 function env(name: string) {
@@ -51,24 +46,43 @@ export function isDigestAuthorized(header: string | null) {
   return !!header && safeEqual(header, env("DIGEST_TRIGGER_SECRET"));
 }
 
-async function twilioSend(to: string, from: string, body: string) {
+function twilioHeaders(extra: Record<string, string> = {}) {
+  return { Authorization: `Bearer ${env("LOVABLE_API_KEY")}`, "X-Connection-Api-Key": env("TWILIO_API_KEY"), ...extra };
+}
+
+/** Daily outbound cap (MAX_OUTBOUND_PER_DAY, default 60). Atomic counter in the database. */
+async function claimOutbound(): Promise<boolean> {
+  const max = Number(process.env["MAX_OUTBOUND_PER_DAY"] ?? "60") || 60;
+  const { data, error } = await supabaseAdmin.rpc("claim_outbound" as never, { _max: max } as never);
+  if (error) {
+    console.error("claim_outbound failed", error.message);
+    return false; // fail closed: do not spend messages if the counter is broken
+  }
+  if (!data) console.warn(`[cost-cap] Daily outbound cap of ${max} reached; message NOT sent.`);
+  return !!data;
+}
+
+/** Sends one Twilio message (text, optionally with one media URL). Returns false when capped. */
+async function twilioSend(to: string, from: string, body: string, mediaUrl?: string) {
+  if (!(await claimOutbound())) return false;
+  const params = new URLSearchParams({ To: to, From: from, Body: body.slice(0, 1550) });
+  if (mediaUrl) params.set("MediaUrl", mediaUrl);
   const res = await fetch(`${GATEWAY_URL}/Messages.json`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${env("LOVABLE_API_KEY")}`,
-      "X-Connection-Api-Key": env("TWILIO_API_KEY"),
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ To: to, From: from, Body: body.slice(0, 1550) }),
+    headers: twilioHeaders({ "Content-Type": "application/x-www-form-urlencoded" }),
+    body: params,
   });
   if (!res.ok) {
     const txt = await res.text();
     console.error(`Twilio send failed [${res.status}]: ${txt}`);
     throw new Error(`Twilio send failed [${res.status}]`);
   }
+  return true;
 }
 
 const asWhatsApp = (n: string) => (n.startsWith("whatsapp:") ? n : `whatsapp:${n}`);
+const sendWhatsApp = (to: string, body: string, mediaUrl?: string) =>
+  twilioSend(asWhatsApp(to), asWhatsApp(env("DEMO_WHATSAPP_NUMBER")), body, mediaUrl);
 
 function reviewLine() {
   const url = process.env["GOOGLE_REVIEW_URL"];
@@ -83,12 +97,206 @@ function isoWeek(d = new Date()) {
   return `${t.getUTCFullYear()}-W${String(Math.ceil(((t.getTime() - y.getTime()) / 86400000 + 1) / 7)).padStart(2, "0")}`;
 }
 
+/** Numbers, prices and times written in the transcript (digits only). */
+export function numbersHeard(text: string | null) {
+  if (!text) return "none";
+  const m = text.match(/\d+(?:[.,:]\d+)*(?:\s*(?:dalasi|gmd|euro|eur|€|d\b|h\b|am\b|pm\b))?/gi);
+  return m && m.length ? [...new Set(m.map((s) => s.trim()))].join(", ") : "none found";
+}
+
+/* ---------------- Lovable AI (Responses API, streamed) ---------------- */
+async function aiText(instructions: string, input: string): Promise<string> {
+  const res = await fetch(AI_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Lovable-API-Key": env("LOVABLE_API_KEY"), "X-Lovable-AIG-SDK": "fetch" },
+    body: JSON.stringify({ model: AI_MODEL, instructions, input, stream: true, store: false, reasoning: { effort: "low" } }),
+  });
+  if (!res.ok || !res.body) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`AI request failed [${res.status}]: ${txt.slice(0, 300)}`);
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  let out = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i: number;
+    while ((i = buf.indexOf("\n\n")) >= 0) {
+      const frame = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      for (const line of frame.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const raw = line.slice(5).trim();
+        if (!raw || raw === "[DONE]") continue;
+        let ev: { type?: string; delta?: string; response?: { error?: { message?: string } }; message?: string };
+        try { ev = JSON.parse(raw); } catch { continue; }
+        if (ev.type === "response.output_text.delta" && ev.delta) out += ev.delta;
+        if (ev.type === "response.failed" || ev.type === "error") {
+          throw new Error(`AI stream failed: ${ev.response?.error?.message ?? ev.message ?? "unknown"}`);
+        }
+        if (ev.type === "response.refusal.delta") throw new Error("AI refused the request");
+      }
+    }
+  }
+  return out.trim();
+}
+
+const TRANSLATE_RULES = [
+  "You are a faithful translator for a Gambian tour operator.",
+  "Translate faithfully. Never add or remove facts. Do not explain or comment.",
+  "Keep every number, price (with its currency, e.g. dalasi / GMD / euro), time, date and place name exactly as in the source.",
+  "Output only the translation, nothing else.",
+].join("\n");
+
+/* ---------------- Phase 2A implementations ---------------- */
+
+/** Downloads the Twilio media (via the Twilio connector) and transcribes it with ElevenLabs scribe_v2 in Wolof. */
+export async function transcribe(mediaUrl: string): Promise<{ text: string; confidence: number | null } | null> {
+  try {
+    const u = new URL(mediaUrl);
+    const m = /\/Accounts\/[^/]+\/(.+)$/.exec(u.pathname);
+    if (u.hostname !== "api.twilio.com" || !m) throw new Error("Unexpected media URL");
+    const media = await fetch(`${GATEWAY_URL}/${m[1]}`, { headers: twilioHeaders(), redirect: "follow" });
+    if (!media.ok) throw new Error(`Media download failed [${media.status}]: ${(await media.text()).slice(0, 200)}`);
+    const type = (media.headers.get("content-type") ?? "audio/ogg").split(";")[0]!.trim();
+    const ext = type.includes("amr") ? "amr" : type.includes("mpeg") || type.includes("mp3") ? "mp3" : type.includes("mp4") ? "m4a" : "ogg";
+    const blob = new Blob([await media.arrayBuffer()], { type });
+
+    const form = new FormData();
+    form.append("file", blob, `voice.${ext}`);
+    form.append("model_id", "scribe_v2");
+    form.append("language_code", "wol");
+    form.append("tag_audio_events", "false");
+    const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST", headers: { "xi-api-key": env("ELEVENLABS_API_KEY") }, body: form,
+    });
+    if (!res.ok) throw new Error(`ElevenLabs STT failed [${res.status}]: ${(await res.text()).slice(0, 300)}`);
+    const j = (await res.json()) as { text?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
+    const text = (j.text ?? "").trim();
+    if (!text) return null;
+    const lps = (j.words ?? []).filter((w) => w.type !== "spacing" && typeof w.logprob === "number").map((w) => Math.exp(w.logprob!));
+    const confidence = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : j.language_probability ?? null;
+    return { text, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
+  } catch (e) {
+    console.error("transcribe failed", e);
+    return null;
+  }
+}
+
+/** Lovable AI translation. Wolof -> English (pivot); English -> German/Dutch; English -> Wolof for round-trip. */
+export async function translate(text: string, to: Lang | "wo"): Promise<string | null> {
+  const from = to === "en" ? "wo" : "en";
+  try {
+    const out = await aiText(`${TRANSLATE_RULES}\nTranslate from ${LANG_NAME[from]} to ${LANG_NAME[to]}.`, text);
+    return out || null;
+  } catch (e) {
+    console.error(`translate to ${to} failed`, e);
+    return null;
+  }
+}
+
+/** Back-translates English to Wolof and asks the model to score consistency with the original transcript. */
+export async function roundtrip(source: string, english: string): Promise<{ score: number; differences: string[]; backWolof: string } | null> {
+  try {
+    const backWolof = await translate(english, "wo");
+    if (!backWolof) return null;
+    const raw = await aiText(
+      [
+        "Compare two Wolof texts: ORIGINAL (a transcript) and BACK (a machine back-translation).",
+        "Score how well BACK preserves the meaning of ORIGINAL from 0 to 1.",
+        "List every number, price, time or name that differs or is missing between them.",
+        'Answer only with JSON: {"score": number, "differences": string[]}',
+      ].join("\n"),
+      `ORIGINAL:\n${source}\n\nBACK:\n${backWolof}`,
+    );
+    const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { score?: number; differences?: string[] };
+    const score = Math.max(0, Math.min(1, Number(j.score)));
+    if (!Number.isFinite(score)) return null;
+    return { score: Math.round(score * 100) / 100, differences: (j.differences ?? []).map(String).slice(0, 10), backWolof };
+  } catch (e) {
+    console.error("roundtrip failed", e);
+    return null;
+  }
+}
+
+/** ElevenLabs TTS (eleven_multilingual_v2, neutral stock voice). Stores mp3 in the private bucket; returns its path. */
+export async function speak(text: string, lang: Lang, answerId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${TTS_VOICE_ID}?output_format=mp3_44100_128`, {
+      method: "POST",
+      headers: { "xi-api-key": env("ELEVENLABS_API_KEY"), "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text.slice(0, 2500), model_id: "eleven_multilingual_v2", language_code: lang }),
+    });
+    if (!res.ok) throw new Error(`ElevenLabs TTS failed [${res.status}]: ${(await res.text()).slice(0, 300)}`);
+    const path = `${answerId}/${lang}.mp3`;
+    const { error } = await supabaseAdmin.storage.from(AUDIO_BUCKET)
+      .upload(path, new Uint8Array(await res.arrayBuffer()), { contentType: "audio/mpeg", upsert: true });
+    if (error) throw new Error(`Upload failed: ${error.message}`);
+    return path;
+  } catch (e) {
+    console.error(`speak ${lang} failed`, e);
+    return null;
+  }
+}
+
+/* ---------------- Background pipelines ---------------- */
+
+async function processRecording(answerId: string, mediaUrl: string, championPhone: string, n: number) {
+  const db = supabaseAdmin;
+  const t = await transcribe(mediaUrl);
+  if (!t) {
+    await db.from("answers").update({ flags: ["transcription failed"] }).eq("id", answerId);
+    await sendWhatsApp(championPhone, `Question ${n}: the voice note could not be heard (transcription failed). It stays pending.`);
+    return;
+  }
+  const flags = ["machine-translated", `wolof ${WOLOF_LABEL}`];
+  const english = await translate(t.text, "en");
+  let german: string | null = null, dutch: string | null = null, score: number | null = null;
+  if (!english) flags.push("translation failed");
+  else {
+    [german, dutch] = await Promise.all([translate(english, "de"), translate(english, "nl")]);
+    if (!german || !dutch) flags.push("translation failed");
+    const rt = await roundtrip(t.text, english);
+    if (!rt) flags.push("round-trip check failed");
+    else {
+      score = rt.score;
+      if (rt.score < ROUNDTRIP_MIN || rt.differences.length) flags.push("round-trip mismatch");
+    }
+  }
+  // Never auto-approve: review_status stays "pending".
+  await db.from("answers").update({
+    transcript_src: t.text, transcript_confidence: t.confidence, english, german, dutch, roundtrip_score: score, flags,
+  } as never).eq("id", answerId);
+  await sendWhatsApp(championPhone, [
+    `Question ${n} heard. Wolof transcript (${WOLOF_LABEL}):`,
+    t.text,
+    `Numbers heard: ${numbersHeard(t.text)}`,
+  ].join("\n"));
+}
+
+async function generateAnswerAudio(answerId: string) {
+  const db = supabaseAdmin;
+  const { data } = await db.from("answers").select("english, german, dutch, review_status").eq("id", answerId).maybeSingle();
+  if (!data || data.review_status !== "approved") return; // audio only AFTER approval
+  for (const lang of ["en", "de", "nl"] as const) {
+    const text = data[FIELD[lang]];
+    if (!text) continue;
+    const path = await speak(text, lang, answerId);
+    if (path) await db.from("answer_audio").upsert({ answer_id: answerId, lang, audio_path: path }, { onConflict: "answer_id,lang" });
+  }
+}
+
+/* ---------------- WhatsApp state machine ---------------- */
 type Conv = {
   phone_hash: string; role: "visitor" | "champion"; state: string; current_question_position: number | null;
   lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null;
 };
+type Reply = { text: string; audioUrl?: string | undefined };
+type Save = (p: Partial<Conv>) => unknown;
 
-/* ---------------- WhatsApp state machine ---------------- */
 export async function handleWhatsApp(input: { from: string; body: string; mediaUrl: string | null }) {
   const db = supabaseAdmin;
   const phone_hash = hashPhone(input.from);
@@ -98,13 +306,16 @@ export async function handleWhatsApp(input: { from: string; body: string; mediaU
     conv = ins.data;
   }
   const c = conv as Conv;
-  const save = (patch: Partial<Conv>) => db.from("conversations").update(patch).eq("phone_hash", phone_hash);
+  const save: Save = (patch) => db.from("conversations").update(patch).eq("phone_hash", phone_hash);
 
-  const reply = await route(c, input, save);
-  await twilioSend(asWhatsApp(input.from), asWhatsApp(env("DEMO_WHATSAPP_NUMBER")), reply);
+  const r = await route(c, input, save);
+  const reply: Reply = typeof r === "string" ? { text: r } : r;
+  // At most one text + one audio per inbound message. No loops.
+  const sent = await sendWhatsApp(input.from, reply.text);
+  if (sent && reply.audioUrl) await sendWhatsApp(input.from, "AI-generated voice — Machine-translated", reply.audioUrl);
 }
 
-async function route(c: Conv, input: { body: string; mediaUrl: string | null }, save: (p: Partial<Conv>) => unknown) {
+async function route(c: Conv, input: { from: string; body: string; mediaUrl: string | null }, save: Save): Promise<string | Reply> {
   const text = input.body.trim();
   const upper = text.toUpperCase();
 
@@ -121,7 +332,7 @@ async function route(c: Conv, input: { body: string; mediaUrl: string | null }, 
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
     return "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.";
   }
-  return c.role === "champion" ? champion(c, upper, input.mediaUrl, save) : visitor(c, text, upper, save);
+  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save) : visitor(c, text, upper, save);
 }
 
 /* ---------------- Visitor ---------------- */
@@ -131,7 +342,7 @@ const CLEAR_Q: Record<Lang, string> = {
   nl: "Was dit duidelijk? Antwoord YES of NO",
 };
 
-async function visitor(c: Conv, text: string, upper: string, save: (p: Partial<Conv>) => unknown) {
+async function visitor(c: Conv, text: string, upper: string, save: Save): Promise<string | Reply> {
   const db = supabaseAdmin;
   if (upper === "EN" || upper === "DE" || upper === "NL") {
     await save({ lang: upper.toLowerCase() as Lang });
@@ -167,17 +378,28 @@ async function visitor(c: Conv, text: string, upper: string, save: (p: Partial<C
     return `${NOT_SURE[c.lang]}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
   }
   await save({ last_visitor_question_id: vq?.id ?? null });
-  return [
-    answerText + (answer.is_sample ? " (Sample answer)" : ""),
-    "— Machine-translated",
-    "",
-    CLEAR_Q[c.lang],
-    reviewLine(),
-  ].join("\n");
+
+  // Pre-generated voice (only exists for approved answers). Short-lived signed URL for Twilio to fetch.
+  let audioUrl: string | undefined;
+  const { data: audio } = await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle();
+  if (audio?.audio_path) {
+    const { data: signed } = await db.storage.from(AUDIO_BUCKET).createSignedUrl(audio.audio_path, 600);
+    audioUrl = signed?.signedUrl;
+  }
+  return {
+    text: [
+      answerText + (answer.is_sample ? " (Sample answer)" : ""),
+      "— Machine-translated" + (audioUrl ? " · voice note follows (AI-generated voice)" : ""),
+      "",
+      CLEAR_Q[c.lang],
+      reviewLine(),
+    ].join("\n"),
+    audioUrl,
+  };
 }
 
 /* ---------------- Champion ---------------- */
-async function champion(c: Conv, upper: string, mediaUrl: string | null, save: (p: Partial<Conv>) => unknown) {
+async function champion(c: Conv, upper: string, mediaUrl: string | null, from: string, save: Save) {
   const db = supabaseAdmin;
   const { data: questions } = await db.from("questions").select("id, position, topic").order("position");
   const qs = questions ?? [];
@@ -197,12 +419,11 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, save: (
       .insert({ question_id: q.id, audio_path: mediaUrl, week: isoWeek(), status: "received" })
       .select("id").single();
     if (rec) {
-      // Phase 1: placeholders return null; answer waits for review with no text yet.
-      const transcript = await transcribe(mediaUrl);
-      await db.from("answers").insert({
-        recording_id: rec.id, transcript_src: transcript, review_status: "pending",
-        flags: ["machine-translated", "placeholder: not transcribed yet"],
-      });
+      const { data: ans } = await db.from("answers").insert({
+        recording_id: rec.id, review_status: "pending", flags: ["processing"],
+      }).select("id").single();
+      // Heavy work after the "Got question N" reply: transcribe -> translate -> round-trip -> notify champion.
+      if (ans) runInBackground("recording", () => processRecording(ans.id, mediaUrl, from, n));
     }
     const next = n + 1;
     if (next > TOTAL_QUESTIONS) {
@@ -213,30 +434,33 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, save: (
     return `Got question ${n}.\n\n${ask(next)}`;
   }
 
-  if (upper === "REVIEW") return showNextPending(save, null);
+  if (upper === "REVIEW") return showNextPending(save);
 
   if (c.state === "reviewing" && c.current_review_answer_id) {
     const m = /^([123])\b/.exec(upper);
     if (!m) return "Reply 1 approve, 2 re-record, 3 needs bilingual reviewer.";
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
+    const id = c.current_review_answer_id;
     await db.from("answers").update({
       review_status: status, approved_at: status === "approved" ? new Date().toISOString() : null,
-    }).eq("id", c.current_review_answer_id);
+    }).eq("id", id);
+    if (status === "approved") runInBackground("tts", () => generateAnswerAudio(id));
     const label = { approved: "Approved", rerecord: "Marked for re-record", needs_bilingual: "Sent to bilingual reviewer" }[status];
-    return `${label}.\n\n${await showNextPending(save, c.current_review_answer_id)}`;
+    return `${label}.\n\n${await showNextPending(save)}`;
   }
 
   return "Champion mode (demo shortcut). START, REVIEW or EXIT.";
 }
 
-async function showNextPending(save: (p: Partial<Conv>) => unknown, _after: string | null) {
+async function showNextPending(save: Save) {
   const { data } = await supabaseAdmin
     .from("answers")
-    .select("id, english, is_sample, created_at, recordings(questions(position, topic))")
+    .select("id, transcript_src, flags, is_sample, created_at, recordings(questions(position, topic))")
     .eq("review_status", "pending")
     .order("created_at");
   const list = (data ?? []) as unknown as Array<{
-    id: string; english: string | null; is_sample: boolean; recordings: { questions: { position: number; topic: string } | null } | null;
+    id: string; transcript_src: string | null; flags: string[]; is_sample: boolean;
+    recordings: { questions: { position: number; topic: string } | null } | null;
   }>;
   const item = list[0];
   if (!item) {
@@ -245,12 +469,43 @@ async function showNextPending(save: (p: Partial<Conv>) => unknown, _after: stri
   }
   await save({ state: "reviewing", current_review_answer_id: item.id });
   const q = item.recordings?.questions;
+  // The champion does not speak English: only the Wolof transcript and numbers are shown, never English text.
   return [
     `Pending: ${list.length}. Now: question ${q?.position} (${q?.topic})${item.is_sample ? " (Sample answer)" : ""}`,
-    item.english ?? "[No text yet — transcription/translation placeholder, Simulated]",
+    `Wolof transcript (${WOLOF_LABEL}):`,
+    item.transcript_src ?? (item.flags.includes("processing") ? "[still processing]" : "[no transcript]"),
+    `Numbers heard: ${numbersHeard(item.transcript_src)}`,
+    `Flags: ${item.flags.length ? item.flags.join(", ") : "none"}`,
     "",
     "Reply 1 approve, 2 re-record, 3 needs bilingual reviewer",
   ].join("\n");
+}
+
+/* ---------------- Evaluation (keyword-match intent accuracy) ---------------- */
+export async function evaluateMatching(custom?: Array<{ text: string; expected_topic: string }>) {
+  const db = supabaseAdmin;
+  const { data: qs } = await db.from("questions").select("topic");
+  // One pseudo-answer per topic so intent accuracy is measured independently of what is approved.
+  const pseudo = (qs ?? []).map((q) => ({ id: q.topic, recordings: { questions: { topic: q.topic } } }));
+  let items = custom;
+  if (!items) {
+    const { data } = await db.from("eval_questions" as never).select("text, expected_topic");
+    items = (data ?? []) as unknown as Array<{ text: string; expected_topic: string }>;
+  }
+  const results = items.map((it) => {
+    const { answer, confidence } = matchQuestion(it.text, pseudo);
+    const predicted = answer?.id ?? null;
+    return { text: it.text, expected: it.expected_topic, predicted, confidence, correct: predicted === it.expected_topic };
+  });
+  const correct = results.filter((r) => r.correct).length;
+  const unsure = results.filter((r) => r.predicted === null).length;
+  const wrong = results.length - correct - unsure;
+  return {
+    label: custom ? "custom labeled list" : "evaluation test data (hand-written, not real visitor data)",
+    total: results.length, correct, unsure_not_answered: unsure, wrong_answer: wrong,
+    accuracy: results.length ? Math.round((correct / results.length) * 1000) / 1000 : null,
+    results,
+  };
 }
 
 /* ---------------- Weekly digest ---------------- */
@@ -283,6 +538,6 @@ export async function sendWeeklyDigest() {
     ...(unList.length ? unList : ["- none"]),
   ].join("\n");
 
-  await twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"), body);
-  return { sent: true, questions: rows.length, unanswered: unList.length };
+  const sent = await twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"), body);
+  return { sent, questions: rows.length, unanswered: unList.length };
 }

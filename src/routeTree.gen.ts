@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
 import { Route as ApiPublicWeeklyDigestRouteImport } from './routes/api/public/weekly-digest'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicEvalMatchRoute = ApiPublicEvalMatchRouteImport.update({
+  id: '/api/public/eval-match',
+  path: '/api/public/eval-match',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicWeeklyDigestRoute = ApiPublicWeeklyDigestRouteImport.update({
@@ -32,34 +38,47 @@ const ApiPublicWhatsappWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/weekly-digest' | '/api/public/whatsapp-webhook'
+  fullPaths:
+    | '/'
+    | '/api/public/eval-match'
+    | '/api/public/weekly-digest'
+    | '/api/public/whatsapp-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/weekly-digest' | '/api/public/whatsapp-webhook'
+  to:
+    | '/'
+    | '/api/public/eval-match'
+    | '/api/public/weekly-digest'
+    | '/api/public/whatsapp-webhook'
   id:
     | '__root__'
     | '/'
+    | '/api/public/eval-match'
     | '/api/public/weekly-digest'
     | '/api/public/whatsapp-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
   ApiPublicWeeklyDigestRoute: typeof ApiPublicWeeklyDigestRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
@@ -71,6 +90,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/eval-match': {
+      id: '/api/public/eval-match'
+      path: '/api/public/eval-match'
+      fullPath: '/api/public/eval-match'
+      preLoaderRoute: typeof ApiPublicEvalMatchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/weekly-digest': {
@@ -92,6 +118,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
   ApiPublicWeeklyDigestRoute: ApiPublicWeeklyDigestRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
