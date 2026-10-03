@@ -14,16 +14,252 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      answer_audio: {
+        Row: {
+          answer_id: string
+          audio_path: string
+          lang: string
+        }
+        Insert: {
+          answer_id: string
+          audio_path: string
+          lang: string
+        }
+        Update: {
+          answer_id?: string
+          audio_path?: string
+          lang?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_audio_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      answers: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          dutch: string | null
+          english: string | null
+          flags: string[]
+          german: string | null
+          id: string
+          is_sample: boolean
+          recording_id: string
+          review_status: Database["public"]["Enums"]["review_status"]
+          roundtrip_score: number | null
+          transcript_src: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          dutch?: string | null
+          english?: string | null
+          flags?: string[]
+          german?: string | null
+          id?: string
+          is_sample?: boolean
+          recording_id: string
+          review_status?: Database["public"]["Enums"]["review_status"]
+          roundtrip_score?: number | null
+          transcript_src?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          dutch?: string | null
+          english?: string | null
+          flags?: string[]
+          german?: string | null
+          id?: string
+          is_sample?: boolean
+          recording_id?: string
+          review_status?: Database["public"]["Enums"]["review_status"]
+          roundtrip_score?: number | null
+          transcript_src?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          id: string
+          position: number
+          text_en: string
+          topic: string
+        }
+        Insert: {
+          id?: string
+          position: number
+          text_en: string
+          topic: string
+        }
+        Update: {
+          id?: string
+          position?: number
+          text_en?: string
+          topic?: string
+        }
+        Relationships: []
+      }
+      recordings: {
+        Row: {
+          audio_path: string | null
+          created_at: string
+          id: string
+          is_sample: boolean
+          question_id: string
+          status: string
+          week: string
+        }
+        Insert: {
+          audio_path?: string | null
+          created_at?: string
+          id?: string
+          is_sample?: boolean
+          question_id: string
+          status?: string
+          week: string
+        }
+        Update: {
+          audio_path?: string | null
+          created_at?: string
+          id?: string
+          is_sample?: boolean
+          question_id?: string
+          status?: string
+          week?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recordings_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unanswered: {
+        Row: {
+          added_to_round_week: string | null
+          created_at: string
+          id: string
+          visitor_question_id: string
+        }
+        Insert: {
+          added_to_round_week?: string | null
+          created_at?: string
+          id?: string
+          visitor_question_id: string
+        }
+        Update: {
+          added_to_round_week?: string | null
+          created_at?: string
+          id?: string
+          visitor_question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unanswered_visitor_question_id_fkey"
+            columns: ["visitor_question_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visitor_questions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          id: string
+          is_sample: boolean
+          lang: string
+          matched_answer_id: string | null
+          text: string
+          was_clear: boolean | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          is_sample?: boolean
+          lang: string
+          matched_answer_id?: string | null
+          text: string
+          was_clear?: boolean | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          is_sample?: boolean
+          lang?: string
+          matched_answer_id?: string | null
+          text?: string
+          was_clear?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_questions_matched_answer_id_fkey"
+            columns: ["matched_answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      record_clarity: {
+        Args: { _clear: boolean; _id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "champion"
+      review_status: "pending" | "approved" | "rerecord" | "needs_bilingual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +386,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["champion"],
+      review_status: ["pending", "approved", "rerecord", "needs_bilingual"],
+    },
   },
 } as const
