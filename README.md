@@ -49,3 +49,14 @@ Secrets (Project Settings → Secrets, never in code): `DEMO_CHAMPION_PIN`, `DEM
 - After approval, ElevenLabs (eleven_multilingual_v2, stock voice) makes EN/DE/NL mp3s in the private `answer-audio` bucket. Visitors get one text plus at most one voice note ("AI-generated voice").
 - Daily cap: `MAX_OUTBOUND_PER_DAY` (default 60). After that the bot stops replying and logs it.
 - Evaluation: `POST /api/public/eval-match` with header `x-digest-secret`. Empty body uses the 20 seeded evaluation questions (test data, not real visitors); or send `{"questions":[{"text":"…","expected_topic":"price"}]}`.
+
+## Phase 2B: phone-call input (Noor's feature phone)
+
+In the Twilio Console open **Phone Numbers → Manage → Active numbers → (your number) → Voice Configuration**:
+
+1. **A call comes in** → Webhook `https://<published-url>/api/public/voice-incoming`, **HTTP POST**.
+2. **Call status changes** → `https://<published-url>/api/public/voice-status`, **HTTP POST** (sends the one summary SMS if the call ends before question 10).
+
+Only calls from the number in `DEMO_SMS_NUMBER` are accepted; everyone else hears "Sorry, this line is private." The bot says only "Question 1" … "Question 10" (Noor uses a printed card). Each answer goes through the same pipeline as WhatsApp voice notes and appears in the champion's WhatsApp REVIEW. After the call: one SMS "TourCoach demo: Got N of 10 answers. The family helper will check them." (counts toward `MAX_OUTBOUND_PER_DAY`).
+
+Secrets used (no new ones): `TWILIO_AUTH_TOKEN`, `DEMO_SMS_NUMBER`, `TWILIO_SMS_FROM`, optional `TWILIO_WEBHOOK_URL` (only its domain is used for the voice routes' signature check).
