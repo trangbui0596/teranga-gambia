@@ -308,8 +308,8 @@ export async function handleWhatsApp(input: { from: string; body: string; mediaU
     const ins = await db.from("conversations").insert({ phone_hash }).select("*").single();
     conv = ins.data;
   }
-  const c = conv as Conv;
-  const save: Save = (patch) => db.from("conversations").update(patch).eq("phone_hash", phone_hash);
+  const c = conv as unknown as Conv;
+  const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
 
   const r = await route(c, input, save);
   const reply: Reply = typeof r === "string" ? { text: r } : r;
