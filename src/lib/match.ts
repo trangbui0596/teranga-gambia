@@ -2,9 +2,9 @@
 export type MatchableAnswer = { id: string; recordings?: { questions?: { topic: string } | null } | null };
 export const CONFIDENCE_THRESHOLD = 0.6;
 export const NOT_SURE: Record<"en" | "de" | "nl", string> = {
-  en: "Not sure, Fatou will answer.",
-  de: "Nicht sicher, Fatou wird antworten.",
-  nl: "Niet zeker, Fatou zal antwoorden.",
+  en: "Not sure, Noor will answer.",
+  de: "Nicht sicher, Noor wird antworten.",
+  nl: "Niet zeker, Noor zal antwoorden.",
 };
 
 /* ---------- Simple keyword matching (no AI yet) ---------- */

@@ -86,7 +86,7 @@ const sendWhatsApp = (to: string, body: string, mediaUrl?: string) =>
 
 function reviewLine() {
   const url = process.env["GOOGLE_REVIEW_URL"];
-  return url ? `Reviews help Fatou: ${url}` : "Reviews help Fatou: [review link not set yet — Simulated]";
+  return url ? `Reviews help Noor: ${url}` : "Reviews help Noor: [review link not set yet — Simulated]";
 }
 
 function isoWeek(d = new Date()) {
@@ -372,7 +372,7 @@ async function visitor(c: Conv, text: string, upper: string, save: Save): Promis
     .select("id").single();
 
   if (!answer || !answerText) {
-    // Never guess: below threshold -> hand to Fatou.
+    // Never guess: below threshold -> hand to Noor.
     if (vq) await db.from("unanswered").insert({ visitor_question_id: vq.id });
     await save({ last_visitor_question_id: vq?.id ?? null });
     return `${NOT_SURE[c.lang]}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
