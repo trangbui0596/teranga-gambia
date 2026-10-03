@@ -4,6 +4,7 @@
 export const NO_PENDING_MSG = "No pending answers from Noor's recordings.";
 
 export type PendingItem = {
+  id: string;
   transcript_src: string | null;
   flags: string[];
   is_sample: boolean;
@@ -28,5 +29,5 @@ export function formatPendingQueue(items: PendingItem[], busy: number, wolofLabe
     "",
     "Reply 1 approve, 2 re-record, 3 needs bilingual reviewer",
   ].join("\n") + still;
-  return { text, answerId: null as string | null };
+  return { text, answerId: item.id as string | null };
 }
