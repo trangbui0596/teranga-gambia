@@ -6,6 +6,7 @@ import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
 import { runInBackground } from "./background.server";
+import { finishAnswers as runFinish, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 
 type Lang = "en" | "de" | "nl";
@@ -108,9 +109,9 @@ export function numbersHeard(text: string | null) {
 }
 
 /* ---------------- Lovable AI (Responses API, streamed) ---------------- */
-async function aiText(instructions: string, input: string): Promise<string> {
+async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
   const res = await fetch(AI_URL, {
-    method: "POST",
+    method: "POST", signal,
     headers: { "Content-Type": "application/json", "Lovable-API-Key": env("LOVABLE_API_KEY"), "X-Lovable-AIG-SDK": "fetch" },
     body: JSON.stringify({ model: AI_MODEL, instructions, input, stream: true, store: false, reasoning: { effort: "low" } }),
   });
@@ -156,44 +157,61 @@ const TRANSLATE_RULES = [
 
 /* ---------------- Phase 2A implementations ---------------- */
 
-/** Downloads the Twilio media (via the Twilio connector) and transcribes it with ElevenLabs scribe_v2 in Wolof. */
-export async function transcribe(mediaUrl: string, languageCode: string | null = "wol"): Promise<{ text: string; confidence: number | null } | null> {
-  try {
-    const u = new URL(mediaUrl);
-    const m = /\/Accounts\/[^/]+\/(.+)$/.exec(u.pathname);
-    if (u.hostname !== "api.twilio.com" || !m) throw new Error("Unexpected media URL");
-    const media = await fetch(`${GATEWAY_URL}/${m[1]}`, { headers: twilioHeaders(), redirect: "follow" });
-    if (!media.ok) throw new Error(`Media download failed [${media.status}]: ${(await media.text()).slice(0, 200)}`);
-    const type = (media.headers.get("content-type") ?? "audio/ogg").split(";")[0]!.trim();
-    const ext = type.includes("amr") ? "amr" : type.includes("mpeg") || type.includes("mp3") ? "mp3" : type.includes("mp4") ? "m4a" : "ogg";
-    const blob = new Blob([await media.arrayBuffer()], { type });
+/** Downloads Twilio media through the Twilio connection. 401/403/404/410 = link expired or gone. */
+export async function downloadMedia(mediaUrl: string, signal: AbortSignal | null = null): Promise<Download> {
+  const u = new URL(mediaUrl);
+  const m = /\/Accounts\/[^/]+\/(.+)$/.exec(u.pathname);
+  if (u.hostname !== "api.twilio.com" || !m) throw new Error("Unexpected media URL");
+  const media = await fetch(`${GATEWAY_URL}/${m[1]}`, { headers: twilioHeaders(), redirect: "follow", signal });
+  if (!media.ok) {
+    console.error(`Media download failed [${media.status}]: ${(await media.text()).slice(0, 200)}`);
+    return { ok: false, status: media.status, expired: [401, 403, 404, 410].includes(media.status) };
+  }
+  const type = (media.headers.get("content-type") ?? "audio/ogg").split(";")[0]!.trim();
+  const buf = await media.arrayBuffer();
+  return { ok: true, status: media.status, bytes: buf.byteLength, type, blob: new Blob([buf], { type }) };
+}
 
-    const form = new FormData();
-    form.append("file", blob, `voice.${ext}`);
-    form.append("model_id", "scribe_v2");
-    if (languageCode) form.append("language_code", languageCode); // null = auto-detect (visitor reviews)
-    form.append("tag_audio_events", "false");
-    const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-      method: "POST", headers: { "xi-api-key": env("ELEVENLABS_API_KEY") }, body: form,
-    });
-    if (!res.ok) throw new Error(`ElevenLabs STT failed [${res.status}]: ${(await res.text()).slice(0, 300)}`);
-    const j = (await res.json()) as { text?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
-    const text = (j.text ?? "").trim();
-    if (!text) return null;
-    const lps = (j.words ?? []).filter((w) => w.type !== "spacing" && typeof w.logprob === "number").map((w) => Math.exp(w.logprob!));
-    const confidence = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : j.language_probability ?? null;
-    return { text, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
+/** ElevenLabs scribe_v2. languageCode null = auto-detect (visitor reviews). */
+export async function sttBlob(blob: Blob, type: string, languageCode: string | null, signal: AbortSignal | null = null) {
+  const ext = type.includes("amr") ? "amr" : type.includes("mpeg") || type.includes("mp3") ? "mp3" : type.includes("mp4") ? "m4a" : "ogg";
+  const form = new FormData();
+  form.append("file", blob, `voice.${ext}`);
+  form.append("model_id", "scribe_v2");
+  if (languageCode) form.append("language_code", languageCode);
+  form.append("tag_audio_events", "false");
+  const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+    method: "POST", headers: { "xi-api-key": env("ELEVENLABS_API_KEY") }, body: form, signal,
+  });
+  if (!res.ok) { console.error(`ElevenLabs STT failed [${res.status}]: ${(await res.text()).slice(0, 300)}`); return null; }
+  const j = (await res.json()) as { text?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
+  const text = (j.text ?? "").trim();
+  const lps = (j.words ?? []).filter((w) => w.type !== "spacing" && typeof w.logprob === "number").map((w) => Math.exp(w.logprob!));
+  const confidence = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : j.language_probability ?? null;
+  return { status: res.status, text, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
+}
+
+/** Download + transcribe in one go (used by the champion assistant and visitor reviews, inside the request). */
+export async function transcribe(mediaUrl: string, languageCode: string | null = "wol", signal: AbortSignal | null = null): Promise<{ text: string; confidence: number | null } | null> {
+  try {
+    const dl = await downloadMedia(mediaUrl, signal);
+    console.log(`[transcribe] media downloaded ${dl.status} ${dl.ok ? dl.bytes : 0} ${dl.ok ? dl.type : "-"}`);
+    if (!dl.ok) return null;
+    const t0 = Date.now();
+    const t = await sttBlob(dl.blob, dl.type, languageCode, signal);
+    console.log(`[transcribe] stt ${t?.status ?? "failed"} ${Date.now() - t0}`);
+    return t && t.text ? { text: t.text, confidence: t.confidence } : null;
   } catch (e) {
-    console.error("transcribe failed", e);
+    console.error("[transcribe] error step=transcribe", e);
     return null;
   }
 }
 
 /** Lovable AI translation. Wolof -> English (pivot); English -> German/Dutch; English -> Wolof for round-trip. */
-export async function translate(text: string, to: Lang | "wo"): Promise<string | null> {
+export async function translate(text: string, to: Lang | "wo", signal: AbortSignal | null = null): Promise<string | null> {
   const from = to === "en" ? "wo" : "en";
   try {
-    const out = await aiText(`${TRANSLATE_RULES}\nTranslate from ${LANG_NAME[from]} to ${LANG_NAME[to]}.`, text);
+    const out = await aiText(`${TRANSLATE_RULES}\nTranslate from ${LANG_NAME[from]} to ${LANG_NAME[to]}.`, text, signal);
     return out || null;
   } catch (e) {
     console.error(`translate to ${to} failed`, e);
@@ -202,9 +220,9 @@ export async function translate(text: string, to: Lang | "wo"): Promise<string |
 }
 
 /** Back-translates English to Wolof and asks the model to score consistency with the original transcript. */
-export async function roundtrip(source: string, english: string): Promise<{ score: number; differences: string[]; backWolof: string } | null> {
+export async function roundtrip(source: string, english: string, signal: AbortSignal | null = null): Promise<{ score: number; differences: string[]; backWolof: string } | null> {
   try {
-    const backWolof = await translate(english, "wo");
+    const backWolof = await translate(english, "wo", signal);
     if (!backWolof) return null;
     const raw = await aiText(
       [
@@ -214,6 +232,7 @@ export async function roundtrip(source: string, english: string): Promise<{ scor
         'Answer only with JSON: {"score": number, "differences": string[]}',
       ].join("\n"),
       `ORIGINAL:\n${source}\n\nBACK:\n${backWolof}`,
+      signal,
     );
     const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { score?: number; differences?: string[] };
     const score = Math.max(0, Math.min(1, Number(j.score)));
@@ -247,38 +266,65 @@ export async function speak(text: string, lang: Lang, answerId: string): Promise
 
 /* ---------------- Background pipelines ---------------- */
 
-async function processRecording(answerId: string, mediaUrl: string, championPhone: string | null, n: number) {
+/* Resumable pipeline (src/lib/pipeline.ts). Nothing depends on work after the HTTP response. */
+const ANSWER_COLS = "id, stage, attempts, transcript_src, english, flags, notify_hash, notified_at, recordings(audio_path, questions(position))";
+type AnswerDbRow = Omit<PipelineRow, "audio_url" | "position"> & { recordings: { audio_path: string | null; questions: { position: number } | null } | null };
+
+function pipelineDeps(): PipelineDeps {
   const db = supabaseAdmin;
-  const t = await transcribe(mediaUrl);
-  if (!t) {
-    await db.from("answers").update({ flags: ["transcription failed"] }).eq("id", answerId);
-    if (championPhone) await sendWhatsApp(championPhone, `Question ${n}: the voice note could not be heard (transcription failed). It stays pending.`);
-    return;
-  }
-  const flags = ["machine-translated", `wolof ${WOLOF_LABEL}`];
-  const english = await translate(t.text, "en");
-  let german: string | null = null, dutch: string | null = null, score: number | null = null;
-  if (!english) flags.push("translation failed");
-  else {
-    [german, dutch] = await Promise.all([translate(english, "de"), translate(english, "nl")]);
-    if (!german || !dutch) flags.push("translation failed");
-    const rt = await roundtrip(t.text, english);
-    if (!rt) flags.push("round-trip check failed");
-    else {
-      score = rt.score;
-      if (rt.score < ROUNDTRIP_MIN || rt.differences.length) flags.push("round-trip mismatch");
-    }
-  }
-  // Never auto-approve: review_status stays "pending".
-  await db.from("answers").update({
-    transcript_src: t.text, transcript_confidence: t.confidence, english, german, dutch, roundtrip_score: score, flags,
-  } as never).eq("id", answerId);
-  // Phone-call recordings have no WhatsApp sender to notify; the champion sees them in REVIEW.
-  if (championPhone) await sendWhatsApp(championPhone, [
-    `Question ${n} heard. Wolof transcript (${WOLOF_LABEL}):`,
-    t.text,
-    `Numbers heard: ${numbersHeard(t.text)}`,
-  ].join("\n"));
+  const t = () => db.from("answers" as never);
+  return {
+    now: () => Date.now(),
+    log: (m) => console.log(m),
+    async load(id) {
+      const { data } = await t().select(ANSWER_COLS).eq("id", id).maybeSingle();
+      const r = data as unknown as AnswerDbRow | null;
+      if (!r) return null;
+      return { ...r, audio_url: r.recordings?.audio_path ?? null, position: r.recordings?.questions?.position ?? null };
+    },
+    async listUnfinished(includeNotify, limit) {
+      const { data } = await t().select("id").eq("is_sample", false).in("stage", UNFINISHED).order("created_at").limit(limit);
+      const ids = ((data ?? []) as Array<{ id: string }>).map((r) => r.id);
+      if (includeNotify) {
+        const { data: n } = await t().select("id").eq("is_sample", false).is("notified_at", null)
+          .not("notify_hash", "is", null).not("transcript_src", "is", null).neq("stage", "failed").order("created_at").limit(limit);
+        for (const r of (n ?? []) as Array<{ id: string }>) if (!ids.includes(r.id)) ids.push(r.id);
+      }
+      return ids;
+    },
+    async countUnfinished() {
+      const { count } = await t().select("id", { count: "exact", head: true }).eq("is_sample", false).in("stage", UNFINISHED);
+      return count ?? 0;
+    },
+    async claimLease(id, ms) {
+      const now = new Date().toISOString();
+      const { data } = await t().update({ lease_until: new Date(Date.now() + ms).toISOString() } as never)
+        .eq("id", id).or(`lease_until.is.null,lease_until.lt.${now}`).select("id");
+      return !!(data as unknown[] | null)?.length;
+    },
+    async releaseLease(id) { await t().update({ lease_until: null } as never).eq("id", id); },
+    async advance(id, from, patch) {
+      const { data, error } = await t().update(patch as never).eq("id", id).eq("stage", from).select("id");
+      if (error) console.error(`[pipeline ${id}] error step=db ${error.message}`);
+      return !!(data as unknown[] | null)?.length;
+    },
+    async claimNotify(id) {
+      const { data } = await t().update({ notified_at: new Date().toISOString() } as never).eq("id", id).is("notified_at", null).select("id");
+      return !!(data as unknown[] | null)?.length;
+    },
+    download: (url, signal) => downloadMedia(url, signal),
+    stt: (blob, type, signal) => sttBlob(blob, type, "wol", signal),
+    translate: (text, to, signal) => translate(text, to, signal),
+    roundtrip: (src, en, signal) => roundtrip(src, en, signal),
+    hash: (p) => hashPhone(p),
+    notify: (phone, text) => sendWhatsApp(phone, text),
+    notifyText: (row, tx) => [`Question ${row.position ?? "?"} heard. Wolof transcript (${WOLOF_LABEL}):`, tx, `Numbers heard: ${numbersHeard(tx)}`].join("\n"),
+  };
+}
+
+/** Finishes unfinished answers (oldest first) within budgetMs. phone = current champion caller (enables the one transcript message). */
+export function finishAnswers(budgetMs: number, opts: { phone?: string | null; firstId?: string | null } = {}) {
+  return runFinish(pipelineDeps(), budgetMs, opts);
 }
 
 async function generateAnswerAudio(answerId: string) {
@@ -300,10 +346,11 @@ type Conv = {
   pending_action?: { answer_id: string; status: "approved" | "rerecord" | "needs_bilingual" } | null;
   agent_history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
-type Reply = { text: string; audioUrl?: string | undefined; secondText?: string | undefined };
+type Reply = { text: string; audioUrl?: string | undefined; secondText?: string | undefined; finishFirst?: string | null | undefined };
 type Save = (p: Partial<Conv>) => unknown;
 
 export async function handleWhatsApp(input: { from: string; body: string; mediaUrl: string | null }) {
+  const startedAt = Date.now();
   const db = supabaseAdmin;
   const phone_hash = hashPhone(input.from);
   let { data: conv } = await db.from("conversations").select("*").eq("phone_hash", phone_hash).maybeSingle();
@@ -320,7 +367,19 @@ export async function handleWhatsApp(input: { from: string; body: string; mediaU
   const sent = await sendWhatsApp(input.from, reply.text);
   if (sent && reply.audioUrl) await sendWhatsApp(input.from, "AI-generated voice — Machine-translated", reply.audioUrl);
   else if (sent && reply.secondText) await sendWhatsApp(input.from, reply.secondText); // only the review POST step
+
+  // Champion requests: finish voice answers inside this request (Twilio waits up to 15 s). Resumable, so a cut-off is harmless.
+  if (reply.finishFirst !== undefined || c.role === "champion") {
+    const left = WEBHOOK_BUDGET_MS - (Date.now() - startedAt);
+    if (left > 3000) {
+      try { await finishAnswers(left, { phone: input.from, firstId: reply.finishFirst ?? null }); }
+      catch (e) { console.error("[pipeline] error step=finishAnswers", e); }
+    }
+    // Best effort only (never relied on): continue in waitUntil if the runtime offers it.
+    runInBackground("finish", () => finishAnswers(20000, { phone: input.from }));
+  }
 }
+const WEBHOOK_BUDGET_MS = 11000;
 
 async function route(c: Conv, input: { from: string; body: string; mediaUrl: string | null }, save: Save): Promise<string | Reply> {
   const text = input.body.trim();
@@ -491,7 +550,7 @@ export async function visitorFeedback(c: Conv, text: string, upper: string, save
   // feedback_wait: take a voice note (auto-detect language) or text.
   let raw = text;
   if (mediaUrl) {
-    const t = await transcribe(mediaUrl, null);
+    const t = await transcribe(mediaUrl, null, AbortSignal.timeout(9000)); // inside the request, bounded
     raw = t?.text ?? "";
   }
   raw = raw.slice(0, 2000).trim();
@@ -585,26 +644,31 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     if (!mediaUrl) return `Please send a voice note for question ${n}.\n${ask(n)}`;
     const q = qs[n - 1];
     if (!q) return "Question not found.";
+    let answerId: string | null = null;
     const { data: rec } = await db.from("recordings")
       .insert({ question_id: q.id, audio_path: mediaUrl, week: isoWeek(), status: "received" })
       .select("id").single();
     if (rec) {
       const { data: ans } = await db.from("answers").insert({
-        recording_id: rec.id, review_status: "pending", flags: ["processing"],
-      }).select("id").single();
-      // Heavy work after the "Got question N" reply: transcribe -> translate -> round-trip -> notify champion.
-      if (ans) runInBackground("recording", () => processRecording(ans.id, mediaUrl, from, n));
+        recording_id: rec.id, review_status: "pending", flags: ["processing"], stage: "received", notify_hash: hashPhone(from),
+      } as never).select("id").single();
+      answerId = (ans as { id: string } | null)?.id ?? null;
     }
+    // The "Got question N" ack is sent first; handleWhatsApp then awaits the pipeline for this answer.
     const next = n + 1;
     if (next > TOTAL_QUESTIONS) {
       await save({ state: "idle", current_question_position: null });
-      return `Got question ${n}. Round complete. Reply REVIEW to review.`;
+      return { text: `Got question ${n}. Round complete. Reply REVIEW to review.`, finishFirst: answerId };
     }
     await save({ current_question_position: next });
-    return `Got question ${n}.\n\n${ask(next)}`;
+    return { text: `Got question ${n}.\n\n${ask(next)}`, finishFirst: answerId };
   }
 
-  if (upper === "REVIEW") return showNextPending(save);
+  if (upper === "REVIEW") {
+    // Finish what is pending first (no transcript messages here: REVIEW shows the transcript itself).
+    try { await finishAnswers(10000); } catch (e) { console.error("[pipeline] error step=finishAnswers", e); }
+    return showNextPending(save);
+  }
   if (upper === "LEDGER") return ledgerSummary();
   if (upper === "LISTING") return draftListing();
 
@@ -633,7 +697,7 @@ async function championAgent(c: Conv, text: string, mediaUrl: string | null, sav
   let message = text;
   let heard = "";
   if (mediaUrl) {
-    const t = await transcribe(mediaUrl);
+    const t = await transcribe(mediaUrl, "wol", AbortSignal.timeout(9000));
     if (!t) return "Sorry, I could not hear the voice note. Please type or try again.";
     message = t.text;
     heard = `Heard (Wolof, ${WOLOF_LABEL}): "${t.text}"\n\n`;
@@ -656,7 +720,11 @@ async function showNextPending(save: Save) {
     .from("answers")
     .select("id, transcript_src, flags, is_sample, created_at, recordings(questions(position, topic))")
     .eq("review_status", "pending")
+    .in("stage" as never, ["checked", "failed"] as never)
     .order("created_at");
+  const { count: busy } = await supabaseAdmin.from("answers").select("id", { count: "exact", head: true })
+    .eq("review_status", "pending").in("stage" as never, UNFINISHED as never);
+  const still = busy ? `\n\n${busy} still processing, send REVIEW again in a minute.` : "";
   const list = (data ?? []) as unknown as Array<{
     id: string; transcript_src: string | null; flags: string[]; is_sample: boolean;
     recordings: { questions: { position: number; topic: string } | null } | null;
@@ -664,7 +732,7 @@ async function showNextPending(save: Save) {
   const item = list[0];
   if (!item) {
     await save({ state: "idle", current_review_answer_id: null });
-    return "No pending answers.";
+    return busy ? `No answers ready yet.${still}` : "No pending answers.";
   }
   await save({ state: "reviewing", current_review_answer_id: item.id });
   const q = item.recordings?.questions;
@@ -677,7 +745,7 @@ async function showNextPending(save: Save) {
     `Flags: ${item.flags.length ? item.flags.join(", ") : "none"}`,
     "",
     "Reply 1 approve, 2 re-record, 3 needs bilingual reviewer",
-  ].join("\n");
+  ].join("\n") + still;
 }
 
 /* ---------------- Evaluation (keyword-match intent accuracy) ---------------- */
@@ -794,8 +862,9 @@ export async function storeCallRecording(callSid: string, n: number, recordingUr
     .insert({ question_id: q.id, audio_path: audio, week: isoWeek(), status: "received" }).select("id").single();
   if (!rec) return null;
   const { data: ans } = await db.from("answers")
-    .insert({ recording_id: rec.id, review_status: "pending", flags: ["processing", "phone call"] }).select("id").single();
-  if (ans) runInBackground("call-recording", () => processRecording(ans.id, audio, null, n));
+    .insert({ recording_id: rec.id, review_status: "pending", flags: ["processing", "phone call"], stage: "received" } as never).select("id").single();
+  // Not processed here (Noor would wait in silence); finished by voice-status at call end, REVIEW or process-pending.
+  if (ans) runInBackground("call-recording", () => finishAnswers(25000)); // best effort only
   const { data: count } = await db.rpc("voice_call_answered" as never, { _sid: callSid } as never);
   return Number(count) || 0;
 }
