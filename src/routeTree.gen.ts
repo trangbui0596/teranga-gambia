@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval-agent'
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
+import { Route as ApiPublicProcessPendingRouteImport } from './routes/api/public/process-pending'
 import { Route as ApiPublicPurgeRouteImport } from './routes/api/public/purge'
 import { Route as ApiPublicVoiceIncomingRouteImport } from './routes/api/public/voice-incoming'
 import { Route as ApiPublicVoiceRecordedRouteImport } from './routes/api/public/voice-recorded'
@@ -32,6 +33,11 @@ const ApiPublicEvalAgentRoute = ApiPublicEvalAgentRouteImport.update({
 const ApiPublicEvalMatchRoute = ApiPublicEvalMatchRouteImport.update({
   id: '/api/public/eval-match',
   path: '/api/public/eval-match',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicProcessPendingRoute = ApiPublicProcessPendingRouteImport.update({
+  id: '/api/public/process-pending',
+  path: '/api/public/process-pending',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPurgeRoute = ApiPublicPurgeRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/process-pending'
     | '/api/public/purge'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/process-pending'
     | '/api/public/purge'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/process-pending'
     | '/api/public/purge'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiPublicEvalAgentRoute: typeof ApiPublicEvalAgentRoute
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
+  ApiPublicProcessPendingRoute: typeof ApiPublicProcessPendingRoute
   ApiPublicPurgeRoute: typeof ApiPublicPurgeRoute
   ApiPublicVoiceIncomingRoute: typeof ApiPublicVoiceIncomingRoute
   ApiPublicVoiceRecordedRoute: typeof ApiPublicVoiceRecordedRoute
@@ -169,6 +182,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/eval-match'
       fullPath: '/api/public/eval-match'
       preLoaderRoute: typeof ApiPublicEvalMatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/process-pending': {
+      id: '/api/public/process-pending'
+      path: '/api/public/process-pending'
+      fullPath: '/api/public/process-pending'
+      preLoaderRoute: typeof ApiPublicProcessPendingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/purge': {
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiPublicEvalAgentRoute: ApiPublicEvalAgentRoute,
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
+  ApiPublicProcessPendingRoute: ApiPublicProcessPendingRoute,
   ApiPublicPurgeRoute: ApiPublicPurgeRoute,
   ApiPublicVoiceIncomingRoute: ApiPublicVoiceIncomingRoute,
   ApiPublicVoiceRecordedRoute: ApiPublicVoiceRecordedRoute,

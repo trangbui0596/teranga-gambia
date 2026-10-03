@@ -109,7 +109,7 @@ export function numbersHeard(text: string | null) {
 }
 
 /* ---------------- Lovable AI (Responses API, streamed) ---------------- */
-async function aiText(instructions: string, input: string, signal?: AbortSignal): Promise<string> {
+async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
   const res = await fetch(AI_URL, {
     method: "POST", signal,
     headers: { "Content-Type": "application/json", "Lovable-API-Key": env("LOVABLE_API_KEY"), "X-Lovable-AIG-SDK": "fetch" },
@@ -158,7 +158,7 @@ const TRANSLATE_RULES = [
 /* ---------------- Phase 2A implementations ---------------- */
 
 /** Downloads Twilio media through the Twilio connection. 401/403/404/410 = link expired or gone. */
-export async function downloadMedia(mediaUrl: string, signal?: AbortSignal): Promise<Download> {
+export async function downloadMedia(mediaUrl: string, signal: AbortSignal | null = null): Promise<Download> {
   const u = new URL(mediaUrl);
   const m = /\/Accounts\/[^/]+\/(.+)$/.exec(u.pathname);
   if (u.hostname !== "api.twilio.com" || !m) throw new Error("Unexpected media URL");
@@ -173,7 +173,7 @@ export async function downloadMedia(mediaUrl: string, signal?: AbortSignal): Pro
 }
 
 /** ElevenLabs scribe_v2. languageCode null = auto-detect (visitor reviews). */
-export async function sttBlob(blob: Blob, type: string, languageCode: string | null, signal?: AbortSignal) {
+export async function sttBlob(blob: Blob, type: string, languageCode: string | null, signal: AbortSignal | null = null) {
   const ext = type.includes("amr") ? "amr" : type.includes("mpeg") || type.includes("mp3") ? "mp3" : type.includes("mp4") ? "m4a" : "ogg";
   const form = new FormData();
   form.append("file", blob, `voice.${ext}`);
@@ -192,7 +192,7 @@ export async function sttBlob(blob: Blob, type: string, languageCode: string | n
 }
 
 /** Download + transcribe in one go (used by the champion assistant and visitor reviews, inside the request). */
-export async function transcribe(mediaUrl: string, languageCode: string | null = "wol", signal?: AbortSignal): Promise<{ text: string; confidence: number | null } | null> {
+export async function transcribe(mediaUrl: string, languageCode: string | null = "wol", signal: AbortSignal | null = null): Promise<{ text: string; confidence: number | null } | null> {
   try {
     const dl = await downloadMedia(mediaUrl, signal);
     console.log(`[transcribe] media downloaded ${dl.status} ${dl.ok ? dl.bytes : 0} ${dl.ok ? dl.type : "-"}`);
@@ -208,7 +208,7 @@ export async function transcribe(mediaUrl: string, languageCode: string | null =
 }
 
 /** Lovable AI translation. Wolof -> English (pivot); English -> German/Dutch; English -> Wolof for round-trip. */
-export async function translate(text: string, to: Lang | "wo", signal?: AbortSignal): Promise<string | null> {
+export async function translate(text: string, to: Lang | "wo", signal: AbortSignal | null = null): Promise<string | null> {
   const from = to === "en" ? "wo" : "en";
   try {
     const out = await aiText(`${TRANSLATE_RULES}\nTranslate from ${LANG_NAME[from]} to ${LANG_NAME[to]}.`, text, signal);
@@ -220,7 +220,7 @@ export async function translate(text: string, to: Lang | "wo", signal?: AbortSig
 }
 
 /** Back-translates English to Wolof and asks the model to score consistency with the original transcript. */
-export async function roundtrip(source: string, english: string, signal?: AbortSignal): Promise<{ score: number; differences: string[]; backWolof: string } | null> {
+export async function roundtrip(source: string, english: string, signal: AbortSignal | null = null): Promise<{ score: number; differences: string[]; backWolof: string } | null> {
   try {
     const backWolof = await translate(english, "wo", signal);
     if (!backWolof) return null;

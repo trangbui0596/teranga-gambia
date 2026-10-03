@@ -19,7 +19,7 @@ function fakeDb(row: Partial<PipelineRow> = {}) {
     countUnfinished: async () => (["received", "transcribed", "translated"].includes(r.stage) ? 1 : 0),
     claimLease: async () => (lease ? false : (lease = true)),
     releaseLease: async () => { lease = false; },
-    advance: async (_id, from, patch) => { if (r.stage !== from) return false; step(); Object.assign(r, patch); return true; },
+    advance: async (_id, from, patch) => { if (r.stage !== from) return false; Object.assign(r, patch); step(); return true; },
     claimNotify: async () => { if (r.notified_at) return false; r.notified_at = "now"; return true; },
     download: async () => { calls.download++; return { ok: true, status: 200, bytes: 10, type: "audio/mpeg", blob: new Blob(["x"]) }; },
     stt: async () => { calls.stt++; clock += 100; return { status: 200, text: "Tour bi 1500 dalasi", confidence: 0.9 }; },
@@ -35,10 +35,10 @@ function fakeDb(row: Partial<PipelineRow> = {}) {
 describe("resumable pipeline", () => {
   it("completes the remaining steps after a cut-off, without duplicate work or messages", async () => {
     const f = fakeDb();
-    f.cut(1); // step 1 (transcript saved) succeeds, then the Worker dies
+    f.cut(2); // steps 1-2 (transcript saved, translations saved) succeed, then the Worker dies
     await expect(runAnswer(f.d, "a1", 60000, "champ")).rejects.toThrow("cut off");
     f.release(); // lease would expire on its own
-    expect(f.r.stage).toBe("transcribed");
+    expect(f.r.stage).toBe("translated");
     expect(f.calls.stt).toBe(1);
 
     f.uncut();
