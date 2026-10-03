@@ -43,6 +43,7 @@ export type Database = {
       answers: {
         Row: {
           approved_at: string | null
+          attempts: number
           created_at: string
           dutch: string | null
           english: string | null
@@ -50,14 +51,19 @@ export type Database = {
           german: string | null
           id: string
           is_sample: boolean
+          lease_until: string | null
+          notified_at: string | null
+          notify_hash: string | null
           recording_id: string
           review_status: Database["public"]["Enums"]["review_status"]
           roundtrip_score: number | null
+          stage: string
           transcript_confidence: number | null
           transcript_src: string | null
         }
         Insert: {
           approved_at?: string | null
+          attempts?: number
           created_at?: string
           dutch?: string | null
           english?: string | null
@@ -65,14 +71,19 @@ export type Database = {
           german?: string | null
           id?: string
           is_sample?: boolean
+          lease_until?: string | null
+          notified_at?: string | null
+          notify_hash?: string | null
           recording_id: string
           review_status?: Database["public"]["Enums"]["review_status"]
           roundtrip_score?: number | null
+          stage?: string
           transcript_confidence?: number | null
           transcript_src?: string | null
         }
         Update: {
           approved_at?: string | null
+          attempts?: number
           created_at?: string
           dutch?: string | null
           english?: string | null
@@ -80,9 +91,13 @@ export type Database = {
           german?: string | null
           id?: string
           is_sample?: boolean
+          lease_until?: string | null
+          notified_at?: string | null
+          notify_hash?: string | null
           recording_id?: string
           review_status?: Database["public"]["Enums"]["review_status"]
           roundtrip_score?: number | null
+          stage?: string
           transcript_confidence?: number | null
           transcript_src?: string | null
         }
