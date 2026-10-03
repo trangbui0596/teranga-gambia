@@ -294,7 +294,7 @@ type Conv = {
   phone_hash: string; role: "visitor" | "champion"; state: string; current_question_position: number | null;
   lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null;
 };
-type Reply = { text: string; audioUrl?: string };
+type Reply = { text: string; audioUrl?: string | undefined };
 type Save = (p: Partial<Conv>) => unknown;
 
 export async function handleWhatsApp(input: { from: string; body: string; mediaUrl: string | null }) {
