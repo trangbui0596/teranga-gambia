@@ -13,3 +13,4 @@
 - Tables have RLS with no policies; only service-role server code touches them — no client data access exists.
 - Slow AI/voice work runs after the webhook reply via runInBackground (src/lib/background.server.ts, Worker waitUntil through AsyncLocalStorage set in src/server.ts) — keeps Twilio replies fast.
 - Phone-call input (Twilio Voice) lives in voice-incoming / voice-recorded / voice-status routes and reuses processRecording; signature URL = TWILIO_WEBHOOK_URL origin + route path, so one secret serves every route.
+- Champion free text goes to src/lib/agent.server.ts (AI SDK, fixed tool set); review changes run only from a stored pending_action after an explicit YES, executed by server code, never by the model.
