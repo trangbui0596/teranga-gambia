@@ -6,7 +6,7 @@ import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
 import { runInBackground } from "./background.server";
-import { finishAnswers as runFinish, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
+import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 
 type Lang = "en" | "de" | "nl";
@@ -245,12 +245,13 @@ export async function roundtrip(source: string, english: string, signal: AbortSi
 }
 
 /** ElevenLabs TTS (eleven_multilingual_v2, neutral stock voice). Stores mp3 in the private bucket; returns its path. */
-export async function speak(text: string, lang: Lang, answerId: string): Promise<string | null> {
+export async function speak(text: string, lang: Lang, answerId: string, signal: AbortSignal | null = null): Promise<string | null> {
   try {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${TTS_VOICE_ID}?output_format=mp3_44100_128`, {
       method: "POST",
       headers: { "xi-api-key": env("ELEVENLABS_API_KEY"), "Content-Type": "application/json" },
       body: JSON.stringify({ text: text.slice(0, 2500), model_id: "eleven_multilingual_v2", language_code: lang }),
+      signal,
     });
     if (!res.ok) throw new Error(`ElevenLabs TTS failed [${res.status}]: ${(await res.text()).slice(0, 300)}`);
     const path = `${answerId}/${lang}.mp3`;
@@ -323,20 +324,50 @@ function pipelineDeps(): PipelineDeps {
 }
 
 /** Finishes unfinished answers (oldest first) within budgetMs. phone = current champion caller (enables the one transcript message). */
-export function finishAnswers(budgetMs: number, opts: { phone?: string | null; firstId?: string | null } = {}) {
-  return runFinish(pipelineDeps(), budgetMs, opts);
+export async function finishAnswers(budgetMs: number, opts: { phone?: string | null; firstId?: string | null } = {}) {
+  const start = Date.now();
+  const res = await runFinish(pipelineDeps(), budgetMs, opts);
+  // Then any approved answers still missing voice files.
+  const audio = await finishAudio(audioDeps(), budgetMs - (Date.now() - start));
+  return { ...res, ...audio };
 }
 
-async function generateAnswerAudio(answerId: string) {
+function audioDeps(): AudioDeps {
   const db = supabaseAdmin;
-  const { data } = await db.from("answers").select("english, german, dutch, review_status").eq("id", answerId).maybeSingle();
-  if (!data || data.review_status !== "approved") return; // audio only AFTER approval
-  for (const lang of ["en", "de", "nl"] as const) {
-    const text = data[FIELD[lang]];
-    if (!text) continue;
-    const path = await speak(text, lang, answerId);
-    if (path) await db.from("answer_audio").upsert({ answer_id: answerId, lang, audio_path: path }, { onConflict: "answer_id,lang" });
-  }
+  const p = pipelineDeps();
+  return {
+    now: () => Date.now(),
+    log: (m) => console.log(m),
+    async texts(id) {
+      const { data } = await db.from("answers").select("english, german, dutch, review_status").eq("id", id).maybeSingle();
+      return data ? { approved: data.review_status === "approved", en: data.english, de: data.german, nl: data.dutch } : null;
+    },
+    async existing(id) {
+      const { data } = await db.from("answer_audio").select("lang").eq("answer_id", id);
+      return ((data ?? []) as Array<{ lang: string }>).map((r) => r.lang as Lang);
+    },
+    claimLease: p.claimLease,
+    releaseLease: p.releaseLease,
+    speak: (text, lang, id, signal) => speak(text, lang, id, signal),
+    async save(id, lang, path) {
+      const { error } = await db.from("answer_audio").upsert({ answer_id: id, lang, audio_path: path }, { onConflict: "answer_id,lang" });
+      if (error) throw new Error(`answer_audio save failed: ${error.message}`);
+    },
+    async listMissing(limit) {
+      const { data } = await db.from("answers").select("id, english, german, dutch, answer_audio(lang)")
+        .eq("review_status", "approved").eq("is_sample", false).order("approved_at", { ascending: true, nullsFirst: true }).limit(200);
+      const rows = (data ?? []) as unknown as Array<{ id: string; english: string | null; german: string | null; dutch: string | null; answer_audio: Array<{ lang: string }> }>;
+      return rows.filter((r) => {
+        const have = new Set(r.answer_audio.map((a) => a.lang));
+        return (["en", "de", "nl"] as const).some((l) => r[FIELD[l]] && !have.has(l));
+      }).slice(0, limit).map((r) => r.id);
+    },
+  };
+}
+
+/** Generates missing voice files for one approved answer inside the current request. */
+export function ensureAnswerAudio(id: string, langs: Lang[], budgetMs: number) {
+  return ensureAudio(audioDeps(), id, langs, Date.now() + budgetMs);
 }
 
 /* ---------------- WhatsApp state machine ---------------- */
@@ -462,7 +493,13 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
 
   // Pre-generated voice (only exists for approved answers). Short-lived signed URL for Twilio to fetch.
   let audioUrl: string | undefined;
-  const { data: audio } = await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle();
+  let { data: audio } = await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle();
+  if (!audio?.audio_path) {
+    // On demand, inside this request (8 s budget). Text only if it is not ready in time.
+    try { await ensureAnswerAudio(answer.id, [c.lang], 8000); } catch (e) { console.error("[audio] error step=visitor", e); }
+    ({ data: audio } = await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle());
+    if (!audio?.audio_path) console.log(`[audio ${answer.id}] not ready for ${c.lang}; text only`);
+  }
   if (audio?.audio_path) {
     const { data: signed } = await db.storage.from(AUDIO_BUCKET).createSignedUrl(audio.audio_path, 600);
     audioUrl = signed?.signedUrl;
@@ -689,7 +726,10 @@ async function applyReview(id: string, status: "approved" | "rerecord" | "needs_
   await supabaseAdmin.from("answers").update({
     review_status: status, approved_at: status === "approved" ? new Date().toISOString() : null,
   }).eq("id", id);
-  if (status === "approved") runInBackground("tts", () => generateAnswerAudio(id));
+  // Voice files are made inside this request (about 10 s) before the confirmation is sent; leftovers via finishAnswers.
+  if (status === "approved") {
+    try { await ensureAnswerAudio(id, ["en", "de", "nl"], 10000); } catch (e) { console.error("[audio] error step=approve", e); }
+  }
 }
 
 /** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
