@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
+import { Route as ApiPublicVoiceIncomingRouteImport } from './routes/api/public/voice-incoming'
+import { Route as ApiPublicVoiceRecordedRouteImport } from './routes/api/public/voice-recorded'
+import { Route as ApiPublicVoiceStatusRouteImport } from './routes/api/public/voice-status'
 import { Route as ApiPublicWeeklyDigestRouteImport } from './routes/api/public/weekly-digest'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 
@@ -22,6 +25,21 @@ const IndexRoute = IndexRouteImport.update({
 const ApiPublicEvalMatchRoute = ApiPublicEvalMatchRouteImport.update({
   id: '/api/public/eval-match',
   path: '/api/public/eval-match',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicVoiceIncomingRoute = ApiPublicVoiceIncomingRouteImport.update({
+  id: '/api/public/voice-incoming',
+  path: '/api/public/voice-incoming',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicVoiceRecordedRoute = ApiPublicVoiceRecordedRouteImport.update({
+  id: '/api/public/voice-recorded',
+  path: '/api/public/voice-recorded',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicVoiceStatusRoute = ApiPublicVoiceStatusRouteImport.update({
+  id: '/api/public/voice-status',
+  path: '/api/public/voice-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicWeeklyDigestRoute = ApiPublicWeeklyDigestRouteImport.update({
@@ -39,12 +57,18 @@ const ApiPublicWhatsappWebhookRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
+  '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
+  '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
+  '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
+  '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -52,6 +76,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
+  '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
+  '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
@@ -60,18 +87,27 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/api/public/eval-match'
+    | '/api/public/voice-incoming'
+    | '/api/public/voice-recorded'
+    | '/api/public/voice-status'
     | '/api/public/weekly-digest'
     | '/api/public/whatsapp-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/api/public/eval-match'
+    | '/api/public/voice-incoming'
+    | '/api/public/voice-recorded'
+    | '/api/public/voice-status'
     | '/api/public/weekly-digest'
     | '/api/public/whatsapp-webhook'
   id:
     | '__root__'
     | '/'
     | '/api/public/eval-match'
+    | '/api/public/voice-incoming'
+    | '/api/public/voice-recorded'
+    | '/api/public/voice-status'
     | '/api/public/weekly-digest'
     | '/api/public/whatsapp-webhook'
   fileRoutesById: FileRoutesById
@@ -79,6 +115,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
+  ApiPublicVoiceIncomingRoute: typeof ApiPublicVoiceIncomingRoute
+  ApiPublicVoiceRecordedRoute: typeof ApiPublicVoiceRecordedRoute
+  ApiPublicVoiceStatusRoute: typeof ApiPublicVoiceStatusRoute
   ApiPublicWeeklyDigestRoute: typeof ApiPublicWeeklyDigestRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
@@ -97,6 +136,27 @@ declare module '@tanstack/react-router' {
       path: '/api/public/eval-match'
       fullPath: '/api/public/eval-match'
       preLoaderRoute: typeof ApiPublicEvalMatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/voice-incoming': {
+      id: '/api/public/voice-incoming'
+      path: '/api/public/voice-incoming'
+      fullPath: '/api/public/voice-incoming'
+      preLoaderRoute: typeof ApiPublicVoiceIncomingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/voice-recorded': {
+      id: '/api/public/voice-recorded'
+      path: '/api/public/voice-recorded'
+      fullPath: '/api/public/voice-recorded'
+      preLoaderRoute: typeof ApiPublicVoiceRecordedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/voice-status': {
+      id: '/api/public/voice-status'
+      path: '/api/public/voice-status'
+      fullPath: '/api/public/voice-status'
+      preLoaderRoute: typeof ApiPublicVoiceStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/weekly-digest': {
@@ -119,6 +179,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
+  ApiPublicVoiceIncomingRoute: ApiPublicVoiceIncomingRoute,
+  ApiPublicVoiceRecordedRoute: ApiPublicVoiceRecordedRoute,
+  ApiPublicVoiceStatusRoute: ApiPublicVoiceStatusRoute,
   ApiPublicWeeklyDigestRoute: ApiPublicWeeklyDigestRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
