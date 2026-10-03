@@ -327,6 +327,27 @@ export type Database = {
           },
         ]
       }
+      voice_calls: {
+        Row: {
+          answered: number
+          call_sid: string
+          created_at: string
+          summary_sent: boolean
+        }
+        Insert: {
+          answered?: number
+          call_sid: string
+          created_at?: string
+          summary_sent?: boolean
+        }
+        Update: {
+          answered?: number
+          call_sid?: string
+          created_at?: string
+          summary_sent?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -340,6 +361,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      voice_call_answered: { Args: { _sid: string }; Returns: number }
+      voice_call_claim_summary: { Args: { _sid: string }; Returns: number }
     }
     Enums: {
       app_role: "champion"
