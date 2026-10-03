@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval-agent'
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
 import { Route as ApiPublicVoiceIncomingRouteImport } from './routes/api/public/voice-incoming'
 import { Route as ApiPublicVoiceRecordedRouteImport } from './routes/api/public/voice-recorded'
@@ -20,6 +21,11 @@ import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/publi
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicEvalAgentRoute = ApiPublicEvalAgentRouteImport.update({
+  id: '/api/public/eval-agent',
+  path: '/api/public/eval-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicEvalMatchRoute = ApiPublicEvalMatchRouteImport.update({
@@ -56,6 +62,7 @@ const ApiPublicWhatsappWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/public/eval-agent'
     | '/api/public/eval-match'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/public/eval-agent'
     | '/api/public/eval-match'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api/public/eval-agent'
     | '/api/public/eval-match'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicEvalAgentRoute: typeof ApiPublicEvalAgentRoute
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
   ApiPublicVoiceIncomingRoute: typeof ApiPublicVoiceIncomingRoute
   ApiPublicVoiceRecordedRoute: typeof ApiPublicVoiceRecordedRoute
@@ -129,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/eval-agent': {
+      id: '/api/public/eval-agent'
+      path: '/api/public/eval-agent'
+      fullPath: '/api/public/eval-agent'
+      preLoaderRoute: typeof ApiPublicEvalAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/eval-match': {
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicEvalAgentRoute: ApiPublicEvalAgentRoute,
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
   ApiPublicVoiceIncomingRoute: ApiPublicVoiceIncomingRoute,
   ApiPublicVoiceRecordedRoute: ApiPublicVoiceRecordedRoute,
