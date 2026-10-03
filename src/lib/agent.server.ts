@@ -21,7 +21,7 @@ export type AgentCtx = {
 };
 
 const HELP =
-  "I can: 1 show waiting answers, 2 show one answer, 3 approve / re-record / send to bilingual reviewer (after you say YES), 4 start recording the 10 questions, 5 visitor stats this week, 6 unanswered visitor questions. Shortcuts: START, REVIEW, EXIT.";
+  "I can: 1 show waiting answers, 2 show one answer, 3 approve / re-record / send to bilingual reviewer (after you say YES), 4 start recording the 10 questions, 5 visitor stats this week, 6 unanswered visitor questions. Shortcuts: START, REVIEW, EXIT, LEDGER (Simulated partner counts), LISTING (Simulated draft Google listing, not published).";
 
 function numbersHeard(text: string | null) {
   if (!text) return "none";

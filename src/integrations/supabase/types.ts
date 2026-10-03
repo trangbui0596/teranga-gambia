@@ -103,6 +103,7 @@ export type Database = {
           current_question_position: number | null
           current_review_answer_id: string | null
           lang: string
+          last_recommendation_id: string | null
           last_visitor_question_id: string | null
           pending_action: Json | null
           phone_hash: string
@@ -116,6 +117,7 @@ export type Database = {
           current_question_position?: number | null
           current_review_answer_id?: string | null
           lang?: string
+          last_recommendation_id?: string | null
           last_visitor_question_id?: string | null
           pending_action?: Json | null
           phone_hash: string
@@ -129,6 +131,7 @@ export type Database = {
           current_question_position?: number | null
           current_review_answer_id?: string | null
           lang?: string
+          last_recommendation_id?: string | null
           last_visitor_question_id?: string | null
           pending_action?: Json | null
           phone_hash?: string
@@ -149,6 +152,13 @@ export type Database = {
             columns: ["current_review_answer_id"]
             isOneToOne: false
             referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_last_recommendation_id_fkey"
+            columns: ["last_recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "recommendation_ledger"
             referencedColumns: ["id"]
           },
           {
@@ -196,6 +206,33 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_operators: {
+        Row: {
+          fit: string
+          id: string
+          is_sample: boolean
+          language_support: string[]
+          name: string
+          tour_type: string
+        }
+        Insert: {
+          fit: string
+          id?: string
+          is_sample?: boolean
+          language_support?: string[]
+          name: string
+          tour_type: string
+        }
+        Update: {
+          fit?: string
+          id?: string
+          is_sample?: boolean
+          language_support?: string[]
+          name?: string
+          tour_type?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           id: string
@@ -216,6 +253,44 @@ export type Database = {
           topic?: string
         }
         Relationships: []
+      }
+      recommendation_ledger: {
+        Row: {
+          connect_requested: boolean
+          created_at: string
+          from_operator: string
+          id: string
+          is_sample: boolean
+          to_operator_id: string
+          visitor_hash: string
+        }
+        Insert: {
+          connect_requested?: boolean
+          created_at?: string
+          from_operator: string
+          id?: string
+          is_sample?: boolean
+          to_operator_id: string
+          visitor_hash: string
+        }
+        Update: {
+          connect_requested?: boolean
+          created_at?: string
+          from_operator?: string
+          id?: string
+          is_sample?: boolean
+          to_operator_id?: string
+          visitor_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_ledger_to_operator_id_fkey"
+            columns: ["to_operator_id"]
+            isOneToOne: false
+            referencedRelation: "partner_operators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recordings: {
         Row: {

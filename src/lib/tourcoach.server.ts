@@ -1,3 +1,4 @@
+import { MORE_ASK, FIT_BY_CHOICE, pickPartner, suggestionText, buildListing, ledgerText, type Partner } from "./partners";
 import { guardCleanup, reviewLinkMessage, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, FEEDBACK_DELETED, FEEDBACK_SHARED, FEEDBACK_EMPTY } from "./feedback";
 // TourCoach backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
 // and /api/public/eval-match.
@@ -294,7 +295,7 @@ async function generateAnswerAudio(answerId: string) {
 /* ---------------- WhatsApp state machine ---------------- */
 type Conv = {
   phone_hash: string; role: "visitor" | "champion"; state: string; current_question_position: number | null;
-  lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null; current_feedback_id?: string | null;
+  lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null; current_feedback_id?: string | null; last_recommendation_id?: string | null;
   pending_action?: { answer_id: string; status: "approved" | "rerecord" | "needs_bilingual" } | null;
   agent_history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
@@ -347,9 +348,23 @@ const CLEAR_Q: Record<Lang, string> = {
   nl: "Was dit duidelijk? Antwoord YES of NO",
 };
 
-async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null): Promise<string | Reply> {
+export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null): Promise<string | Reply> {
   const db = supabaseAdmin;
   if (upper === "FEEDBACK" || c.state.startsWith("feedback_")) return visitorFeedback(c, text, upper, save, mediaUrl);
+  // Phase 2E (Simulated): opt-in partner suggestion. Asked once; only "<1|2|3> YES" suggests anything.
+  if (upper === "MORE" || upper === "RECOMMEND") { await save({ state: "more_wait" }); return MORE_ASK; }
+  if (c.state === "more_wait") {
+    const m = /^([123])\s*,?\s*YES$/.exec(upper);
+    if (!m) { await save({ state: "idle" }); return "No suggestion made (no opt-in). (Simulated)"; }
+    const r = await recommendPartner(c.phone_hash, m[1]!);
+    await save({ state: "idle", last_recommendation_id: r.ledgerId } as Partial<Conv>);
+    return r.text;
+  }
+  if (upper === "CONNECT" && c.last_recommendation_id) {
+    await db.from("recommendation_ledger" as never).update({ connect_requested: true } as never).eq("id", c.last_recommendation_id);
+    await save({ last_recommendation_id: null } as Partial<Conv>);
+    return "Noted (Simulated). Noor or the champion will pass on the contact. Your number is not shared automatically. No payment involved.";
+  }
   if (upper === "EN" || upper === "DE" || upper === "NL") {
     await save({ lang: upper.toLowerCase() as Lang });
     return { EN: "Language: English", DE: "Sprache: Deutsch", NL: "Taal: Nederlands" }[upper];
@@ -498,6 +513,47 @@ export async function purgeFeedback(): Promise<{ purged: number }> {
   return { purged: rows.length };
 }
 
+/* ---------------- Phase 2E / 2F (Simulated demos) ---------------- */
+const monthStart = () => { const d = new Date(); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString(); };
+
+async function monthCounts(): Promise<Record<string, number>> {
+  const { data } = await supabaseAdmin.from("recommendation_ledger" as never).select("to_operator_id").gte("created_at", monthStart());
+  const out: Record<string, number> = {};
+  for (const r of (data ?? []) as Array<{ to_operator_id: string }>) out[r.to_operator_id] = (out[r.to_operator_id] ?? 0) + 1;
+  return out;
+}
+
+/** visitorHash must already be the salted hash; raw numbers are never stored or shared. */
+export async function recommendPartner(visitorHash: string, choice: string): Promise<{ text: string; ledgerId: string | null }> {
+  const fit = FIT_BY_CHOICE[choice];
+  const { data } = await supabaseAdmin.from("partner_operators" as never).select("id, name, tour_type, fit, language_support");
+  const p = fit ? pickPartner((data ?? []) as Partner[], await monthCounts(), fit) : null;
+  if (!p) return { text: suggestionText(null), ledgerId: null };
+  const { data: row } = await supabaseAdmin.from("recommendation_ledger" as never)
+    .insert({ from_operator: "Noor", to_operator_id: p.id, visitor_hash: visitorHash, is_sample: true } as never).select("id").single();
+  return { text: suggestionText(p), ledgerId: (row as { id: string } | null)?.id ?? null };
+}
+
+export async function ledgerSummary(): Promise<string> {
+  const { data } = await supabaseAdmin.from("partner_operators" as never).select("id, name").order("name");
+  const counts = await monthCounts();
+  const rows = ((data ?? []) as Array<{ id: string; name: string }>).map((p) => ({ name: p.name, received: counts[p.id] ?? 0 }));
+  return ledgerText(rows, Object.values(counts).reduce((a, b) => a + b, 0));
+}
+
+/** Draft listing from APPROVED answers only (English text). Nothing is sent to Google. */
+export async function draftListing(): Promise<string> {
+  const { data } = await supabaseAdmin.from("answers")
+    .select("english, is_sample, recordings(questions(topic))").eq("review_status", "approved");
+  const by: Record<string, string> = {};
+  let sample = false;
+  for (const r of (data ?? []) as unknown as Array<{ english: string | null; is_sample: boolean; recordings: { questions: { topic: string } | null } | null }>) {
+    const t = r.recordings?.questions?.topic;
+    if (t && r.english) { by[t] = r.english; sample ||= r.is_sample; }
+  }
+  return buildListing(by) + (sample ? "\n(Built from Sample answers)" : "");
+}
+
 /* ---------------- Champion ---------------- */
 async function champion(c: Conv, upper: string, mediaUrl: string | null, from: string, save: Save, text: string) {
   const db = supabaseAdmin;
@@ -548,6 +604,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   }
 
   if (upper === "REVIEW") return showNextPending(save);
+  if (upper === "LEDGER") return ledgerSummary();
+  if (upper === "LISTING") return draftListing();
 
   if (c.state === "reviewing" && c.current_review_answer_id) {
     const m = /^([123])\b/.exec(upper);
