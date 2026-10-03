@@ -34,8 +34,11 @@ export type AnswerRow = {
     questions: { position: number; text_en: string; topic: string } | null } | null;
 };
 
-export async function fetchAnswers(status?: AnswerRow["review_status"]) {
-  let q = supabase.from("answers").select(ANSWER_SELECT);
+const PUBLIC_SELECT =
+  "id, english, german, dutch, flags, review_status, is_sample, recording_id, recordings(id, question_id, questions(position, text_en, topic))";
+
+export async function fetchAnswers(status?: AnswerRow["review_status"], publicOnly = false) {
+  let q = supabase.from("answers").select(publicOnly ? PUBLIC_SELECT : ANSWER_SELECT);
   if (status) q = q.eq("review_status", status);
   const { data, error } = await q;
   if (error) throw error;

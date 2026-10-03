@@ -35,7 +35,7 @@ function AskPage() {
   const [text, setText] = useState("");
   const [result, setResult] = useState<{ vqId: string; answer: AnswerRow | null } | null>(null);
   const [clear, setClear] = useState<boolean | null>(null);
-  const answers = useQuery({ queryKey: ["public-answers"], queryFn: () => fetchAnswers("approved") });
+  const answers = useQuery({ queryKey: ["public-answers"], queryFn: () => fetchAnswers("approved", true) });
   const t = T[lang];
   const field = LANGS.find((l) => l.code === lang)!.field;
 
