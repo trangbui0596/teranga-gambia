@@ -1,3 +1,4 @@
+import { numbersHeard } from "./numbers";
 // Champion/operator WhatsApp assistant (server-only). Visitors never reach this code.
 // The model can act ONLY through the fixed tools below. set_review_status never writes directly:
 // it stores a proposal that server code executes after the champion replies YES (see tourcoach.server.ts).
@@ -23,11 +24,6 @@ export type AgentCtx = {
 const HELP =
   "I can: 1 show waiting answers, 2 show one answer, 3 approve / re-record / send to bilingual reviewer (after you say YES), 4 start recording the 10 questions, 5 visitor stats this week, 6 unanswered visitor questions. Shortcuts: START, REVIEW, EXIT, LEDGER (Simulated partner counts), LISTING (Simulated draft Google listing, not published).";
 
-function numbersHeard(text: string | null) {
-  if (!text) return "none";
-  const m = text.match(/\d+(?:[.,:]\d+)*(?:\s*(?:dalasi|gmd|euro|eur|€|d\b|h\b|am\b|pm\b))?/gi);
-  return m && m.length ? [...new Set(m.map((s) => s.trim()))].join(", ") : "none found";
-}
 
 type PendingRow = {
   id: string; transcript_src: string | null; flags: string[]; is_sample: boolean;
