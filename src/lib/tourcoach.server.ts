@@ -6,6 +6,8 @@ import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
 import { runInBackground } from "./background.server";
+import { numbersHeard } from "./numbers";
+import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } from "./champion-commands";
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 
@@ -101,12 +103,8 @@ function isoWeek(d = new Date()) {
   return `${t.getUTCFullYear()}-W${String(Math.ceil(((t.getTime() - y.getTime()) / 86400000 + 1) / 7)).padStart(2, "0")}`;
 }
 
-/** Numbers, prices and times written in the transcript (digits only). */
-export function numbersHeard(text: string | null) {
-  if (!text) return "none";
-  const m = text.match(/\d+(?:[.,:]\d+)*(?:\s*(?:dalasi|gmd|euro|eur|€|d\b|h\b|am\b|pm\b))?/gi);
-  return m && m.length ? [...new Set(m.map((s) => s.trim()))].join(", ") : "none found";
-}
+/** Numbers, prices and times in the transcript: digits plus Wolof number words (src/lib/numbers.ts). */
+export { numbersHeard };
 
 /* ---------------- Lovable AI (Responses API, streamed) ---------------- */
 async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
@@ -425,7 +423,8 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
     }
     return "Wrong PIN (demo shortcut).";
   }
-  if (upper === "EXIT") {
+  // In a recording round EXIT ends the round (handled in champion()), it does not leave champion mode.
+  if (upper === "EXIT" && !(c.role === "champion" && c.state === "recording")) {
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
     return "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.";
   }
@@ -676,9 +675,19 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     return ask(1);
   }
 
-  if (c.state === "recording" && c.current_question_position) {
+  // Text commands first during a round; only non-command text gets the voice-note reminder.
+  const cmd = c.state === "recording" && !mediaUrl ? recordingCommand(upper, !!c.current_review_answer_id) : null;
+  if (cmd === "stop") {
+    const saved = Math.max(0, (c.current_question_position ?? 1) - 1);
+    await save({ state: "idle", current_question_position: null });
+    return roundStoppedText(saved);
+  }
+  if (cmd === "help") return recordingHelpText(c.current_question_position ?? 1, TOTAL_QUESTIONS);
+  if (cmd === "review") await save({ state: "idle", current_question_position: null }); // falls through to REVIEW below
+
+  if (c.state === "recording" && c.current_question_position && !cmd) {
     const n = c.current_question_position;
-    if (!mediaUrl) return `Please send a voice note for question ${n}.\n${ask(n)}`;
+    if (!mediaUrl) return `Please send a voice note for question ${n}.\n${ROUND_HINT}\n${ask(n)}`;
     const q = qs[n - 1];
     if (!q) return "Question not found.";
     let answerId: string | null = null;
@@ -698,7 +707,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
       return { text: `Got question ${n}. Round complete. Reply REVIEW to review.`, finishFirst: answerId };
     }
     await save({ current_question_position: next });
-    return { text: `Got question ${n}.\n\n${ask(next)}`, finishFirst: answerId };
+    return { text: `Got question ${n}. ${ROUND_HINT}\n\n${ask(next)}`, finishFirst: answerId };
   }
 
   if (upper === "REVIEW") {
@@ -709,7 +718,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   if (upper === "LEDGER") return ledgerSummary();
   if (upper === "LISTING") return draftListing();
 
-  if (c.state === "reviewing" && c.current_review_answer_id) {
+  if ((c.state === "reviewing" || cmd === "digit") && c.current_review_answer_id) {
     const m = /^([123])\b/.exec(upper);
     if (m) {
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
