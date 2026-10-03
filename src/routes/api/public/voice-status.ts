@@ -17,6 +17,10 @@ export const Route = createFileRoute("/api/public/voice-status")({
         if (params["CallStatus"] === "completed" && lib.isOperatorCaller(params["From"]) && params["CallSid"]) {
           try { await lib.sendCallSummary(params["CallSid"].slice(0, 64)); } catch (e) { console.error("call summary failed", e); }
         }
+        // Call over: nobody is waiting, so finish the call's answers inside this request (resumable).
+        if (params["CallStatus"] === "completed") {
+          try { await lib.finishAnswers(12000); } catch (e) { console.error("[pipeline] error step=finishAnswers", e); }
+        }
         return new Response(null, { status: 204 });
       },
     },

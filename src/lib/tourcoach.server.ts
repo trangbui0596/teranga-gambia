@@ -550,7 +550,7 @@ export async function visitorFeedback(c: Conv, text: string, upper: string, save
   // feedback_wait: take a voice note (auto-detect language) or text.
   let raw = text;
   if (mediaUrl) {
-    const t = await transcribe(mediaUrl, null);
+    const t = await transcribe(mediaUrl, null, AbortSignal.timeout(9000)); // inside the request, bounded
     raw = t?.text ?? "";
   }
   raw = raw.slice(0, 2000).trim();
@@ -697,7 +697,7 @@ async function championAgent(c: Conv, text: string, mediaUrl: string | null, sav
   let message = text;
   let heard = "";
   if (mediaUrl) {
-    const t = await transcribe(mediaUrl);
+    const t = await transcribe(mediaUrl, "wol", AbortSignal.timeout(9000));
     if (!t) return "Sorry, I could not hear the voice note. Please type or try again.";
     message = t.text;
     heard = `Heard (Wolof, ${WOLOF_LABEL}): "${t.text}"\n\n`;
