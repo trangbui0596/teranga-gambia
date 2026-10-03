@@ -294,6 +294,8 @@ async function generateAnswerAudio(answerId: string) {
 type Conv = {
   phone_hash: string; role: "visitor" | "champion"; state: string; current_question_position: number | null;
   lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null;
+  pending_action?: { answer_id: string; status: "approved" | "rerecord" | "needs_bilingual" } | null;
+  agent_history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
 type Reply = { text: string; audioUrl?: string | undefined };
 type Save = (p: Partial<Conv>) => unknown;
@@ -306,8 +308,8 @@ export async function handleWhatsApp(input: { from: string; body: string; mediaU
     const ins = await db.from("conversations").insert({ phone_hash }).select("*").single();
     conv = ins.data;
   }
-  const c = conv as Conv;
-  const save: Save = (patch) => db.from("conversations").update(patch).eq("phone_hash", phone_hash);
+  const c = conv as unknown as Conv;
+  const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
 
   const r = await route(c, input, save);
   const reply: Reply = typeof r === "string" ? { text: r } : r;
@@ -333,7 +335,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
     return "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.";
   }
-  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save) : visitor(c, text, upper, save);
+  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save);
 }
 
 /* ---------------- Visitor ---------------- */
@@ -400,11 +402,24 @@ async function visitor(c: Conv, text: string, upper: string, save: Save): Promis
 }
 
 /* ---------------- Champion ---------------- */
-async function champion(c: Conv, upper: string, mediaUrl: string | null, from: string, save: Save) {
+async function champion(c: Conv, upper: string, mediaUrl: string | null, from: string, save: Save, text: string) {
   const db = supabaseAdmin;
   const { data: questions } = await db.from("questions").select("id, position, topic").order("position");
   const qs = questions ?? [];
   const ask = (n: number) => `Question ${n} of ${TOTAL_QUESTIONS}: ${qs[n - 1]?.topic ?? "?"}\nReply with a voice note.`;
+
+  // Confirmation turn for an agent-proposed review decision: only an explicit YES executes it.
+  if (c.pending_action) {
+    const pa = c.pending_action;
+    await save({ pending_action: null });
+    if (/^(YES|OUI|WAAW)\b/.test(upper)) {
+      const { data: still } = await db.from("answers").select("review_status").eq("id", pa.answer_id).maybeSingle();
+      if (still?.review_status !== "pending") return "That answer is no longer pending. Nothing changed.";
+      await applyReview(pa.answer_id, pa.status);
+      return { approved: "Done: approved.", rerecord: "Done: marked for re-record.", needs_bilingual: "Done: sent to bilingual reviewer." }[pa.status];
+    }
+    // Anything else cancels the proposal and is handled as a new message below.
+  }
 
   if (upper === "START") {
     await save({ state: "recording", current_question_position: 1 });
@@ -439,18 +454,45 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
 
   if (c.state === "reviewing" && c.current_review_answer_id) {
     const m = /^([123])\b/.exec(upper);
-    if (!m) return "Reply 1 approve, 2 re-record, 3 needs bilingual reviewer.";
+    if (m) {
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
-    const id = c.current_review_answer_id;
-    await db.from("answers").update({
-      review_status: status, approved_at: status === "approved" ? new Date().toISOString() : null,
-    }).eq("id", id);
-    if (status === "approved") runInBackground("tts", () => generateAnswerAudio(id));
+    await applyReview(c.current_review_answer_id, status);
     const label = { approved: "Approved", rerecord: "Marked for re-record", needs_bilingual: "Sent to bilingual reviewer" }[status];
     return `${label}.\n\n${await showNextPending(save)}`;
+    }
   }
 
-  return "Champion mode (demo shortcut). START, REVIEW or EXIT.";
+  return championAgent(c, text, mediaUrl, save);
+}
+
+async function applyReview(id: string, status: "approved" | "rerecord" | "needs_bilingual") {
+  await supabaseAdmin.from("answers").update({
+    review_status: status, approved_at: status === "approved" ? new Date().toISOString() : null,
+  }).eq("id", id);
+  if (status === "approved") runInBackground("tts", () => generateAnswerAudio(id));
+}
+
+/** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
+async function championAgent(c: Conv, text: string, mediaUrl: string | null, save: Save) {
+  let message = text;
+  let heard = "";
+  if (mediaUrl) {
+    const t = await transcribe(mediaUrl);
+    if (!t) return "Sorry, I could not hear the voice note. Please type or try again.";
+    message = t.text;
+    heard = `Heard (Wolof, ${WOLOF_LABEL}): "${t.text}"\n\n`;
+  }
+  if (!message.trim()) return "Champion mode (demo shortcut). START, REVIEW or EXIT.";
+  const { runChampionAgent } = await import("./agent.server");
+  try {
+    const history = (c.agent_history ?? []).slice(-6);
+    const r = await runChampionAgent({ phone_hash: c.phone_hash }, message, history);
+    await save({ agent_history: [...history, { role: "user" as const, content: message.slice(0, 500) }, { role: "assistant" as const, content: r.plainText.slice(0, 500) }].slice(-6) });
+    return heard + r.reply;
+  } catch (e) {
+    console.error("champion agent failed", e);
+    return heard + "Assistant unavailable right now. Shortcuts: START, REVIEW, EXIT.";
+  }
 }
 
 async function showNextPending(save: Save) {

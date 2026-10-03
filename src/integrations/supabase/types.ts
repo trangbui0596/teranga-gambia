@@ -98,30 +98,36 @@ export type Database = {
       }
       conversations: {
         Row: {
+          agent_history: Json
           current_question_position: number | null
           current_review_answer_id: string | null
           lang: string
           last_visitor_question_id: string | null
+          pending_action: Json | null
           phone_hash: string
           role: string
           state: string
           updated_at: string
         }
         Insert: {
+          agent_history?: Json
           current_question_position?: number | null
           current_review_answer_id?: string | null
           lang?: string
           last_visitor_question_id?: string | null
+          pending_action?: Json | null
           phone_hash: string
           role?: string
           state?: string
           updated_at?: string
         }
         Update: {
+          agent_history?: Json
           current_question_position?: number | null
           current_review_answer_id?: string | null
           lang?: string
           last_visitor_question_id?: string | null
+          pending_action?: Json | null
           phone_hash?: string
           role?: string
           state?: string

@@ -60,3 +60,9 @@ In the Twilio Console open **Phone Numbers → Manage → Active numbers → (yo
 Only calls from the number in `DEMO_SMS_NUMBER` are accepted; everyone else hears "Sorry, this line is private." The bot says only "Question 1" … "Question 10" (Noor uses a printed card). Each answer goes through the same pipeline as WhatsApp voice notes and appears in the champion's WhatsApp REVIEW. After the call: one SMS "TourCoach demo: Got N of 10 answers. The family helper will check them." (counts toward `MAX_OUTBOUND_PER_DAY`).
 
 Secrets used (no new ones): `TWILIO_AUTH_TOKEN`, `DEMO_SMS_NUMBER`, `TWILIO_SMS_FROM`, optional `TWILIO_WEBHOOK_URL` (only its domain is used for the voice routes' signature check).
+
+## Phase 2G: champion assistant on WhatsApp
+
+In champion mode, free-text or voice messages go to an AI assistant (Lovable AI, tool calling). It can only: list pending answers, show one (Wolof transcript, Numbers heard, flags), propose approve / re-record / bilingual reviewer (executed only after the champion replies YES; round-trip mismatches are called out), start a recording round, show week stats, list unanswered questions, show help. Max 3 tool calls and one reply per message; replies labelled AI-generated; Wolof replies labelled "machine-generated, unverified". START, REVIEW, 1/2/3 and EXIT still work as shortcuts. Visitor mode is unchanged.
+
+Evaluation: `POST /api/public/eval-agent` with header `x-digest-secret` (dry run, 15 scripted messages, nothing changed or sent).
