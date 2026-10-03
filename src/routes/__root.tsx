@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TourCoach Gambia" },
+      { title: "Teranga" },
       { name: "description", content: "Noor's approved tour answers in English, German and Dutch." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

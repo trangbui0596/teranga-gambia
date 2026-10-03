@@ -1,6 +1,6 @@
 import { MORE_ASK, FIT_BY_CHOICE, pickPartner, suggestionText, buildListing, ledgerText, type Partner } from "./partners";
 import { guardCleanup, reviewLinkMessage, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, FEEDBACK_DELETED, FEEDBACK_SHARED, FEEDBACK_EMPTY } from "./feedback";
-// TourCoach backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
+// Teranga backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
 // and /api/public/eval-match.
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -729,7 +729,7 @@ export async function sendWeeklyDigest() {
   const hasSample = rows.some((r) => r.is_sample);
 
   const body = [
-    "TourCoach demo — weekly digest" + (hasSample ? " (includes Sample data)" : ""),
+    "Teranga demo — weekly digest" + (hasSample ? " (includes Sample data)" : ""),
     `Questions (7 days): ${rows.length}`,
     ...Object.entries(counts).map(([k, v]) => `${k}: ${v}`),
     "Unanswered:",
@@ -783,7 +783,7 @@ export async function sendCallSummary(callSid: string) {
   if (data === null || data === undefined) return false; // already sent for this call
   const n = Number(data) || 0;
   return twilioSend(to, from,
-    `TourCoach demo: Got ${n} of ${TOTAL_QUESTIONS} answers. The family helper will check them.`);
+    `Teranga demo: Got ${n} of ${TOTAL_QUESTIONS} answers. The family helper will check them.`);
 }
 
 /** Stores a call recording for question n and runs the same pipeline as WhatsApp voice notes. Returns answers so far. */
