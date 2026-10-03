@@ -782,7 +782,7 @@ async function showNextPending(save: Save) {
   const { text, answerId } = formatPendingQueue(
     list.map((i) => ({
       id: i.id, transcript_src: i.transcript_src, flags: i.flags, is_sample: i.is_sample,
-      position: i.recordings?.questions?.position, topic: i.recordings?.questions?.topic,
+      position: i.recordings?.questions?.position ?? null, topic: i.recordings?.questions?.topic ?? null,
     })),
     busy ?? 0, WOLOF_LABEL, numbersHeard);
   // The champion does not speak English: only the Wolof transcript and numbers are shown, never English text.
