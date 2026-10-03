@@ -467,7 +467,7 @@ async function visitorFeedback(c: Conv, text: string, upper: string, save: Save,
       if (!t) { await done(); return FEEDBACK_PROMPT[L]; }
       await db.from("visitor_feedback" as never).update({ status: "posted" } as never).eq("id", fid);
       // Stays in feedback_ready so SHARE / NO still work; purged after 24h unless shared.
-      return { text: t, secondText: reviewLinkMessage(process.env.GOOGLE_REVIEW_URL) };
+      return { text: t, secondText: reviewLinkMessage(process.env['GOOGLE_REVIEW_URL']) };
     }
     return FEEDBACK_OPTIONS[L];
   }
