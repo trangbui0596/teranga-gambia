@@ -294,7 +294,7 @@ async function generateAnswerAudio(answerId: string) {
 /* ---------------- WhatsApp state machine ---------------- */
 type Conv = {
   phone_hash: string; role: "visitor" | "champion"; state: string; current_question_position: number | null;
-  lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null;
+  lang: Lang; last_visitor_question_id: string | null; current_review_answer_id: string | null; current_feedback_id?: string | null;
   pending_action?: { answer_id: string; status: "approved" | "rerecord" | "needs_bilingual" } | null;
   agent_history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
