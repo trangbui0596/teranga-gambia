@@ -1,0 +1,1 @@
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS pending_action jsonb, ADD COLUMN IF NOT EXISTS agent_history jsonb NOT NULL DEFAULT '[]'::jsonb;
