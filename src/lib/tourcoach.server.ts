@@ -430,7 +430,7 @@ export async function cleanReview(raw: string): Promise<{ text: string; usedRaw:
   return guardCleanup(raw, cleaned);
 }
 
-async function visitorFeedback(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null): Promise<string | Reply> {
+export async function visitorFeedback(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null): Promise<string | Reply> {
   const db = supabaseAdmin;
   const L = c.lang;
   const fid = c.current_feedback_id ?? null;
