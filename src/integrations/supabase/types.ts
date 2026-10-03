@@ -93,6 +93,54 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          current_question_position: number | null
+          current_review_answer_id: string | null
+          lang: string
+          last_visitor_question_id: string | null
+          phone_hash: string
+          role: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          current_question_position?: number | null
+          current_review_answer_id?: string | null
+          lang?: string
+          last_visitor_question_id?: string | null
+          phone_hash: string
+          role?: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          current_question_position?: number | null
+          current_review_answer_id?: string | null
+          lang?: string
+          last_visitor_question_id?: string | null
+          phone_hash?: string
+          role?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_current_review_answer_id_fkey"
+            columns: ["current_review_answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_last_visitor_question_id_fkey"
+            columns: ["last_visitor_question_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           id: string
@@ -251,10 +299,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      record_clarity: {
-        Args: { _clear: boolean; _id: string }
-        Returns: undefined
       }
     }
     Enums: {
