@@ -348,7 +348,7 @@ const CLEAR_Q: Record<Lang, string> = {
   nl: "Was dit duidelijk? Antwoord YES of NO",
 };
 
-async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null): Promise<string | Reply> {
+export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null): Promise<string | Reply> {
   const db = supabaseAdmin;
   if (upper === "FEEDBACK" || c.state.startsWith("feedback_")) return visitorFeedback(c, text, upper, save, mediaUrl);
   // Phase 2E (Simulated): opt-in partner suggestion. Asked once; only "<1|2|3> YES" suggests anything.
