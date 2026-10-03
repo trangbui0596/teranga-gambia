@@ -171,3 +171,61 @@ export async function finishAnswers(d: PipelineDeps, budgetMs: number, opts: { p
   }
   return { processed, finished, remaining: await d.countUnfinished() };
 }
+
+/* ---------------- Approved-answer voice files (EN/DE/NL) ----------------
+ * Per-language progress = an answer_audio row for that language. Missing languages are generated
+ * inside the request (parallel TTS, each saved as soon as it is ready), so a cut-off run resumes
+ * with only the languages still missing. Only approved answers ever get audio. */
+export const AUDIO_LANGS: Lang[] = ["en", "de", "nl"];
+
+export interface AudioDeps {
+  now(): number;
+  log(msg: string): void;
+  texts(id: string): Promise<{ approved: boolean; en: string | null; de: string | null; nl: string | null } | null>;
+  existing(id: string): Promise<Lang[]>;
+  claimLease(id: string, ms: number): Promise<boolean>;
+  releaseLease(id: string): Promise<void>;
+  speak(text: string, lang: Lang, id: string, signal: AbortSignal): Promise<string | null>;
+  save(id: string, lang: Lang, path: string): Promise<void>;
+  listMissing(limit: number): Promise<string[]>;
+}
+
+/** Returns the languages that have audio after this call. */
+export async function ensureAudio(d: AudioDeps, id: string, langs: Lang[], deadline: number): Promise<Lang[]> {
+  const have = new Set(await d.existing(id));
+  const t = await d.texts(id);
+  if (!t || !t.approved) return [...have]; // audio only AFTER approval
+  const missing = langs.filter((l) => !have.has(l) && t[l]);
+  if (!missing.length) return [...have];
+  if (deadline - d.now() < 2500) { d.log(`[audio ${id}] skipped, no time left`); return [...have]; }
+  if (!(await d.claimLease(id, Math.max(5000, deadline - d.now() + 2000)))) { d.log(`[audio ${id}] busy elsewhere`); return [...have]; }
+  try {
+    const signal = AbortSignal.timeout(Math.max(1, deadline - d.now() - 300));
+    await Promise.all(missing.map(async (l) => {
+      const t0 = d.now();
+      try {
+        const path = await d.speak(t[l]!, l, id, signal);
+        if (!path) { d.log(`[audio ${id}] tts ${l} failed ${d.now() - t0}`); return; }
+        await d.save(id, l, path);
+        have.add(l);
+        d.log(`[audio ${id}] tts ${l} saved ${d.now() - t0}`);
+      } catch (e) { d.log(`[audio ${id}] error step=tts ${l} ${(e as Error).message}`); }
+    }));
+  } finally {
+    await d.releaseLease(id).catch(() => undefined);
+  }
+  return [...have];
+}
+
+/** Completes missing voice files for approved answers, oldest first, within budgetMs. */
+export async function finishAudio(d: AudioDeps, budgetMs: number) {
+  const deadline = d.now() + budgetMs;
+  const ids = await d.listMissing(20);
+  let done = 0;
+  for (const id of ids) {
+    if (deadline - d.now() < 3000) break;
+    const got = await ensureAudio(d, id, AUDIO_LANGS, deadline);
+    if (AUDIO_LANGS.every((l) => got.includes(l))) done++;
+  }
+  return { audio_completed: done, audio_remaining: (await d.listMissing(100)).length };
+}
