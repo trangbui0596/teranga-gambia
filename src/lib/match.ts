@@ -1,4 +1,4 @@
-// Pure, environment-agnostic matching logic (used by server functions; later by WhatsApp/SMS handlers).
+// Pure keyword matching used by the WhatsApp/SMS backend (src/lib/tourcoach.server.ts).
 export type MatchableAnswer = { id: string; recordings?: { questions?: { topic: string } | null } | null };
 export const CONFIDENCE_THRESHOLD = 0.6;
 export const NOT_SURE: Record<"en" | "de" | "nl", string> = {
