@@ -40,8 +40,8 @@ function ImportPage() {
     setBusy(true);
     try {
       for (let i = 0; i < Math.min(sorted.length, questions.data.length); i++) {
-        const q = questions.data[i];
-        const f = sorted[i];
+        const q = questions.data[i]!;
+        const f = sorted[i]!;
         const path = `${week}/q${q.position}-${Date.now()}-${f.name.replace(/[^\w.-]/g, "_")}`;
         const up = await supabase.storage.from("recordings").upload(path, f, { contentType: f.type || "audio/mpeg" });
         if (up.error) throw up.error;

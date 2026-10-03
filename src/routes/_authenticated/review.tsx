@@ -54,7 +54,7 @@ function ReviewPage() {
   async function setStatus(a: AnswerRow, s: AnswerRow["review_status"]) {
     const { error } = await supabase.from("answers")
       .update({ review_status: s, approved_at: s === "approved" ? new Date().toISOString() : null }).eq("id", a.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(STATUS[s].icon);
     qc.invalidateQueries({ queryKey: ["answers"] });
   }

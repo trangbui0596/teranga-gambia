@@ -30,8 +30,8 @@ function AuthPage() {
       ? await supabase.auth.signInWithPassword({ email, password: pw })
       : await supabase.auth.signUp({ email, password: pw, options: { emailRedirectTo: `${window.location.origin}/review` } });
     setBusy(false);
-    if (res.error) return toast.error(res.error.message);
-    if (mode === "up" && !res.data.session) return toast.success("📧 Check email to confirm");
+    if (res.error) { toast.error(res.error.message); return; }
+    if (mode === "up" && !res.data.session) { toast.success("📧 Check email to confirm"); return; }
     nav({ to: "/review" });
   }
 
