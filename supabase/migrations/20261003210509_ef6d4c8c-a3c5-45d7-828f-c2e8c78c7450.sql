@@ -1,0 +1,2 @@
+GRANT SELECT (id, question_id) ON public.recordings TO anon;
+CREATE POLICY "recordings of approved answers public" ON public.recordings FOR SELECT TO anon USING (EXISTS (SELECT 1 FROM public.answers a WHERE a.recording_id = recordings.id AND a.review_status='approved'));
