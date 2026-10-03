@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Ear, RefreshCw, Upload, LogOut } from "lucide-react";
+import { BookOpen, Ear, RefreshCw, Upload, LogOut, Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReactNode } from "react";
 
@@ -8,6 +8,7 @@ const items = [
   { to: "/sync", icon: RefreshCw, label: "2" },
   { to: "/review", icon: Ear, label: "3" },
   { to: "/library", icon: BookOpen, label: "4" },
+  { to: "/channels", icon: Radio, label: "📶" },
 ] as const;
 
 export function ChampionShell({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
@@ -29,7 +30,7 @@ export function ChampionShell({ title, icon, children }: { title: string; icon: 
       </header>
       <main className="px-4">{children}</main>
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t-4 border-primary bg-card">
-        <div className="mx-auto grid max-w-xl grid-cols-4">
+        <div className="mx-auto grid max-w-xl grid-cols-5">
           {items.map(({ to, icon: Icon, label }) => (
             <Link
               key={to}

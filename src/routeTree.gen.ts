@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated/channels'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
@@ -30,6 +31,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedChannelsRoute = AuthenticatedChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedImportRoute = AuthenticatedImportRouteImport.update({
   id: '/import',
@@ -55,6 +61,7 @@ const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/channels': typeof AuthenticatedChannelsRoute
   '/import': typeof AuthenticatedImportRoute
   '/library': typeof AuthenticatedLibraryRoute
   '/review': typeof AuthenticatedReviewRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/channels': typeof AuthenticatedChannelsRoute
   '/import': typeof AuthenticatedImportRoute
   '/library': typeof AuthenticatedLibraryRoute
   '/review': typeof AuthenticatedReviewRoute
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/channels': typeof AuthenticatedChannelsRoute
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
@@ -80,14 +89,16 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/import' | '/library' | '/review' | '/sync'
+  fullPaths:
+    '/' | '/auth' | '/channels' | '/import' | '/library' | '/review' | '/sync'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/import' | '/library' | '/review' | '/sync'
+  to: '/' | '/auth' | '/channels' | '/import' | '/library' | '/review' | '/sync'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/channels'
     | '/_authenticated/import'
     | '/_authenticated/library'
     | '/_authenticated/review'
@@ -123,6 +134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/channels': {
+      id: '/_authenticated/channels'
+      path: '/channels'
+      fullPath: '/channels'
+      preLoaderRoute: typeof AuthenticatedChannelsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/import': {
       id: '/_authenticated/import'
       path: '/import'
@@ -155,6 +173,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedChannelsRoute: typeof AuthenticatedChannelsRoute
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
@@ -162,6 +181,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedChannelsRoute: AuthenticatedChannelsRoute,
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
