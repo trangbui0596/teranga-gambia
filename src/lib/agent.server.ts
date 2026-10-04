@@ -147,7 +147,7 @@ function buildTools(ctx: AgentCtx, calls: string[]) {
         guard("get_coaching");
         const { getCoaching } = await import("./coach.server");
         const { aiText } = await import("./tourcoach.server");
-        return { message: (await getCoaching(aiText, 9000)).messages[0] };
+        return { message: (await getCoaching(aiText, 9000, undefined, undefined, true)).messages[0] };
       },
     }),
     get_help: tool({

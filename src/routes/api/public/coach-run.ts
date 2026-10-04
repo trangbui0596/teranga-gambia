@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/public/coach-run")({
         }
         try {
           const { getCoaching } = await import("@/lib/coach.server");
-          const r = await getCoaching(lib.aiText, 25000);
+          const r = await getCoaching(lib.aiText, 45000);
           return Response.json({ cached: r.cached, run: r.run, message: r.messages[0], more: r.messages[1] });
         } catch (e) {
           console.error("[coach] error step=coach-run", e);

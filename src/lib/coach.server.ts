@@ -124,9 +124,11 @@ export const dbStore: CoachStore = {
 };
 
 /** Cached for 24 h: repeated COACH calls make no Google or AI calls. */
-export async function getCoaching(aiText: AiFn, budgetMs = 10000, store: CoachStore = dbStore, fetcher = fetchAndAnalyze) {
+export const NOT_READY = "Coaching is not ready yet (a fresh run takes about 30 seconds, longer than one WhatsApp reply allows). It is refreshed by the daily coach run. Send COACH again later.";
+export async function getCoaching(aiText: AiFn, budgetMs = 10000, store: CoachStore = dbStore, fetcher = fetchAndAnalyze, cacheOnly = false) {
   const cached = await store.latest();
   if (cached && isFresh(cached.fetched_at)) return { run: cached, cached: true, messages: formatCoach(cached) };
+  if (cacheOnly) return { run: null, cached: false, messages: [NOT_READY, null] as [string, string | null] };
   const run = await fetcher(aiText, budgetMs);
   // Do not cache a run that failed outright, so it can be retried.
   if (run.places_count > 0 || run.api_errors.length === 0) await store.save(run);

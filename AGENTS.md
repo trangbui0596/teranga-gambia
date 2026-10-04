@@ -18,3 +18,4 @@
 - Champion free text goes to src/lib/agent.server.ts (AI SDK, fixed tool set); review changes run only from a stored pending_action after an explicit YES, executed by server code, never by the model.
 - SMS summaries and digests use the pure formatter in src/lib/sms.ts, with one capped WhatsApp fallback after a send failure — keeps A2P wording stable and avoids repeated sends.
 - Never create Response/Request objects, timers, random values or I/O at module scope in server routes — Cloudflare Workers reject global-scope I/O and every route 500s.
+- Review coaching (src/lib/coach.ts pure, coach.server.ts I/O): Google reviews live only in request memory; only derived counts go to coach_runs/coach_themes; a fresh run (~30 s) happens only in /api/public/coach-run, WhatsApp COACH and the agent read the 24 h cache — fits the in-request time budget.

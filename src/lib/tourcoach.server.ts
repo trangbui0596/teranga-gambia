@@ -723,7 +723,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const coach = await import("./coach.server");
     try {
       if (upper === "COACH MORE") return await coach.coachMore();
-      return (await coach.getCoaching(aiText, 10000)).messages[0];
+      return (await coach.getCoaching(aiText, 10000, undefined, undefined, true)).messages[0];
     } catch (e) {
       console.error("[coach] error step=coach", e);
       return "Coaching could not load right now. Send COACH again in a minute.";
