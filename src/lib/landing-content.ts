@@ -32,22 +32,53 @@ export const NOT_MEASURED =
 
 export const STEPS = [
   {
-    title: "Noor records once, by phone call",
-    body: "She answers the common visitor questions out loud, in Wolof, on a basic phone. No internet needed.",
+    title: "Noor records once",
+    channel: "Phone call",
+    body: "Prompted by the question card, she answers the common visitor questions out loud, in Wolof, on a basic phone. No internet needed.",
+    ai: "Speech recognition hears Wolof; machine translation into English, German and Dutch, with a round-trip check.",
   },
   {
-    title: "A family helper approves every answer, by SMS",
-    body: "She gets the Wolof transcript and the numbers it heard as a text, then replies 1 to approve, 2 to record again or 3 to ask a bilingual reviewer. Nothing reaches a visitor before she does. WhatsApp does the same while US SMS registration is pending.",
+    title: "Her helper approves every answer",
+    channel: "SMS",
+    body: "She gets the Wolof transcript and the numbers it heard as a text and replies 1 to approve, 2 to record again or 3 to ask a bilingual reviewer. Nothing reaches a visitor before she does.",
+    ai: "It shows the numbers it heard, so a helper who doesn’t read English can confirm a price.",
   },
   {
-    title: "Visitors ask in their own language, by voice or text",
-    body: "Tourists use WhatsApp, where they already have data. They send a voice note or text in English, German or Dutch, and get Noor’s approved answer as text and an AI voice note in their language, labeled machine-translated. When it isn’t sure, it says “Not sure, Noor will answer.”",
+    title: "Google finds her, WhatsApp is the way in",
+    channel: "Google listing",
+    body: "Her approved answers build her Google listing draft, with her WhatsApp number as the “ask us” link. A person publishes it. Tourists find Noor on Google Maps and tap to message her.",
+    ai: "The listing is written from her own words only. It never invents a phone number or hours.",
   },
   {
-    title: "Noor gets coaching in Wolof, by SMS",
-    body: "From real public Google Maps reviews: what visitors praise, what they complain about, and what to do next. Every week the sync re-reads the reviews, adds what visitors asked and found unclear, and refines the advice. If there isn’t enough data, it says so.",
+    title: "A tourist asks, in their own language",
+    channel: "WhatsApp",
+    body: "By voice note or text, in English, German or Dutch. If Noor’s approved answer exists they get it as text and an AI voice. If not: “Not sure, Noor will answer”, and they can reply NOTIFY to hear back.",
+    ai: "Speech recognition detects the language and hears the question; an AI voice answers in that language. Matching is plain rules, so it can’t invent an answer.",
+  },
+  {
+    title: "The weekly sync closes the loop",
+    channel: "SMS and WhatsApp",
+    body: "New questions go to Noor and her helper or community champion. Once they are answered and approved, the tourists who asked are messaged. The sync also re-reads public reviews and refines Noor’s coaching.",
+    ai: "It learns from what tourists asked and found unclear, and from how public reviews moved since last week.",
+  },
+  {
+    title: "After the tour, one voice note",
+    channel: "WhatsApp",
+    body: "The tourist speaks their review. Teranga writes it down cleanly, they copy it into Google and choose their own stars. Fewer steps means more reviews, and more reviews help Noor’s listing get found.",
+    ai: "Speech recognition plus a clean-up that changes no facts and no feeling. Teranga never posts for them.",
   },
 ];
+
+export const WHY_WHATSAPP = {
+  title: "Why visitors use WhatsApp, and what the AI does there",
+  body: "Noor needs no internet, but tourists already have it, and most already have WhatsApp. They find her on Google Maps, tap her WhatsApp number and ask in their own language, by voice if they like. Noor never has to read or write English.",
+  items: [
+    "Hears the tourist: speech recognition detects English, German or Dutch and turns the voice note into a question.",
+    "Answers in their language: Noor’s approved Wolof answer was already translated; an AI voice speaks it.",
+    "Stays honest: matching is rules over approved answers, and it says “Not sure, Noor will answer” instead of guessing.",
+    "Writes the review for them to paste: voice to clean text, nothing posted on their behalf.",
+  ],
+};
 
 export const TRY_IT =
   "The demo runs on a private Twilio sandbox, so it isn’t open to the public. The recorded walkthrough is the way to see it.";

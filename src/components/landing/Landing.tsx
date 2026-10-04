@@ -28,6 +28,7 @@ import {
   STEPS,
   TABS,
   TRY_IT,
+  WHY_WHATSAPP,
   VIDEO_URL,
   type TabId,
 } from "@/lib/landing-content";
@@ -210,23 +211,44 @@ function Card({ title, tag, children }: { title: string; tag?: string; children:
 function HowPanel() {
   return (
     <div>
-      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {STEPS.map((s, i) => (
-          <li key={s.title} className="flex gap-3 rounded-xl border bg-card p-4 lg:block">
-            <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground lg:mb-3"
-              aria-hidden="true"
-            >
-              {i + 1}
-            </span>
-            <div>
-              <h3 className="text-lg font-bold leading-snug">{s.title}</h3>
-              <p className="mt-1 leading-snug">{s.body}</p>
+          <li key={s.title} className="rounded-xl border bg-card p-4">
+            <div className="flex items-center gap-2">
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground"
+                aria-hidden="true"
+              >
+                {i + 1}
+              </span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+                {s.channel}
+              </span>
             </div>
+            <h3 className="mt-2 text-lg font-bold leading-snug">{s.title}</h3>
+            <p className="mt-1 leading-snug">{s.body}</p>
+            <p className="mt-2 border-l-4 border-primary pl-2 text-sm leading-snug text-muted-foreground">
+              <span className="font-bold text-foreground">AI: </span>
+              {s.ai}
+            </p>
           </li>
         ))}
       </ol>
-      <h3 className="mt-6 text-lg font-bold">Then, for visibility</h3>
+      <section
+        className="mt-4 rounded-xl border-2 border-primary bg-card p-4"
+        aria-labelledby="why-wa"
+      >
+        <h3 id="why-wa" className="text-lg font-bold">
+          {WHY_WHATSAPP.title}
+        </h3>
+        <p className="mt-1 leading-snug">{WHY_WHATSAPP.body}</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          {WHY_WHATSAPP.items.map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
+      </section>
+      <h3 className="mt-6 text-lg font-bold">Also built</h3>
       <ul className="mt-2 grid gap-3 lg:grid-cols-2">
         {EXTRAS.map((c) => (
           <Card key={c.title} title={c.title} tag={c.tag}>

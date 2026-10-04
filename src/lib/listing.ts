@@ -97,7 +97,15 @@ export function buildDescription(a: ApprovedAnswers): string {
 
 const answered = (a: ApprovedAnswers, topic: string) => !!a[topic]?.text?.trim();
 
-export function buildListingPack(a: ApprovedAnswers): ListingPack {
+/** Contact details that are NOT in Noor's recorded answers. The WhatsApp number is the line visitors message with questions. */
+export type ListingContact = { whatsapp?: string | null | undefined };
+export const whatsappLink = (n: string | null | undefined) => {
+  const digits = (n ?? "").replace(/\D/g, "");
+  return digits.length >= 7 ? `https://wa.me/${digits}` : null;
+};
+
+export function buildListingPack(a: ApprovedAnswers, contact: ListingContact = {}): ListingPack {
+  const wa = whatsappLink(contact.whatsapp);
   const description = buildDescription(a);
   const approvedCount = Object.values(a).filter((x) => x?.text?.trim()).length;
   const fromTopic = (
@@ -163,6 +171,13 @@ export function buildListingPack(a: ApprovedAnswers): ListingPack {
       labelWo: "Làkk yi",
       state: "check",
       value: "English, German, Dutch (machine-translated). Wolof.",
+    },
+    {
+      key: "whatsapp",
+      labelEn: "Booking or website link (WhatsApp chat)",
+      labelWo: "Lien WhatsApp ngir laaj yi",
+      state: wa ? "check" : "needs_input",
+      value: wa,
     },
     {
       key: "hours",

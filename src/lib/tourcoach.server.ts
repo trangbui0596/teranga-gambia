@@ -12,6 +12,7 @@ import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } fro
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { weeklyDigestWhatsApp } from "./digest.templates";
+import { NOTIFY_HINT, NOTIFY_NONE, NOTIFY_OK, channelOf, followupMessage, plainNumber } from "./followup";
 import { buildListingPack, formatListingPack, listingCopyText, type ApprovedAnswers } from "./listing";
 import { ALERT_MENU, ALERT_TTL_HOURS, BILINGUAL_FLAG, COMMUNITY_MENU, alertPosted, alertSms, formatAlertList, formatBilingualItem, formatPulse, noNotices, parseAlertCommand, translationLabel, visitorNotice, type ActiveAlert } from "./community";
 import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, smsSegments, toSmsText, unknownSms, weeklyDigestSmsWo, withOptOut, type OperatorSmsCommand } from "./sms-text";
@@ -456,7 +457,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
     return bi(W.visitorMode, "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.");
   }
-  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save, input.mediaUrl, channel);
+  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save, input.mediaUrl, channel, input.from);
 }
 
 /* ---------------- Visitor ---------------- */
@@ -475,7 +476,7 @@ function spokenLang(code: string | null | undefined): Lang | null {
   return null;
 }
 
-export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null, channel: "whatsapp" | "sms" = "whatsapp"): Promise<string | Reply> {
+export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null, channel: "whatsapp" | "sms" = "whatsapp", from = ""): Promise<string | Reply> {
   const db = supabaseAdmin;
   if (upper === "FEEDBACK" || c.state.startsWith("feedback_")) return visitorFeedback(c, text, upper, save, mediaUrl);
   // Phase 2E (Simulated): opt-in partner suggestion. Asked once; only "<1|2|3> YES" suggests anything.
@@ -495,6 +496,14 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
   if (upper === "EN" || upper === "DE" || upper === "NL") {
     await save({ lang: upper.toLowerCase() as Lang });
     return { EN: "Language: English", DE: "Sprache: Deutsch", NL: "Taal: Nederlands" }[upper];
+  }
+  if (upper === "NOTIFY") {
+    if (!c.last_visitor_question_id || !from) return NOTIFY_NONE[c.lang];
+    const { data: vq } = await db.from("visitor_questions").select("matched_answer_id").eq("id", c.last_visitor_question_id).maybeSingle();
+    if (!vq || (vq as { matched_answer_id: string | null }).matched_answer_id) return NOTIFY_NONE[c.lang];
+    // Consent given by replying NOTIFY: the number is kept only until the answer is sent (or 14 days).
+    await db.from("visitor_followups" as never).insert({ visitor_question_id: c.last_visitor_question_id, phone: plainNumber(from), channel: channelOf(from), lang: c.lang } as never);
+    return NOTIFY_OK[c.lang];
   }
   if (upper === "STATUS") return visitorNotice(await activeAlerts(), c.lang) || noNotices(c.lang);
   if ((upper === "YES" || upper === "NO") && c.last_visitor_question_id) {
@@ -536,7 +545,7 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     if (vq) await db.from("unanswered").insert({ visitor_question_id: vq.id });
     await save({ last_visitor_question_id: vq?.id ?? null });
     const sureNotice = visitorNotice(await activeAlerts(), c.lang);
-    return `${heard}${NOT_SURE[c.lang]}${sureNotice ? `\n\n${sureNotice}` : ""}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
+    return `${heard}${NOT_SURE[c.lang]}\n${NOTIFY_HINT[c.lang]}${sureNotice ? `\n\n${sureNotice}` : ""}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
   }
   await save({ last_visitor_question_id: vq?.id ?? null });
 
@@ -659,6 +668,8 @@ export async function purgeFeedback(): Promise<{ purged: number }> {
   const rows = (data ?? []) as Array<{ id: string; media_url: string | null }>;
   for (const r of rows) await deleteTwilioMedia(r.media_url);
   if (rows.length) await db.from("visitor_feedback" as never).delete().in("id", rows.map((r) => r.id));
+  // Follow-up numbers are kept at most 14 days (consent was only for one message).
+  await db.from("visitor_followups" as never).delete().lt("created_at", new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString());
   return { purged: rows.length };
 }
 
@@ -712,7 +723,7 @@ async function approvedAnswers(): Promise<ApprovedAnswers> {
 }
 
 export async function currentListingPack() {
-  return buildListingPack(await approvedAnswers());
+  return buildListingPack(await approvedAnswers(), { whatsapp: process.env["DEMO_WHATSAPP_NUMBER"] });
 }
 
 /** Google listing draft from APPROVED answers only. Nothing is sent to Google: a person claims the profile and pastes it. */
@@ -794,6 +805,10 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     // Finish what is pending first (no transcript messages here: REVIEW shows the transcript itself).
     try { await finishAnswers(10000); } catch (e) { console.error("[pipeline] error step=finishAnswers", e); }
     return showNextPending(save, channel);
+  }
+  if (upper === "FOLLOWUPS") {
+    const f = await sendFollowups();
+    return bi(`Yónnee nañu ${f.sent} tontu ci gan yi. ${f.waiting} di xaar.`, `Follow-ups sent to tourists: ${f.sent}. Still waiting: ${f.waiting}.`);
   }
   if (upper === "SYNC") {
     const r = await weeklySync(false);
@@ -1022,7 +1037,8 @@ export async function runWeeklySync() {
   const sms = await sendOperatorSms(r.sms);
   let whatsapp = false;
   try { whatsapp = await sendWhatsApp(to, r.report); } catch (e) { console.error("[sync] WhatsApp report failed", (e as Error).message); }
-  return { sms, whatsapp, visitors: r.insight.total, actions: r.insight.actions.length, reviewShifts: r.insight.shifts.length };
+  const followups = await sendFollowups().catch((e) => { console.error("[sync] followups failed", e); return { sent: 0, waiting: 0 }; });
+  return { sms, whatsapp, visitors: r.insight.total, actions: r.insight.actions.length, reviewShifts: r.insight.shifts.length, followups };
 }
 
 /** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
@@ -1082,6 +1098,40 @@ async function showNextPending(save: Save, channel: "whatsapp" | "sms" = "whatsa
     });
   }
   return text;
+}
+
+/* ---------------- Follow-up to tourists ---------------- */
+
+/** Messages every opted-in visitor whose question now has an approved answer, then deletes their number. Best effort: a message
+ *  that cannot be sent (for example WhatsApp's 24 h window closed) stays for the next sync; rows older than 14 days are purged. */
+export async function sendFollowups(limit = 20): Promise<{ sent: number; waiting: number }> {
+  const db = supabaseAdmin;
+  const { data } = await db.from("visitor_followups" as never)
+    .select("id, phone, channel, lang, visitor_questions(text)").order("created_at").limit(limit);
+  const rows = (data ?? []) as unknown as Array<{ id: string; phone: string; channel: "whatsapp" | "sms"; lang: "en" | "de" | "nl"; visitor_questions: { text: string } | null }>;
+  if (!rows.length) return { sent: 0, waiting: 0 };
+  const { data: ans } = await db.from("answers")
+    .select("id, english, german, dutch, is_sample, flags, recordings(questions(topic))").eq("review_status", "approved");
+  const answers = (ans ?? []) as unknown as Array<{
+    id: string; english: string | null; german: string | null; dutch: string | null; is_sample: boolean; flags: string[] | null;
+    recordings: { questions: { topic: string } | null } | null;
+  }>;
+  let sent = 0;
+  for (const r of rows) {
+    const q = r.visitor_questions?.text;
+    if (!q) continue;
+    const { answer } = matchQuestion(q, answers);
+    const text = answer?.[FIELD[r.lang]] ?? null;
+    if (!answer || !text) continue;
+    const body = followupMessage(r.lang, q, text + (answer.is_sample ? " (Sample answer)" : ""), translationLabel(r.lang, !!answer.flags?.includes(BILINGUAL_FLAG)));
+    try {
+      const ok = r.channel === "whatsapp" ? await sendWhatsApp(r.phone, body) : await twilioSend(r.phone, env("TWILIO_SMS_FROM"), toSmsText(body));
+      if (!ok) break; // daily cap reached: keep the rest for later
+      await db.from("visitor_followups" as never).delete().eq("id", r.id);
+      sent++;
+    } catch (e) { console.error("[followup] send failed", (e as Error).message); }
+  }
+  return { sent, waiting: rows.length - sent };
 }
 
 /* ---------------- Community Circle (community champion) ---------------- */

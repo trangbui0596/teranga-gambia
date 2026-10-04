@@ -22,7 +22,7 @@ describe("Google listing pack", () => {
     expect(listingCopyText(p)).toBeNull();
     expect(p.fields.find((f) => f.key === "category")?.state).toBe("check");
     expect(p.fields.find((f) => f.key === "name")?.value).toBeNull(); // never invented
-    expect(helperFields(p).map((f) => f.key)).toEqual(["name", "hours", "phone", "photos"]);
+    expect(helperFields(p).map((f) => f.key)).toEqual(["name", "whatsapp", "hours", "phone", "photos"]);
     expect(nextCards(p).length).toBeGreaterThan(0);
   });
 
@@ -80,5 +80,16 @@ describe("Google listing pack", () => {
     expect(text).toContain("Built partly from Sample answers");
     expect(text).toContain("unverified");
     expect(text).toContain("Tontu yi nangu nañu: 1 ci 10");
+  });
+});
+
+describe("WhatsApp link in the listing", () => {
+  it("builds a wa.me link from the visitor-question line and asks for it when missing", async () => {
+    const { whatsappLink } = await import("@/lib/listing");
+    expect(whatsappLink("+1 (415) 523-8886")).toBe("https://wa.me/14155238886");
+    expect(whatsappLink("123")).toBeNull();
+    expect(whatsappLink(undefined)).toBeNull();
+    expect(buildListingPack({}, { whatsapp: "+14155238886" }).fields.find((f) => f.key === "whatsapp")).toMatchObject({ state: "check", value: "https://wa.me/14155238886" });
+    expect(buildListingPack({}).fields.find((f) => f.key === "whatsapp")?.state).toBe("needs_input");
   });
 });
