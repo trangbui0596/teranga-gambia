@@ -13,9 +13,9 @@ export type TabId = "how" | "sms" | "community" | "offline" | "real" | "sources"
 export const TABS: Array<{ id: TabId; label: string; icon: string; teaser: string }> = [
   {
     id: "how",
-    label: "The full flow",
+    label: "The full flow, in detail",
     icon: "🗺️",
-    teaser: "Five steps, and who needs the internet",
+    teaser: "Five steps, internet badges and fair referrals",
   },
   { id: "sms", label: "Try SMS", icon: "💬", teaser: "Text Teranga yourself (simulated)" },
   {
@@ -226,6 +226,99 @@ export const CHAIN_SUPPORT = [
     icon: "🤝",
     name: "Community champion",
     line: "One person for a circle. Notices, translation checks, referrals.",
+  },
+];
+
+export type StoryPage = {
+  kind: "cover" | "step" | "end";
+  day?: string;
+  icon: string;
+  title: string;
+  text: string;
+  net?: { online: boolean; text: string };
+  chip?: string;
+  /** Add a real photo here (file in public/photos/) with its credit; until then the page shows an illustration. */
+  photo?: { src: string; alt: string; credit: string };
+};
+export const STORYBOOK: StoryPage[] = [
+  {
+    kind: "cover",
+    icon: "🌍",
+    title: "A week with Noor",
+    text: "Noor runs river tours in The Gambia. She speaks Wolof and has a basic phone. Turn the page to follow her week.",
+    chip: "An illustrative story. Noor is fictional.",
+  },
+  {
+    kind: "step",
+    day: "Monday",
+    icon: "📞",
+    title: "The call",
+    text: "Noor calls the Teranga number. A voice asks her ready-made questions and she answers aloud in Wolof.",
+    net: { online: false, text: "No internet" },
+    chip: "Phone call",
+  },
+  {
+    kind: "step",
+    day: "Tuesday",
+    icon: "✅",
+    title: "She approves",
+    text: "A text shows what the AI heard, in Wolof, with the numbers. One digit approves it. Nothing goes out without her.",
+    net: { online: false, text: "No internet" },
+    chip: "SMS",
+  },
+  {
+    kind: "step",
+    day: "Wednesday",
+    icon: "🗺️",
+    title: "Her Google listing",
+    text: "Teranga drafts her Google listing from her own answers. What it doesn’t know stays “needs input”. Her household champion claims it.",
+    net: {
+      online: false,
+      text: "Noor: no internet. Claiming it on Google needs internet (household champion)",
+    },
+    chip: "SMS + Google Maps",
+  },
+  {
+    kind: "step",
+    day: "Thursday",
+    icon: "🧳",
+    title: "A tourist asks",
+    text: "A visitor asks on WhatsApp, by voice, in German. Teranga answers in German, as text and voice, in Noor’s approved words.",
+    net: { online: true, text: "Tourist needs internet" },
+    chip: "WhatsApp",
+  },
+  {
+    kind: "step",
+    day: "Friday",
+    icon: "🔄",
+    title: "The weekly sync",
+    text: "Her household champion syncs new questions, feedback and Google reviews. The AI sends Noor a short Wolof SMS on what to improve.",
+    net: { online: true, text: "Household champion needs internet. Noor gets it by SMS" },
+    chip: "Household champion’s smartphone",
+  },
+  {
+    kind: "step",
+    day: "Saturday",
+    icon: "⭐",
+    title: "A voice review",
+    text: "After the tour, the visitor speaks a review. Teranga cleans up the text. The visitor pastes and posts it themselves.",
+    net: { online: true, text: "Tourist needs internet" },
+    chip: "WhatsApp",
+  },
+  {
+    kind: "step",
+    day: "Sunday",
+    icon: "🤝",
+    title: "Neighbours look out for each other",
+    text: "The river road floods. The community champion sends one notice by SMS, and visitors see it under every answer. Extra guests are referred to a neighbour, in turn.",
+    net: { online: false, text: "Members read the notice by SMS, no internet" },
+    chip: "Community champion",
+  },
+  {
+    kind: "end",
+    icon: "✨",
+    title: "That is the loop",
+    text: "One call, answers in three languages, a listing, reviews and a community that looks out for each other. See the details, or try it.",
   },
 ];
 

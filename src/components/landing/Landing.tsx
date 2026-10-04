@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, Fragment } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, Fragment } from "react";
 import { EVIDENCE, INDICATOR_NAMES, RETRIEVED, evidence, wdiUrl } from "@/lib/evidence";
 import {
   CHANNELS,
@@ -6,6 +6,7 @@ import {
   CHAIN_TITLE,
   CHAIN,
   CHAIN_SUPPORT,
+  STORYBOOK,
   REFERRALS_TITLE,
   REFERRALS_SUB,
   REFERRAL_STEPS,
@@ -230,6 +231,149 @@ function Chain() {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function Storybook() {
+  const [i, setI] = useState(0);
+  const touch = useRef<number | null>(null);
+  const last = STORYBOOK.length - 1;
+  const go = (n: number) => setI(Math.max(0, Math.min(last, n)));
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      go(i + 1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      go(i - 1);
+    }
+  };
+  return (
+    <section id="storybook" aria-labelledby="storybook-title" className="mt-8">
+      <h2 id="storybook-title" className="sr-only">
+        A week with Noor
+      </h2>
+      <div
+        role="group"
+        aria-roledescription="carousel"
+        aria-label="A week with Noor"
+        tabIndex={0}
+        onKeyDown={onKey}
+        onTouchStart={(e) => {
+          touch.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          const x0 = touch.current;
+          const x1 = e.changedTouches[0]?.clientX;
+          touch.current = null;
+          if (x0 === null || x1 === undefined) return;
+          if (x0 - x1 > 50) go(i + 1);
+          else if (x1 - x0 > 50) go(i - 1);
+        }}
+        className="overflow-hidden rounded-3xl border-2 border-primary/60 bg-card outline-none focus-visible:ring-4 focus-visible:ring-ring/40"
+      >
+        <div
+          className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
+          style={{ transform: `translateX(-${i * 100}%)` }}
+        >
+          {STORYBOOK.map((p, n) => (
+            <div
+              key={p.title}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`Page ${n + 1} of ${STORYBOOK.length}`}
+              aria-hidden={n !== i}
+              className="grid w-full shrink-0 gap-4 p-4 sm:grid-cols-[1fr_1.2fr] sm:items-center sm:p-6"
+            >
+              <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary/20 sm:min-h-64">
+                {p.photo ? (
+                  <figure className="m-0 h-full w-full">
+                    <img
+                      src={p.photo.src}
+                      alt={p.photo.alt}
+                      className="h-full w-full object-cover"
+                    />
+                    <figcaption className="px-2 py-1 text-xs text-muted-foreground">
+                      {p.photo.credit}
+                    </figcaption>
+                  </figure>
+                ) : (
+                  <span className="text-7xl sm:text-8xl" aria-hidden="true">
+                    {p.icon}
+                  </span>
+                )}
+              </div>
+              <div>
+                {p.day ? (
+                  <p className="text-xs font-bold uppercase tracking-wide text-primary">{p.day}</p>
+                ) : null}
+                <h3 className="font-display text-2xl font-black leading-tight sm:text-3xl">
+                  {p.title}
+                </h3>
+                <p className="mt-2 text-base leading-snug sm:text-lg">{p.text}</p>
+                {p.net ? (
+                  <p
+                    className={`mt-3 inline-block rounded-lg px-2 py-1 text-sm font-bold leading-snug ${p.net.online ? "bg-secondary text-secondary-foreground" : "bg-primary/15 text-primary"}`}
+                  >
+                    <span aria-hidden="true">{p.net.online ? "🌐 " : "🟢 "}</span>
+                    {p.net.text}
+                  </p>
+                ) : null}
+                {p.chip ? (
+                  <p className="mt-2 text-xs font-bold text-muted-foreground">{p.chip}</p>
+                ) : null}
+                {p.kind === "end" ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(["sms", "real", "sources"] as const).map((id) => (
+                      <a
+                        key={id}
+                        href={`#${id}`}
+                        tabIndex={n === i ? 0 : -1}
+                        className={`${pill} border-primary`}
+                      >
+                        {TABS.find((t) => t.id === id)?.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+          <button
+            type="button"
+            onClick={() => go(i - 1)}
+            disabled={i === 0}
+            className="min-h-11 rounded-full border-2 border-border px-4 font-bold disabled:opacity-40"
+          >
+            ← Back
+          </button>
+          <div className="flex gap-1.5" role="tablist" aria-label="Pages">
+            {STORYBOOK.map((p, n) => (
+              <button
+                key={p.title}
+                type="button"
+                role="tab"
+                aria-selected={n === i}
+                aria-label={`Page ${n + 1}: ${p.title}`}
+                onClick={() => go(n)}
+                className={`h-3 rounded-full transition-all ${n === i ? "w-6 bg-primary" : "w-3 bg-border"}`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => go(i + 1)}
+            disabled={i === last}
+            className="min-h-11 rounded-full border-2 border-primary bg-primary px-4 font-bold text-primary-foreground disabled:opacity-40"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">{TRY_IT}</p>
     </section>
   );
 }
@@ -743,7 +887,7 @@ const PANELS: Record<TabId, () => ReactNode> = {
   screens: ScreensPanel,
 };
 
-function Explore({ initialTab }: { initialTab: TabId }) {
+function Explore({ initialTab }: { initialTab: TabId | null }) {
   const [open, setOpen] = useState<TabId | null>(initialTab);
 
   useEffect(() => {
@@ -771,9 +915,7 @@ function Explore({ initialTab }: { initialTab: TabId }) {
       <h2 id="explore-title" className="text-2xl font-black sm:text-3xl">
         Explore Teranga
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        A storybook in chapters. Tap a chapter to open it.
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">More detail, one chapter at a time.</p>
       <ol className="mt-4 space-y-3">
         {TABS.map((t, i) => {
           const isOpen = t.id === open;
@@ -832,7 +974,7 @@ function Explore({ initialTab }: { initialTab: TabId }) {
   );
 }
 
-export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
+export function Landing({ initialTab = null }: { initialTab?: TabId | null }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="pattern-kente h-2" aria-hidden="true" />
@@ -863,6 +1005,7 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
         <Chain />
+        <Storybook />
         <Explore initialTab={initialTab} />
       </main>
       <footer className="mx-auto max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">
