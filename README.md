@@ -152,6 +152,15 @@ Privacy: no review gating (the same review link goes to every visitor); visitor 
 - Replace the simulated partner list with real operators who have opted in. Add a pricing range only with real data.
 - A self-serve command to delete recordings.
 
+## What the data told us
+
+- Mobile subscriptions (126 per 100 people) far outnumber internet users (49.5%), so the operator's side is voice and SMS.
+- Tourism receipts fell 66% in 2020 (derived from US$157M to US$53M), so an operator's income is fragile.
+- 68.6% of workers are self-employed, so the tool is built for a one-person business.
+- 18.9% of land is below 5 m above sea level, so one community champion can warn a whole river or road.
+
+Details and what the data did not show: [docs/DATA_INSIGHTS.md](https://github.com/trangbui0596/hacknation-worldbank-small-ai-for-tourism/blob/claude/amazing-wozniak-hwlb9i/docs/DATA_INSIGHTS.md).
+
 ## Tech stack
 
 - **Lovable**: app, hosting and Postgres database (Lovable Cloud); Lovable AI for translation, summaries and review clean-up.
