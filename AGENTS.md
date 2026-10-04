@@ -19,3 +19,4 @@
 - SMS summaries and digests use the pure formatter in src/lib/sms.ts, with one capped WhatsApp fallback after a send failure — keeps A2P wording stable and avoids repeated sends.
 - Never create Response/Request objects, timers, random values or I/O at module scope in server routes — Cloudflare Workers reject global-scope I/O and every route 500s.
 - Review coaching (src/lib/coach.ts pure, coach.server.ts I/O): Google reviews live only in request memory; only derived counts persist; fresh runs happen in /api/public/coach-run, while commands read the 24 h cache; all Wolof output uses fixed bilingual templates, never runtime generation.
+- Code can also be edited from GitHub (Claude Code); pushes to main sync into Lovable.
