@@ -26,6 +26,7 @@ const SCHEMA: Record<string, string[]> = {
   coach_runs: ["id", "fetched_at", "place_ids", "places_count", "reviews_count", "date_from", "date_to", "price_count", "price_min", "price_max", "price_currency", "actions", "api_calls", "api_errors"],
   coach_themes: ["id", "run_id", "theme", "sentiment", "count"],
   community_alerts: ["id", "kind", "place", "created_at", "expires_at", "cleared_at", "posted_by"],
+  visitor_followups: ["id", "visitor_question_id", "phone", "channel", "lang", "created_at"],
   eval_questions: ["id", "text", "expected_topic", "label"],
 };
 
@@ -35,6 +36,7 @@ const NOT_NULL: Record<string, string[]> = {
   unanswered: ["visitor_question_id"], partner_operators: ["name", "tour_type", "fit"],
   recommendation_ledger: ["from_operator", "to_operator_id", "visitor_hash"], coach_themes: ["run_id", "theme", "sentiment", "count"],
   community_alerts: ["kind", "expires_at", "posted_by"],
+  visitor_followups: ["visitor_question_id", "phone", "channel", "lang"],
 };
 
 const ENUMS: Record<string, Record<string, string[]>> = {
@@ -42,6 +44,7 @@ const ENUMS: Record<string, Record<string, string[]>> = {
   answers: { review_status: ["pending", "approved", "rerecord", "needs_bilingual"] },
   visitor_questions: { lang: ["en", "de", "nl"] },
   coach_themes: { sentiment: ["positive", "negative"] },
+  visitor_followups: { channel: ["whatsapp", "sms"], lang: ["en", "de", "nl"] },
   community_alerts: { kind: ["flood", "road", "storm", "boats", "closed", "clear"] },
 };
 
@@ -61,6 +64,7 @@ const DEFAULTS: Record<string, () => Row> = {
   coach_runs: () => ({ id: uuid(), fetched_at: now(), place_ids: [], places_count: 0, reviews_count: 0, price_count: 0, actions: [], api_calls: 0, api_errors: [] }),
   coach_themes: () => ({ id: uuid() }),
   community_alerts: () => ({ id: uuid(), created_at: now() }),
+  visitor_followups: () => ({ id: uuid(), created_at: now() }),
   eval_questions: () => ({ id: uuid(), label: "evaluation test data" }),
 };
 
@@ -72,6 +76,7 @@ const RELATIONS: Record<string, Record<string, (db: FakeDb, r: Row) => Row | Row
   },
   recordings: { questions: (db, r) => db.tables["questions"]!.find((x) => x["id"] === r["question_id"]) ?? null },
   visitor_questions: { answers: (db, r) => db.tables["answers"]!.find((x) => x["id"] === r["matched_answer_id"]) ?? null },
+  visitor_followups: { visitor_questions: (db, r) => db.tables["visitor_questions"]!.find((x) => x["id"] === r["visitor_question_id"]) ?? null },
   unanswered: { visitor_questions: (db, r) => db.tables["visitor_questions"]!.find((x) => x["id"] === r["visitor_question_id"]) ?? null },
 };
 const REL_TABLE: Record<string, string> = { recordings: "recordings", answer_audio: "answer_audio", questions: "questions", answers: "answers", visitor_questions: "visitor_questions" };

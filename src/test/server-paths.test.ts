@@ -7,7 +7,7 @@
 // the Google Maps review fetch (COACH reads the cached run only), and Twilio signature checks in the routes.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeDb } from "./helpers/fake-supabase";
-import { handleSms, handleWhatsApp, hashPhone, runWeeklySync, sendWeeklyDigest, simulateSms } from "@/lib/tourcoach.server";
+import { handleSms, handleWhatsApp, hashPhone, purgeFeedback, runWeeklySync, sendFollowups, sendWeeklyDigest, simulateSms } from "@/lib/tourcoach.server";
 
 vi.mock("@/integrations/supabase/client.server", async () => {
   const { fakeDb: db } = await import("./helpers/fake-supabase");
@@ -827,6 +827,200 @@ describe("handleWhatsApp: visitor voice question", () => {
   });
 });
 
+/* ================= 3c. NOTIFY follow-ups ================= */
+describe("follow-up to tourists (NOTIFY)", () => {
+  const PHONE = "+15550003333";
+  const followups = () => fakeDb.rows("visitor_followups");
+  const unsure = async (from = VISITOR, q = "zzzz qqqq") => (await wa(from, q))[0]!.body;
+  /** A visitor who got "not sure" for a question that later gets an approved answer. */
+  async function waitingVisitor(o: { channel?: "whatsapp" | "sms"; lang?: string; text?: string; phone?: string; ageDays?: number } = {}) {
+    const [vq] = await fakeDb.put("visitor_questions", { text: o.text ?? "How much does it cost?", lang: o.lang ?? "en", matched_answer_id: null, confidence: 0 });
+    const created = o.ageDays ? { created_at: new Date(Date.now() - o.ageDays * 24 * HOUR).toISOString() } : {};
+    await fakeDb.put("visitor_followups", { visitor_question_id: vq!["id"], phone: o.phone ?? PHONE, channel: o.channel ?? "whatsapp", lang: o.lang ?? "en", ...created });
+    return vq!["id"] as string;
+  }
+
+  it("'Not sure' now carries the NOTIFY hint (English, German, Dutch)", async () => {
+    expect(await unsure()).toContain("Reply NOTIFY and we will message you here when Noor has answered.");
+    await wa(VISITOR, "DE");
+    expect(await unsure()).toContain("Antworten Sie NOTIFY");
+    await wa(VISITOR, "NL");
+    expect(await unsure()).toContain("Antwoord NOTIFY");
+  });
+
+  it("NOTIFY right after an unanswered question stores one follow-up (number without prefix, channel, lang, question id)", async () => {
+    await unsure();
+    const qid = fakeDb.rows("visitor_questions")[0]!["id"];
+    const out = await wa(VISITOR, "notify");
+    expect(out[0]!.body).toContain("Noted. We will message you here when Noor has answered.");
+    expect(out[0]!.body).toContain("delete");
+    expect(followups()).toHaveLength(1);
+    expect(followups()[0]).toMatchObject({ visitor_question_id: qid, phone: PHONE, channel: "whatsapp", lang: "en" });
+  });
+
+  it("German visitor gets German texts and lang 'de' is stored", async () => {
+    await wa(VISITOR, "DE");
+    await unsure();
+    const out = await wa(VISITOR, "NOTIFY");
+    expect(out[0]!.body).toContain("Notiert.");
+    expect(followups()[0]).toMatchObject({ lang: "de", phone: PHONE });
+    fakeDb.reset();
+    expect((await wa(VISITOR, "DE"), (await wa(VISITOR, "NOTIFY"))[0]!.body)).toContain("Stellen Sie zuerst eine Frage");
+  });
+
+  it("NOTIFY with no prior question, or after an ANSWERED question, stores nothing", async () => {
+    expect((await wa(VISITOR, "NOTIFY"))[0]!.body).toBe("Ask a question first. If Noor has no answer yet, reply NOTIFY.");
+    await addAnswer({ topic: "price" });
+    await wa(VISITOR, "How much does it cost?");
+    expect((await wa(VISITOR, "NOTIFY"))[0]!.body).toContain("Ask a question first");
+    expect(followups()).toHaveLength(0);
+  });
+
+  it("NOTIFY over SMS (visitor mode) stores channel 'sms'", async () => {
+    process.env["SMS_VISITOR_MODE"] = "on";
+    await handleSms({ from: STRANGER_SMS, body: "zzzz qqqq" });
+    expect(net.attempts[0]!.body).toContain("Reply NOTIFY");
+    await handleSms({ from: STRANGER_SMS, body: "NOTIFY" });
+    expect(followups()).toMatchObject([{ phone: STRANGER_SMS, channel: "sms", lang: "en" }]);
+  });
+
+  describe("sendFollowups", () => {
+    it("sends the answer on WhatsApp with the question quoted and the label, then deletes the row", async () => {
+      await waitingVisitor();
+      await addAnswer({ topic: "price" });
+      const r = await sendFollowups();
+      expect(r).toEqual({ sent: 1, waiting: 0 });
+      expect(net.attempts).toHaveLength(1);
+      expect(net.attempts[0]).toMatchObject({ to: `whatsapp:${PHONE}`, from: WA_FROM, status: 201 });
+      const b = net.attempts[0]!.body;
+      expect(b).toContain("Noor has now answered your question: “How much does it cost?”");
+      expect(b).toContain("The tour costs 1500 dalasi per person.");
+      expect(b).toContain("Machine-translated");
+      expect(followups()).toHaveLength(0);
+    });
+
+    it("sends by SMS (plain GSM text, from TWILIO_SMS_FROM) for the sms channel, in the stored language", async () => {
+      await waitingVisitor({ channel: "sms", lang: "de", text: "Wie viel kostet die Tour?", phone: STRANGER_SMS });
+      await addAnswer({ topic: "price", flags: ["bilingual verified"] });
+      expect(await sendFollowups()).toEqual({ sent: 1, waiting: 0 });
+      const m = net.attempts[0]!;
+      expect(m).toMatchObject({ to: STRANGER_SMS, from: SMS_FROM });
+      expect(m.body).toContain("Noor hat Ihre Frage jetzt beantwortet");
+      expect(m.body).toContain("Die Tour kostet 1500 Dalasi pro Person.");
+      expect(m.body).toContain("Maschinell");
+      expect(hasEmoji(m.body)).toBe(false);
+      expect(/[^\x20-\x7EäöüÄÖÜß\n]/.test(m.body)).toBe(false); // GSM-7 letters only
+      expect(m.body.length).toBeLessThanOrEqual(459);
+    });
+
+    it("keeps a row whose question still has no answer", async () => {
+      await waitingVisitor({ text: "zzzz qqqq" });
+      await addAnswer({ topic: "price" });
+      expect(await sendFollowups()).toEqual({ sent: 0, waiting: 1 });
+      expect(net.attempts).toHaveLength(0);
+      expect(followups()).toHaveLength(1);
+    });
+
+    it("keeps the row when the send throws (retry next sync), and still sends the others", async () => {
+      await waitingVisitor({ channel: "sms", phone: STRANGER_SMS });
+      await waitingVisitor({ channel: "whatsapp" });
+      await addAnswer({ topic: "price" });
+      net.smsFails = true;
+      expect(await sendFollowups()).toEqual({ sent: 1, waiting: 1 });
+      expect(followups()).toMatchObject([{ channel: "sms" }]);
+      expect(consoleErrors.some((l) => l.includes("[followup] send failed"))).toBe(true);
+      consoleErrors.length = 0; // expected here
+      net.smsFails = false;
+      expect(await sendFollowups()).toEqual({ sent: 1, waiting: 0 });
+    });
+
+    it("stops and keeps the rest when the daily cap is reached", async () => {
+      await waitingVisitor();
+      await waitingVisitor();
+      await addAnswer({ topic: "price" });
+      fakeDb.capReached = true;
+      expect(await sendFollowups()).toEqual({ sent: 0, waiting: 2 });
+      expect(net.attempts).toHaveLength(0);
+      expect(followups()).toHaveLength(2);
+    });
+
+    it("an empty table is a no-op", async () => {
+      expect(await sendFollowups()).toEqual({ sent: 0, waiting: 0 });
+    });
+
+    it("champion FOLLOWUPS sends them and reports the count in Wolof and English", async () => {
+      await waitingVisitor();
+      await waitingVisitor({ text: "zzzz qqqq" });
+      await addAnswer({ topic: "price" });
+      const HC = "whatsapp:+15550006666";
+      await wa(HC, "REVIEW 4821");
+      net.attempts.length = 0;
+      const out = await wa(HC, "FOLLOWUPS");
+      const reply = replyTo(out, HC)[0]!.body;
+      expect(reply).toContain("Yónnee nañu 1 tontu ci gan yi. 1 di xaar.");
+      expect(reply).toContain("Follow-ups sent to tourists: 1. Still waiting: 1.");
+      expect(out.filter((m) => m.to === `whatsapp:${PHONE}`)).toHaveLength(1);
+      expect(followups()).toHaveLength(1);
+    });
+  });
+
+  it("purgeFeedback deletes follow-ups older than 14 days only", async () => {
+    await waitingVisitor({ ageDays: 15 });
+    await waitingVisitor({ ageDays: 13 });
+    await waitingVisitor();
+    await purgeFeedback();
+    expect(followups()).toHaveLength(2);
+    expect(followups().every((f) => Date.now() - Date.parse(f["created_at"]) < 14 * 24 * HOUR)).toBe(true);
+  });
+
+  it("runWeeklySync sends waiting follow-ups and reports followups {sent, waiting}", async () => {
+    process.env["GOOGLE_MAPS_API_KEY"] = "gk";
+    try {
+      await waitingVisitor();
+      await waitingVisitor({ text: "zzzz qqqq" });
+      await addAnswer({ topic: "price" });
+      const r = await runWeeklySync();
+      expect(r.followups).toEqual({ sent: 1, waiting: 1 });
+      expect(net.attempts.filter((m) => m.to === `whatsapp:${PHONE}`)).toHaveLength(1);
+    } finally {
+      delete process.env["GOOGLE_MAPS_API_KEY"];
+      net.other.length = 0;
+      consoleErrors.length = 0; // Google errors expected
+    }
+  });
+});
+
+/* ================= 3d. listing pack: WhatsApp link field ================= */
+describe("listing pack WhatsApp field", () => {
+  it("has 11 fields; the wa.me link comes from DEMO_WHATSAPP_NUMBER and needs a check; answers approved stays 'of 10'", async () => {
+    await addAnswer({ topic: "price" });
+    const HC = "whatsapp:+15550006666";
+    await wa(HC, "REVIEW 4821");
+    net.attempts.length = 0;
+    const out = await wa(HC, "LISTING");
+    const body = out[0]!.body;
+    expect(body).toContain("Listing: 0 ci 11 paré");
+    expect(body).toContain("Answers approved: 1 of 10");
+    expect(body).toContain("WhatsApp chat");
+  });
+
+  it("the SMS progress text counts 11 fields", async () => {
+    await handleSms({ from: NOOR, body: "LISTING EN" });
+    expect(net.attempts[0]!.body).toContain("0 of 11 ready");
+    expect(net.attempts[0]!.body).toContain("Answers approved: 0 of 10");
+  });
+
+  it("without DEMO_WHATSAPP_NUMBER digits the field needs input", async () => {
+    const mod = await import("@/lib/listing");
+    expect(mod.whatsappLink("+14155238886")).toBe("https://wa.me/14155238886");
+    expect(mod.whatsappLink("abc")).toBeNull();
+    const pack = mod.buildListingPack({}, { whatsapp: "+14155238886" });
+    expect(pack.fields).toHaveLength(11);
+    expect(pack.fields.find((f) => f.key === "whatsapp")).toMatchObject({ state: "check", value: "https://wa.me/14155238886" });
+    expect(mod.buildListingPack({}, {}).fields.find((f) => f.key === "whatsapp")).toMatchObject({ state: "needs_input", value: null });
+  });
+});
+
 /* ================= 2c. public simulator: reads, sends nothing, writes nothing ================= */
 describe("simulateSms", () => {
   const snapshot = () => JSON.stringify(fakeDb.tables);
@@ -991,7 +1185,7 @@ describe("weekly sync", () => {
       const r = await runWeeklySync();
       expect(net.other.length).toBeGreaterThan(0);
       expect(net.other.every((u) => u.startsWith("https://connector-gateway.lovable.dev/google_maps"))).toBe(true);
-      expect(r).toMatchObject({ sms: "sent", whatsapp: true, visitors: 3 });
+      expect(r).toMatchObject({ sms: "sent", whatsapp: true, visitors: 3, followups: { sent: 0, waiting: 0 } });
       expect(net.attempts).toHaveLength(2);
       expect(net.attempts[0]).toMatchObject({ to: NOOR, from: SMS_FROM });
       expect(net.attempts[1]).toMatchObject({ to: `whatsapp:${NOOR}`, from: WA_FROM });
