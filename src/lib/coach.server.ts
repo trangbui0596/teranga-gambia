@@ -8,11 +8,15 @@ import {
 import { COACH_TEMPLATES, type CoachLanguage } from "./coach.templates";
 
 const MAPS = "https://connector-gateway.lovable.dev/google_maps";
-const MAX_CALLS = 25;
-const MAX_PLACES = 15;
+// More places = more real reviews. Stay well under the Workers subrequest limit (about 50 per request, shared with
+// the database and AI calls): 10 searches + up to 24 detail calls + AI batches + a few database calls.
+const MAX_CALLS = 36;
+const MAX_PLACES = 24;
+const AI_BATCH = 60;
 const QUERIES = [
   "tour operator Gambia", "river boat tour Gambia", "birdwatching tour Gambia",
   "Banjul tour guide", "Kunta Kinteh island tour", "Kololi tour operator",
+  "Kartong Gunjur nature tour", "Serrekunda Bakau excursion", "Janjanbureh Tendaba safari", "Abuko Makasutu eco tour",
 ];
 
 type Review = { text: string; rating: number | null; publishTime: string | null };
@@ -56,9 +60,17 @@ export async function fetchAndAnalyze(aiText: AiFn, budgetMs: number): Promise<S
     const searches = await Promise.all(QUERIES.map((q) => mapsCall(state, `${MAPS}/places/v1/places:searchText`, {
       method: "POST",
       headers: mapsHeaders({ "Content-Type": "application/json", "X-Goog-FieldMask": "places.id" }),
-      body: JSON.stringify({ textQuery: q, pageSize: 10, regionCode: "GM" }),
+      body: JSON.stringify({ textQuery: q, pageSize: 20, regionCode: "GM" }),
     }, ctl.signal)));
-    const ids = [...new Set(searches.flatMap((s) => ((s?.places ?? []) as Array<{ id: string }>).map((p) => p.id)))].slice(0, MAX_PLACES);
+    // Interleave the searches so one query does not fill every slot.
+    const lists = searches.map((s) => ((s?.places ?? []) as Array<{ id: string }>).map((p) => p.id));
+    const ids: string[] = [];
+    for (let i = 0; ids.length < MAX_PLACES && lists.some((l) => i < l.length); i++) {
+      for (const l of lists) {
+        const id = l[i];
+        if (id && !ids.includes(id) && ids.length < MAX_PLACES) ids.push(id);
+      }
+    }
     console.log(`[coach] search done places=${ids.length} calls=${state.calls}`);
 
     const details = await Promise.all(ids.map((id) => mapsCall(state, `${MAPS}/places/v1/places/${encodeURIComponent(id)}`, {
@@ -80,12 +92,17 @@ export async function fetchAndAnalyze(aiText: AiFn, budgetMs: number): Promise<S
     if (reviews.length) {
       const left = deadline - Date.now();
       if (left < 2000) throw new Error("Time budget used up before analysis");
-      const input = reviews.map((r, i) => `[${i}] ${r.text}`).join("\n");
-      const raw = await aiText(LABEL_RULES, input, ctl.signal);
-      const json = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { labels: Array<ReviewLabel & { i: number }> };
-      labels = reviews.map((r, i) => {
-        const l = json.labels?.find((x) => x.i === i);
-        return { themes: l?.themes ?? [], prices: verifiedPrices(r.text, l?.prices ?? []) };
+      // Batches run in parallel so a bigger sample does not cost more time or overflow one answer.
+      const batches: Review[][] = [];
+      for (let i = 0; i < reviews.length; i += AI_BATCH) batches.push(reviews.slice(i, i + AI_BATCH));
+      const outs = await Promise.all(batches.map((b) => aiText(LABEL_RULES, b.map((r, i) => `[${i}] ${r.text}`).join("\n"), ctl.signal)));
+      labels = batches.flatMap((b, bi) => {
+        const raw = outs[bi]!;
+        const json = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { labels: Array<ReviewLabel & { i: number }> };
+        return b.map((r, i) => {
+          const l = json.labels?.find((x) => x.i === i);
+          return { themes: l?.themes ?? [], prices: verifiedPrices(r.text, l?.prices ?? []) };
+        });
       });
     }
     const themes = countThemes(labels);
