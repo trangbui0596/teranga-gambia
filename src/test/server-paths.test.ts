@@ -719,6 +719,107 @@ describe("handleSms: household champion session (REVIEW <PIN> by SMS)", () => {
   });
 });
 
+/* ================= 2b3. Noor reviews her own answers (no PIN) ================= */
+describe("Noor reviews without a PIN", () => {
+  const pending = (o: AnswerSeed = {}) => addAnswer({ review_status: "pending", stage: "checked", ...o });
+  const NOOR_WA = `whatsapp:${NOOR}`;
+
+  it("SMS REVIEW from Noor creates her row, logs her in and sends the compact review card", async () => {
+    await pending({ topic: "price", transcript_src: "Njekk bi yuñi dalasi la" });
+    await handleSms({ from: NOOR, body: "REVIEW" });
+    expect(net.attempts).toHaveLength(1);
+    expect(net.attempts[0]).toMatchObject({ to: NOOR, from: SMS_FROM });
+    const b = net.attempts[0]!.body;
+    expect(b.startsWith("1/1 Njekk")).toBe(true);
+    expect(b).toContain("Limu:");
+    expect(b).toContain("1 Nangu, 2 Waxaat ko, 3");
+    expect(b.length).toBeLessThanOrEqual(459);
+    expect(conv(NOOR)).toMatchObject({ role: "champion", state: "reviewing", current_review_answer_id: expect.any(String) });
+  });
+
+  it("1 approves: receipt SMS to Noor, confirmation, then the NEXT card", async () => {
+    const first = await pending({ topic: "price" });
+    await pending({ topic: "food" });
+    await handleSms({ from: NOOR, body: "review" });
+    net.attempts.length = 0;
+    await handleSms({ from: NOOR, body: "1" });
+    expect(fakeDb.rows("answers").find((a) => a["id"] === first)).toMatchObject({ review_status: "approved" });
+    expect(net.attempts).toHaveLength(3);
+    for (const m of net.attempts) expect(m).toMatchObject({ to: NOOR, from: SMS_FROM });
+    expect(net.attempts[0]!.body).toContain('sa tontu ci "Njekk"');
+    expect(net.attempts[1]!.body).toContain("nangu");
+    expect(net.attempts[2]!.body.startsWith("1/1 ")).toBe(true);
+  });
+
+  it("2 and 3 from Noor work too", async () => {
+    const a = await pending({ topic: "price" });
+    const b = await pending({ topic: "food" });
+    await handleSms({ from: NOOR, body: "REVIEW" });
+    await handleSms({ from: NOOR, body: "2" });
+    await handleSms({ from: NOOR, body: "3" });
+    expect(fakeDb.rows("answers").find((x) => x["id"] === a)).toMatchObject({ review_status: "rerecord" });
+    expect(fakeDb.rows("answers").find((x) => x["id"] === b)).toMatchObject({ review_status: "needs_bilingual" });
+  });
+
+  it("her other commands still work after she is a champion (HELP, COACH as Noor commands)", async () => {
+    await handleSms({ from: NOOR, body: "REVIEW" });
+    net.attempts.length = 0;
+    await handleSms({ from: NOOR, body: "HELP" });
+    expect(net.attempts[0]!.body).toContain("COACH = coaching");
+  });
+
+  it("a stranger's bare REVIEW (or a lone digit) gets nothing and creates no row, even with visitor mode off", async () => {
+    await pending({ topic: "price" });
+    for (const body of ["REVIEW", "1", "2"]) await handleSms({ from: STRANGER_SMS, body });
+    expect(net.attempts).toHaveLength(0);
+    expect(fakeDb.rows("conversations")).toHaveLength(0);
+    expect(fakeDb.rows("answers")[0]).toMatchObject({ review_status: "pending" });
+  });
+
+  it("a stranger's bare REVIEW on WhatsApp is just a visitor question (no champion login)", async () => {
+    await pending({ topic: "price" });
+    const out = await wa(VISITOR, "REVIEW");
+    expect(conv(VISITOR)).toMatchObject({ role: "visitor" });
+    expect(out[0]!.body).not.toContain("Tontu 1");
+  });
+
+  it("bare REVIEW on WhatsApp from Noor's number logs her in and shows the review card", async () => {
+    await pending({ topic: "price", transcript_src: "Njekk bi 1500" });
+    const out = await wa(NOOR_WA, "REVIEW");
+    expect(conv(NOOR_WA)).toMatchObject({ role: "champion", state: "reviewing" });
+    const reply = replyTo(out, NOOR_WA);
+    expect(reply).toHaveLength(1);
+    expect(reply[0]!.body).toContain("Njekk bi 1500");
+    expect(reply[0]!.body).toContain("Tontu 1 ci 1");
+  });
+
+  it("a digit from Noor outside a review never calls the AI assistant (visitor row: answered as a question)", async () => {
+    await handleSms({ from: NOOR, body: "1" });
+    expect(net.attempts).toHaveLength(1);
+    expect(net.attempts[0]).toMatchObject({ to: NOOR, from: SMS_FROM });
+    expect(net.attempts[0]!.body).toContain("Not sure");
+    expect(net.other).toEqual([]);
+  });
+
+  it("a digit from Noor as a champion with nothing under review gets the SMS hint, no AI call", async () => {
+    await handleSms({ from: NOOR, body: "REVIEW" }); // nothing pending: state idle
+    net.attempts.length = 0;
+    await handleSms({ from: NOOR, body: "2" });
+    expect(net.attempts).toHaveLength(1);
+    expect(net.attempts[0]!.body).toContain("Not an SMS command");
+    expect(net.other).toEqual([]);
+  });
+
+  // On WhatsApp a champion's "2" with no review in progress falls through champion() to championAgent(): an AI call for a lone digit.
+  it("KNOWN BUG (minor): a lone digit from a WhatsApp champion with no review in progress does not call the AI assistant", async () => {
+    await wa(NOOR_WA, "REVIEW");
+    try {
+      await wa(NOOR_WA, "2");
+      expect(net.other).toEqual([]);
+    } finally { net.other.length = 0; consoleErrors.length = 0; }
+  });
+});
+
 /* ================= 3b. visitor voice notes (WhatsApp) ================= */
 describe("handleWhatsApp: visitor voice question", () => {
   const voice = async (from = VISITOR, body = "") => {

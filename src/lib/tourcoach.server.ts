@@ -766,6 +766,10 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     return bi("Jëkk dugg ci mbootaay: COMMUNITY + PIN.", "Open the community tools first: COMMUNITY <PIN>.");
   }
 
+  // A lone digit with no review on screen is not a question for the AI assistant.
+  if (/^[123]$/.test(upper) && c.state !== "reviewing" && c.state !== "bilingual" && c.state !== "recording") {
+    return bi("Jëkk bind REVIEW ngir gis tontu yi.", "Send REVIEW first to see the answers.");
+  }
   if (upper === "START") {
     await save({ state: "recording", current_question_position: 1 });
     return ask(1);
