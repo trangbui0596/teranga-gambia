@@ -15,10 +15,10 @@ const WORDS: Record<string, Kind> = {
   fukk: { t: "ten" }, fuk: { t: "ten" },
   fanweer: { t: "tens", v: 30 }, fanwer: { t: "tens", v: 30 },
   teemeer: { t: "hundred" }, temer: { t: "hundred" }, temeer: { t: "hundred" }, teemer: { t: "hundred" },
-  junni: { t: "thousand" }, juni: { t: "thousand" },
+  junni: { t: "thousand" }, juni: { t: "thousand" }, yuni: { t: "thousand" }, yunni: { t: "thousand" }, juuni: { t: "thousand" },
   ak: { t: "join" }, ag: { t: "join" },
 };
-const CURRENCY = new Set(["dalasi", "dalasis", "dalassi", "d", "gmd"]);
+const CURRENCY = new Set(["dalasi", "dalasis", "dalassi", "dalasii", "dalaasi", "daala", "daalasi", "dalas", "d", "gmd"]);
 const TIME = new Set(["waxtu"]);
 
 export const norm = (w: string) => w.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -76,21 +76,31 @@ export function numbersHeard(text: string | null): string {
   const runs: string[] = [];
   let cur: Array<{ orig: string; k: Kind }> = [];
   let unclear = false;
+  // A word we do not know directly before "ak"/"ag" + number words ("fuuni ak juroom temer") may be a missing
+  // thousand/hundred: never report the shorter number as if it were complete.
+  let lastUnknown: string | null = null;
+  let lead: string | null = null;
   const flush = () => {
     while (cur.length && cur[cur.length - 1]!.k.t === "join") cur.pop();
     if (cur.length) {
       const words = cur.map((c) => c.orig).join(" ");
       const v = wolofValue(cur.map((c) => c.k));
-      if (v === null) unclear = true;
-      runs.push(v === null ? `${words} (please confirm)` : `${words} (about ${v})`);
+      if (lead) { unclear = true; runs.push(`${lead} ak ${words} (word before "ak" not understood, number may be incomplete: please confirm)`); }
+      else {
+        if (v === null) unclear = true;
+        runs.push(v === null ? `${words} (please confirm)` : `${words} (about ${v})`);
+      }
     }
     cur = [];
+    lead = null;
   };
   let currency = false, time = false;
   for (const t of tokens) {
     const k = WORDS[t.n];
-    if (k && !(k.t === "join" && !cur.length)) { cur.push({ orig: t.orig, k }); continue; }
+    if (k && k.t === "join" && !cur.length && lastUnknown) { lead = lastUnknown; continue; }
+    if (k && !(k.t === "join" && !cur.length)) { cur.push({ orig: t.orig, k }); lastUnknown = null; continue; }
     flush();
+    lastUnknown = /^\d+$/.test(t.orig) ? null : t.orig;
     if (CURRENCY.has(t.n) && !(t.n === "d" && !/\bD\b/.test(t.orig))) currency = true;
     if (TIME.has(t.n)) time = true;
   }

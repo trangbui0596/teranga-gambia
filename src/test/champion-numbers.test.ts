@@ -57,3 +57,22 @@ describe("numbers heard", () => {
     expect(numbersHeard(null)).toBe("none");
   });
 });
+
+describe("numbers heard: live ASR spellings and safety", () => {
+  it("yuñi ak juróom teemeer daala sii -> 1500 dalasi (live transcript)", () => {
+    const r = numbersHeard("Ñegg bi mooy yuñi ak juróom teemeer daala sii.");
+    expect(r).toContain("about 1500");
+    expect(r).toContain("dalasi");
+    expect(r).not.toContain("about 500");
+  });
+  it("an unknown word before 'ak' never yields a smaller confident number", () => {
+    const r = numbersHeard("Ñegg bi mooy fuuni ak juróom teemeer dalasi");
+    expect(r).not.toContain("about 500");
+    expect(r).toContain("please confirm");
+  });
+  it("known cases still work", () => {
+    expect(numbersHeard("juniak jurom témér dalasi")).toContain("about 1500");
+    expect(numbersHeard("The price is 1500 dalasi")).toContain("1500");
+    expect(numbersHeard("Tanji Bridge")).toBe("none found");
+  });
+});
