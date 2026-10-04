@@ -95,7 +95,7 @@ describe("a price must survive translation", () => {
     const f = fakeDb();
     const hints: number[][] = [];
     f.d.stt = async () => ({ status: 200, text: "Niech by mój juniak Jurón témér dalasi.", confidence: 0.9 });
-    f.d.translate = async (_t, to, _s, hint) => { if (to === "en") hints.push(hint ?? []); return to === "en" ? "The tour costs 1500 dalasi." : `T-${to}`; };
+    f.d.translate = async (_t, to, _s, hint) => { if (to === "en") hints.push(hint ?? []); return to === "en" ? "The tour costs 1500 dalasi." : `Die Tour kostet 1500 Dalasi (${to}).`; };
     await finishAnswers(f.d, 60000, {});
     expect(hints[0]).toEqual([1500]);
     expect(f.r.flags.join(" ")).not.toContain("number mismatch");
@@ -109,10 +109,25 @@ describe("a price must survive translation", () => {
     expect(enCalls).toBe(2);
     expect(f.r.flags).toContain("number mismatch: please confirm");
   });
+  it("flags German or Dutch that lose the number, after one retry, and passes the number to both", async () => {
+    const f = fakeDb();
+    const calls = { de: 0, nl: 0 };
+    const hints: { de?: number[] | undefined; nl?: number[] | undefined } = {};
+    f.d.stt = async () => ({ status: 200, text: "Niech by mój juniak Jurón témér dalasi.", confidence: 0.9 });
+    f.d.translate = async (_t, to, _s, hint) => {
+      if (to === "en") return "The tour costs 1500 dalasi.";
+      if (to === "de") { calls.de++; hints.de = hint; } else { calls.nl++; hints.nl = hint; }
+      return to === "de" ? "Die Tour kostet 1500 Dalasi." : "De tour kost vijftienhonderd dalasi.";
+    };
+    await finishAnswers(f.d, 60000, {});
+    expect(hints.de).toEqual([1500]); expect(hints.nl).toEqual([1500]);
+    expect(calls.de).toBe(1); expect(calls.nl).toBe(2);
+    expect(f.r.flags).toContain("number mismatch (German or Dutch): please confirm");
+  });
   it("accepts the number written in words", async () => {
     const f = fakeDb();
     f.d.stt = async () => ({ status: 200, text: "Niech by mój juniak Jurón témér dalasi.", confidence: 0.9 });
-    f.d.translate = async (_t, to) => (to === "en" ? "It costs fifteen hundred dalasi." : `T-${to}`);
+    f.d.translate = async (_t, to) => (to === "en" ? "It costs fifteen hundred dalasi." : `Kostet 1.500 Dalasi (${to}).`);
     await finishAnswers(f.d, 60000, {});
     expect(f.r.flags.join(" ")).not.toContain("number mismatch");
   });

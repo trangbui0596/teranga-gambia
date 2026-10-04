@@ -14,6 +14,11 @@ const emptyTwiml = () =>
 
 // Twilio number > Messaging > "A message comes in": https://<published-url>/api/public/sms-webhook (HTTP POST).
 // Noor's number can text COACH, LISTING, WEEK or HELP and gets the answer by SMS: no internet needed on her side.
+const failedTwiml = () =>
+  new Response('<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, something went wrong on our side. Please send your message again in a minute.</Message></Response>', {
+    headers: { "Content-Type": "text/xml" },
+  });
+
 export const Route = createFileRoute("/api/public/sms-webhook")({
   server: {
     handlers: {
@@ -43,6 +48,8 @@ export const Route = createFileRoute("/api/public/sms-webhook")({
           await lib.handleSms({ from: parsed.data.From, body: parsed.data.Body });
         } catch (e) {
           console.error("sms-webhook error", e);
+          // Do not leave the sender in silence. This TwiML reply costs nothing and does not touch the daily outbound cap.
+          return failedTwiml();
         }
         // Replies go through the Twilio API, so the TwiML response is empty.
         return emptyTwiml();

@@ -1163,6 +1163,13 @@ describe("simulateSms", () => {
     expect(r.reply).toContain("Nothing changes here");
   });
 
+  it("REVIEW in the PUBLIC simulator never shows a real pending answer", async () => {
+    await addAnswer({ topic: "price", review_status: "pending", is_sample: false, transcript_src: "PRIVATE-TRANSCRIPT-7731 juróom téeméer dalasi" });
+    const r = await sim("noor", "REVIEW", "wo");
+    expect(r.reply).not.toContain("PRIVATE-TRANSCRIPT-7731");
+    expect(r.reply).toContain("example card");
+  });
+
   it("HELP lists REVIEW so Noor knows she can approve her own answers", async () => {
     expect((await sim("noor", "HELP", "en")).reply).toContain("REVIEW");
     expect((await sim("noor", "HELP", "wo")).reply).toContain("REVIEW");

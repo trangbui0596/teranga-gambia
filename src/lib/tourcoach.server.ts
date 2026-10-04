@@ -119,7 +119,10 @@ function isoWeek(d = new Date()) {
 export { numbersHeard };
 
 /* ---------------- Lovable AI (Responses API, streamed) ---------------- */
-export async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
+const AI_RETRY_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+
+/** One streamed call. A stream that ends without a completed event is a cut-off answer and is rejected, never stored. */
+async function aiTextOnce(instructions: string, input: string, signal: AbortSignal | null): Promise<string> {
   const res = await fetch(AI_URL, {
     method: "POST", signal,
     headers: { "Content-Type": "application/json", "Lovable-API-Key": env("LOVABLE_API_KEY"), "X-Lovable-AIG-SDK": "fetch" },
@@ -127,12 +130,15 @@ export async function aiText(instructions: string, input: string, signal: AbortS
   });
   if (!res.ok || !res.body) {
     const txt = await res.text().catch(() => "");
-    throw new Error(`AI request failed [${res.status}]: ${txt.slice(0, 300)}`);
+    const err = new Error(`AI request failed [${res.status}]: ${txt.slice(0, 300)}`) as Error & { retryable?: boolean };
+    err.retryable = AI_RETRY_STATUS.has(res.status);
+    throw err;
   }
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = "";
   let out = "";
+  let completed = false;
   for (;;) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -144,10 +150,12 @@ export async function aiText(instructions: string, input: string, signal: AbortS
       for (const line of frame.split("\n")) {
         if (!line.startsWith("data:")) continue;
         const raw = line.slice(5).trim();
-        if (!raw || raw === "[DONE]") continue;
+        if (raw === "[DONE]") { completed = true; continue; }
+        if (!raw) continue;
         let ev: { type?: string; delta?: string; response?: { error?: { message?: string } }; message?: string };
         try { ev = JSON.parse(raw); } catch { continue; }
         if (ev.type === "response.output_text.delta" && ev.delta) out += ev.delta;
+        if (ev.type === "response.completed") completed = true;
         if (ev.type === "response.failed" || ev.type === "error") {
           throw new Error(`AI stream failed: ${ev.response?.error?.message ?? ev.message ?? "unknown"}`);
         }
@@ -155,7 +163,28 @@ export async function aiText(instructions: string, input: string, signal: AbortS
       }
     }
   }
+  if (!completed) {
+    const err = new Error("AI stream ended before it completed") as Error & { retryable?: boolean };
+    err.retryable = true;
+    throw err;
+  }
   return out.trim();
+}
+
+/** Lovable AI (Responses API, streamed). One retry after a short pause on a rate limit, a 5xx, a dropped network or a cut-off
+ *  stream, unless the caller's time budget (signal) has already run out. Refusals and failed events are not retried. */
+export async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
+  try {
+    return await aiTextOnce(instructions, input, signal);
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    const retryable = (e as { retryable?: boolean }).retryable ?? e instanceof TypeError; // fetch network errors are TypeErrors
+    if (!retryable) throw e;
+    console.error(`AI retry after: ${(e as Error).message.slice(0, 120)}`);
+    await new Promise((r) => setTimeout(r, 700));
+    if (signal?.aborted) throw e;
+    return await aiTextOnce(instructions, input, signal);
+  }
 }
 
 const TRANSLATE_RULES = [
@@ -166,6 +195,8 @@ const TRANSLATE_RULES = [
 ].join("\n");
 
 /* ---------------- Phase 2A implementations ---------------- */
+
+export const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
 
 /** Downloads Twilio media through the Twilio connection. 401/403/404/410 = link expired or gone. */
 export async function downloadMedia(mediaUrl: string, signal: AbortSignal | null = null): Promise<Download> {
@@ -178,7 +209,10 @@ export async function downloadMedia(mediaUrl: string, signal: AbortSignal | null
     return { ok: false, status: media.status, expired: [401, 403, 404, 410].includes(media.status) };
   }
   const type = (media.headers.get("content-type") ?? "audio/ogg").split(";")[0]!.trim();
+  // A voice note is a few hundred KB. Refuse anything large before it is read, and again after, so a stranger cannot make us pay to transcribe it.
+  if (Number(media.headers.get("content-length") ?? 0) > MAX_MEDIA_BYTES) return { ok: false, status: 413, expired: false };
   const buf = await media.arrayBuffer();
+  if (buf.byteLength > MAX_MEDIA_BYTES) return { ok: false, status: 413, expired: false };
   return { ok: true, status: media.status, bytes: buf.byteLength, type, blob: new Blob([buf], { type }) };
 }
 
@@ -1002,28 +1036,14 @@ async function handleOtherSms(input: { from: string; body: string }, trusted = f
 }
 
 /** Public simulator for the home page: what the SMS would say. Reads data, writes nothing, sends nothing. */
-/** Read-only preview of what Noor's REVIEW text looks like: her next pending answer, or a labelled example when nothing is pending.
- *  The simulator keeps no state, so replying 1, 2 or 3 is explained, not performed. */
+/** Preview of what Noor's REVIEW text looks like. This feeds the PUBLIC simulator, so it must never read private data:
+ *  it always shows a labelled example card, not her real pending answers. Replying 1, 2 or 3 is explained, not performed. */
 async function reviewCardPreview(): Promise<string> {
-  const { data } = await supabaseAdmin
-    .from("answers")
-    .select("id, transcript_src, flags, is_sample, created_at, recordings(questions(position, topic))")
-    .eq("review_status", "pending").eq("is_sample", false)
-    .in("stage" as never, ["checked"] as never)
-    .order("created_at");
-  const list = ((data ?? []) as unknown as Array<{ transcript_src: string | null; flags: string[]; recordings: { questions: { topic: string } | null } | null }>)
-    .filter((i) => i.transcript_src);
-  const item = list[0];
-  const example = !item;
-  const transcript = item?.transcript_src ?? "Njëg bi mooy junni ak juróom téeméer dalasi.";
+  const transcript = "Njëg bi mooy junni ak juróom téeméer dalasi.";
   const card = formatReviewSms({
-    index: 1, total: list.length || 1, topic: item?.recordings?.questions?.topic ?? "price", transcript,
-    numbers: numbersHeard(transcript), flags: item?.flags ?? [],
+    index: 1, total: 1, topic: "price", transcript, numbers: numbersHeard(transcript), flags: [],
   });
-  const note = example
-    ? "(Simulation: nothing is waiting, so this is an example card. Replying 1, 2 or 3 would approve, record again, or ask a bilingual reviewer. Nothing changes here.)"
-    : "(Simulation: replying 1, 2 or 3 would approve, record again, or ask a bilingual reviewer. Nothing changes here.)";
-  return `${card}\n\n${note}`;
+  return `${card}\n\n(Simulation: this is an example card, not a real answer. Replying 1, 2 or 3 would approve, record again, or ask a bilingual reviewer. Nothing changes here.)`;
 }
 
 export async function simulateSms(as: "noor" | "visitor", text: string, lang: "en" | "de" | "nl" | "wo"): Promise<{ reply: string; parts: number }> {

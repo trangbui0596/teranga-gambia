@@ -99,3 +99,13 @@ describe("number helpers", () => {
     expect(mentionsNumber("Five hundred dalasi", 1500)).toBe(false);
   });
 });
+
+import { digitsMention } from "@/lib/numbers";
+describe("digitsMention (German and Dutch prices)", () => {
+  it("accepts digits with any thousands separator", () => {
+    for (const t of ["1500 Dalasi", "1.500 Dalasi", "1,500 dalasi", "1 500 dalasi", "1'500 Dalasi", "kost 1.500,- per persoon"]) expect(digitsMention(t, 1500)).toBe(true);
+  });
+  it("rejects other numbers, longer numbers and words", () => {
+    for (const t of ["500 Dalasi", "15000 Dalasi", "21500 Dalasi", "vijftienhonderd dalasi", "Preis 1.5 Dalasi"]) expect(digitsMention(t, 1500)).toBe(false);
+  });
+});

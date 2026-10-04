@@ -15,6 +15,11 @@ const emptyTwiml = () =>
     headers: { "Content-Type": "text/xml" },
   });
 
+const failedTwiml = () =>
+  new Response('<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, something went wrong on our side. Please send your message again in a minute.</Message></Response>', {
+    headers: { "Content-Type": "text/xml" },
+  });
+
 export const Route = createFileRoute("/api/public/whatsapp-webhook")({
   server: {
     handlers: {
@@ -43,6 +48,8 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
           });
         } catch (e) {
           console.error("whatsapp-webhook error", e);
+          // Do not leave the sender in silence. This TwiML reply costs nothing and does not touch the daily outbound cap.
+          return failedTwiml();
         }
         // We reply via the Twilio API, so the TwiML response is empty.
         return emptyTwiml();

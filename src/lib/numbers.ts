@@ -249,3 +249,10 @@ export function mentionsNumber(english: string, n: number): boolean {
     forms.push(`${below1000(n / 100).replace(/-/g, " ")} hundred`);
   return forms.some((f) => t.includes(f));
 }
+
+/** True when the text states n as digits. Thousands separators (1.500, 1,500, 1 500, 1'500) are ignored, so "1.500 Dalasi" counts.
+ *  Used for German and Dutch, where translators write numbers as digits and "." is the thousands mark. */
+export function digitsMention(text: string, n: number): boolean {
+  const t = text.replace(/(\d)[.,\s'’  ](?=\d{3}(?!\d))/g, "$1");
+  return new RegExp(`(?<![\\d.,])${n}(?![\\d])`).test(t);
+}

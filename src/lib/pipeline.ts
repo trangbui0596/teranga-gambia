@@ -4,7 +4,7 @@
 // any later call (next webhook, REVIEW, /api/public/process-pending) continues where work stopped.
 // Never rely on work after the HTTP response on Workers: callers await this with a time budget.
 
-import { certainValues, mentionsNumber } from "./numbers";
+import { certainValues, digitsMention, mentionsNumber } from "./numbers";
 
 export type Stage = "received" | "transcribed" | "translated" | "checked" | "failed";
 export type Lang = "en" | "de" | "nl";
@@ -132,7 +132,14 @@ export async function runAnswer(d: PipelineDeps, id: string, deadline: number, p
             english = (await d.translate(src, "en", signal, stated)) ?? english;
             if (!stated.every((v) => mentionsNumber(english!, v))) fl.push("number mismatch: please confirm");
           }
-          if (english) [german, dutch] = await Promise.all([d.translate(english, "de", signal), d.translate(english, "nl", signal)]);
+          if (english) [german, dutch] = await Promise.all([d.translate(english, "de", signal, stated), d.translate(english, "nl", signal, stated)]);
+          // Visitors read German and Dutch, but the operator only ever approves the Wolof, so check the numbers there too (digits, separators ignored).
+          if (stated.length) {
+            const bad = (txt: string | null) => !!txt && !stated.every((v) => digitsMention(txt, v));
+            if (bad(german)) german = (await d.translate(english!, "de", signal, stated)) ?? german;
+            if (bad(dutch)) dutch = (await d.translate(english!, "nl", signal, stated)) ?? dutch;
+            if (bad(german) || bad(dutch)) fl.push("number mismatch (German or Dutch): please confirm");
+          }
         } catch (e) { d.log(`[pipeline ${id}] error step=translate ${(e as Error).message}`); }
         if (signal.aborted) return "partial"; // budget ran out mid-step: redo the step next time
         if (!english || !german || !dutch) fl.push("translation failed");
