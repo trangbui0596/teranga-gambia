@@ -1,5 +1,6 @@
 // Pure review-coaching logic (no I/O). Counts are computed here from per-review labels so every
 // statement is traceable to "n of N reviews". Nothing here stores or returns review text.
+import { COACH_TEMPLATES as T, THEME_TEMPLATES, TOPIC_TEMPLATES, fill, type CoachLanguage } from "./coach.templates";
 
 export const THEMES = [
   "price_value", "guide_quality", "punctuality", "safety", "communication_booking",
@@ -23,8 +24,7 @@ export const THEME_TOPIC: Record<Theme, string | null> = {
 export const MIN_REVIEWS = 10;
 export const CACHE_MS = 24 * 3600 * 1000;
 export const MAX_MSG = 1400;
-export const SOURCE = "Source: Google Maps public reviews.";
-export const AI_LABEL = "AI-generated summary of public reviews, may be wrong.";
+export const MAX_MSG_WO = 1500;
 
 export type ReviewLabel = { themes: Array<{ theme: string; sentiment: string }>; prices: Array<{ amount: number; currency: string }> };
 export type ThemeCount = { theme: Theme; sentiment: Sentiment; count: number };
@@ -111,37 +111,62 @@ export function toStoredRun(x: StoredRun): StoredRun {
   };
 }
 
-/** Returns [main message, optional "COACH MORE" message], each under MAX_MSG chars. */
-export function formatCoach(r: StoredRun): [string, string | null] {
+const localizedTopic = (topic: string, lang: CoachLanguage) =>
+  TOPIC_TEMPLATES[topic as keyof typeof TOPIC_TEMPLATES]?.[lang] ?? topic;
+
+function actionLines(r: StoredRun, lang: CoachLanguage) {
+  if (r.reviews_count < MIN_REVIEWS) return [];
+  const ordered = [
+    ...r.themes.filter((theme) => theme.sentiment === "negative"),
+    ...r.themes.filter((theme) => theme.sentiment === "positive"),
+  ].slice(0, 5);
+  return ordered.map((item) => {
+    const count = fill(T[item.sentiment === "negative" ? "complaintCount" : "praiseCount"][lang], { n: item.count, total: r.reviews_count });
+    const topic = THEME_TOPIC[item.theme];
+    const advice = topic
+      ? fill(T[item.sentiment === "negative" ? "recordImprove" : "ensureCovers"][lang], { topic: localizedTopic(topic, lang) })
+      : T[item.sentiment === "negative" ? "talkNoor" : "mentionGreeting"][lang];
+    return `${THEME_TEMPLATES[item.theme][lang][item.sentiment]}: ${count} ${advice}`;
+  });
+}
+
+const wolofLabels = (lang: CoachLanguage) => lang === "wo" ? `\n${T.machineLabel.wo}\n${T.machineLabel.en}` : "";
+
+/** Returns [main message, optional continuation], using fixed templates only. */
+export function formatCoach(r: StoredRun, lang: CoachLanguage = "wo"): [string, string | null] {
   const N = r.reviews_count, M = r.places_count;
+  const max = lang === "wo" ? MAX_MSG_WO : MAX_MSG;
   if (N === 0) {
-    return [`Teranga coaching: Google Maps returned no reviews (${M} places found). Nothing to coach yet.\n${SOURCE}`, null];
+    const empty = `${fill(T.noReviews[lang], { places: M })}\n${T.source[lang]}${wolofLabels(lang)}`;
+    return [empty.slice(0, max), null];
   }
-  const range = r.date_from && r.date_to ? `${r.date_from} to ${r.date_to}` : "unknown dates";
-  const head = `Teranga coaching (${AI_LABEL})\n${M} places, ${N} reviews analyzed, ${range}. ${SOURCE}`;
-  const thin = N < MIN_REVIEWS ? `\nNot enough real review data to coach reliably (${N} reviews from ${M} places).` : "";
-  const top = r.themes.slice(0, 3).map((t, i) => `${i + 1}. ${THEME_LABEL[t.theme]} (${t.sentiment}): ${t.count} of ${N} reviews`);
-  const themes = top.length ? `\nTop themes:\n${top.join("\n")}` : "\nNo tour themes found.";
+  const range = { from: r.date_from ?? T.unknownDates[lang], to: r.date_to ?? T.unknownDates[lang] };
+  const head = `${T.header[lang]}\n${fill(T.counts[lang], { places: M, reviews: N, ...range })}\n${T.source[lang]}`;
+  const thin = N < MIN_REVIEWS ? `\n${fill(T.thin[lang], { reviews: N, places: M })}` : "";
+  const top = r.themes.slice(0, 3).map((item, i) => `${i + 1}. ${THEME_TEMPLATES[item.theme][lang][item.sentiment]}: ${fill(T.countPhrase[lang], { n: item.count, total: N })}`);
+  const themes = top.length ? `\n${T.topThemes[lang]}\n${top.join("\n")}` : `\n${T.noThemes[lang]}`;
   const price = r.price_count
-    ? `\nPrices mentioned: ${r.price_count} times, ${r.price_min}${r.price_min !== r.price_max ? `-${r.price_max}` : ""} ${r.price_currency}. Ask a person: no automatic price changes.`
+    ? `\n${fill(T.prices[lang], { count: r.price_count, min: r.price_min ?? "?", range: r.price_min !== r.price_max ? "-" : "", max: r.price_min !== r.price_max ? r.price_max ?? "?" : "", currency: r.price_currency ?? "?" })}`
     : "";
-  const acts = r.actions.slice(0, 3).map((a, i) => `${i + 1}. ${a}`);
-  const actions = acts.length ? `\nActions:\n${acts.join("\n")}` : "";
-  const limits = `\nLimits: Google shows only up to 5 reviews per place, so this sample is not complete.`;
+  const allActions = actionLines(r, lang);
+  const acts = allActions.slice(0, 3).map((action, i) => `${i + 1}. ${action}`);
+  const actions = acts.length ? `\n${T.actions[lang]}\n${acts.join("\n")}` : "";
+  const limits = `\n${T.limits[lang]}`;
   const rest = [
-    ...r.themes.slice(3).map((t) => `${THEME_LABEL[t.theme]} (${t.sentiment}): ${t.count} of ${N} reviews`),
-    ...r.actions.slice(3).map((a, i) => `Action ${i + 4}. ${a}`),
+    ...r.themes.slice(3).map((item) => `${THEME_TEMPLATES[item.theme][lang][item.sentiment]}: ${fill(T.countPhrase[lang], { n: item.count, total: N })}`),
+    ...allActions.slice(3).map((action, i) => `${fill(T.action[lang], { n: i + 4 })} ${action}`),
   ];
-  const moreHint = rest.length ? "\nSend COACH MORE for the rest." : "";
-  let main = head + thin + themes + price + actions + limits + moreHint;
+  const moreHint = rest.length ? `\n${T.moreHint[lang]}` : "";
+  const englishHint = lang === "wo" ? `\n${T.englishHint.wo}` : "";
+  let main = head + thin + themes + price + actions + limits + moreHint + englishHint + wolofLabels(lang);
   let overflow: string[] = [];
-  if (main.length > MAX_MSG) { // drop actions to the second message first
+  if (main.length > max) {
     overflow = acts;
-    main = head + thin + themes + price + limits + "\nSend COACH MORE for the rest.";
+    main = head + thin + themes + price + limits + `\n${T.moreHint[lang]}` + englishHint + wolofLabels(lang);
   }
   const moreBody = [...overflow, ...rest];
   const more = moreBody.length
-    ? `Teranga coaching, more (${AI_LABEL})\n${moreBody.join("\n")}\n${SOURCE}`.slice(0, MAX_MSG)
+    ? `${T.moreHeader[lang]}\n${moreBody.join("\n")}\n${T.source[lang]}${englishHint}${wolofLabels(lang)}`.slice(0, max)
     : null;
-  return [main.slice(0, MAX_MSG), more];
+  return [main.slice(0, max), more];
 }

@@ -719,14 +719,16 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   }
   if (upper === "LEDGER") return ledgerSummary();
   if (upper === "LISTING") return draftListing();
-  if (upper === "COACH" || upper === "COACH MORE") {
+  if (["COACH", "COACH EN", "COACH MORE", "COACH MORE EN"].includes(upper)) {
     const coach = await import("./coach.server");
+    const lang = upper.endsWith(" EN") ? "en" : "wo";
     try {
-      if (upper === "COACH MORE") return await coach.coachMore();
-      return (await coach.getCoaching(aiText, 10000, undefined, undefined, true)).messages[0];
+      if (upper.startsWith("COACH MORE")) return await coach.coachMore(undefined, lang);
+      return (await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang)).messages[0];
     } catch (e) {
       console.error("[coach] error step=coach", e);
-      return "Coaching could not load right now. Send COACH again in a minute.";
+      const { COACH_TEMPLATES: t } = await import("./coach.templates");
+      return `${t.loadError[lang]}${lang === "wo" ? `\n${t.englishHint.wo}\n${t.machineLabel.wo}\n${t.machineLabel.en}` : ""}`;
     }
   }
 

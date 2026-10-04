@@ -22,7 +22,7 @@ export type AgentCtx = {
 };
 
 const HELP =
-  "I can: 1 show waiting answers, 2 show one answer, 3 approve / re-record / send to bilingual reviewer (after you say YES), 4 start recording the 10 questions, 5 visitor stats this week, 6 unanswered visitor questions. Shortcuts: START, REVIEW, EXIT, LEDGER (Simulated partner counts), LISTING (Simulated draft Google listing, not published).";
+  "I can: 1 show waiting answers, 2 show one answer, 3 approve / re-record / send to bilingual reviewer (after you say YES), 4 start recording the 10 questions, 5 visitor stats this week, 6 unanswered visitor questions, 7 public-review coaching. Shortcuts: START, REVIEW, EXIT, COACH (Wolof), COACH EN (English), COACH MORE, COACH MORE EN, LEDGER (Simulated partner counts), LISTING (Simulated draft Google listing, not published).";
 
 
 type PendingRow = {
@@ -141,13 +141,13 @@ function buildTools(ctx: AgentCtx, calls: string[]) {
       },
     }),
     get_coaching: tool({
-      description: "Coaching from public Google Maps reviews of Gambian tour operators (counts, themes, actions). Send the returned message as is.",
-      inputSchema: z.object({}),
-      execute: async () => {
+      description: "Coaching from public Google Maps reviews. Wolof is the default; use English only when the champion asks for English. Send the returned fixed-template message as is.",
+      inputSchema: z.object({ language: z.enum(["wo", "en"]).default("wo") }),
+      execute: async ({ language }) => {
         guard("get_coaching");
         const { getCoaching } = await import("./coach.server");
         const { aiText } = await import("./tourcoach.server");
-        return { message: (await getCoaching(aiText, 9000, undefined, undefined, true)).messages[0] };
+        return { message: (await getCoaching(aiText, 9000, undefined, undefined, true, language)).messages[0] };
       },
     }),
     get_help: tool({
