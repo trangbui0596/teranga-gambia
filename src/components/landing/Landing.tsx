@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode, Fragment } from "react";
+import { useEffect, useState, type ReactNode, Fragment } from "react";
 import { EVIDENCE, INDICATOR_NAMES, RETRIEVED, evidence, wdiUrl } from "@/lib/evidence";
 import {
   CHANNELS,
@@ -348,6 +348,26 @@ function HowPanel() {
                 <span className="hidden lg:inline">→</span>
               </span>
             ) : null}
+          </li>
+        ))}
+      </ol>
+      <h3 className="mt-6 font-display text-xl font-black">Step by step</h3>
+      <ol className="mt-2 space-y-3" aria-label="Step by step">
+        {FLOW.map((f, i) => (
+          <li key={f.title} className="flex gap-3 rounded-xl border bg-card p-3">
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary font-black text-primary-foreground"
+              aria-hidden="true"
+            >
+              {i + 1}
+            </span>
+            <span>
+              <span className="block font-bold leading-tight">
+                <span aria-hidden="true">{f.icon} </span>
+                {f.title}
+              </span>
+              <span className="mt-1 block text-sm leading-snug">{f.story}</span>
+            </span>
           </li>
         ))}
       </ol>
@@ -724,90 +744,90 @@ const PANELS: Record<TabId, () => ReactNode> = {
 };
 
 function Explore({ initialTab }: { initialTab: TabId }) {
-  const [tab, setTab] = useState<TabId>(initialTab);
+  const [open, setOpen] = useState<TabId | null>(initialTab);
 
   useEffect(() => {
     const read = () => {
       const h = window.location.hash.slice(1);
-      if (TABS.some((t) => t.id === h)) setTab(h as TabId);
+      if (TABS.some((t) => t.id === h)) setOpen(h as TabId);
     };
     read();
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
   }, []);
 
-  const select = (id: TabId) => {
-    setTab(id);
+  const toggle = (id: TabId) => {
+    const next = open === id ? null : id;
+    setOpen(next);
     try {
-      window.history.replaceState(null, "", `#${id}`);
+      window.history.replaceState(null, "", next ? `#${next}` : window.location.pathname);
     } catch {
       /* the hash is only a convenience */
     }
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const i = TABS.findIndex((t) => t.id === tab);
-    const next =
-      e.key === "ArrowRight"
-        ? i + 1
-        : e.key === "ArrowLeft"
-          ? i - 1
-          : e.key === "Home"
-            ? 0
-            : e.key === "End"
-              ? TABS.length - 1
-              : null;
-    if (next === null) return;
-    e.preventDefault();
-    const target = TABS[(next + TABS.length) % TABS.length]!;
-    select(target.id);
-    document.getElementById(`tab-${target.id}`)?.focus();
-  };
-
-  const Panel = PANELS[tab];
   return (
     <section id="explore" aria-labelledby="explore-title" className="mt-8 scroll-mt-4">
       <h2 id="explore-title" className="text-2xl font-black sm:text-3xl">
         Explore Teranga
       </h2>
-      <div
-        role="tablist"
-        aria-label="Explore Teranga"
-        onKeyDown={onKeyDown}
-        className="mt-4 flex flex-wrap gap-2"
-      >
-        {TABS.map((t) => {
-          const active = t.id === tab;
+      <p className="mt-1 text-sm text-muted-foreground">
+        A storybook in chapters. Tap a chapter to open it.
+      </p>
+      <ol className="mt-4 space-y-3">
+        {TABS.map((t, i) => {
+          const isOpen = t.id === open;
+          const Panel = PANELS[t.id];
           return (
-            <button
+            <li
               key={t.id}
-              type="button"
-              role="tab"
-              id={`tab-${t.id}`}
-              aria-selected={active}
-              aria-controls={`panel-${t.id}`}
-              tabIndex={active ? 0 : -1}
-              onClick={() => select(t.id)}
-              className={`min-h-10 rounded-full border-2 px-3 font-bold outline-none transition-colors sm:min-h-11 sm:px-4 focus-visible:ring-4 focus-visible:ring-ring/40 ${
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card hover:bg-secondary"
-              }`}
+              className={`rounded-2xl border-2 bg-card transition-colors ${isOpen ? "border-primary" : "border-border"}`}
             >
-              {t.label}
-            </button>
+              <h3 className="m-0">
+                <button
+                  type="button"
+                  id={`tab-${t.id}`}
+                  aria-expanded={isOpen}
+                  aria-controls={`panel-${t.id}`}
+                  onClick={() => toggle(t.id)}
+                  className="flex w-full items-center gap-3 rounded-2xl p-3 text-left outline-none focus-visible:ring-4 focus-visible:ring-ring/40 sm:p-4"
+                >
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-2xl"
+                    aria-hidden="true"
+                  >
+                    {t.icon}
+                  </span>
+                  <span className="flex-1">
+                    <span className="block text-xs font-bold uppercase tracking-wide text-primary">
+                      Chapter {i + 1}
+                    </span>
+                    <span className="block font-display text-lg font-black leading-tight sm:text-xl">
+                      {t.label}
+                    </span>
+                    <span className="block text-sm leading-snug text-muted-foreground">
+                      {t.teaser}
+                    </span>
+                  </span>
+                  <span className="text-2xl font-black text-primary" aria-hidden="true">
+                    {isOpen ? "–" : "+"}
+                  </span>
+                </button>
+              </h3>
+              {isOpen ? (
+                <div
+                  role="region"
+                  id={`panel-${t.id}`}
+                  aria-labelledby={`tab-${t.id}`}
+                  className="border-t px-3 pb-4 pt-4 sm:px-4"
+                >
+                  <Panel />
+                </div>
+              ) : null}
+            </li>
           );
         })}
-      </div>
-      <div
-        role="tabpanel"
-        id={`panel-${tab}`}
-        aria-labelledby={`tab-${tab}`}
-        tabIndex={0}
-        className="mt-5 outline-none"
-      >
-        <Panel />
-      </div>
+      </ol>
     </section>
   );
 }

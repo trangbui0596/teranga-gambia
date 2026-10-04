@@ -10,14 +10,38 @@ export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 
 export type TabId = "how" | "sms" | "community" | "offline" | "real" | "sources" | "screens";
 
-export const TABS: Array<{ id: TabId; label: string }> = [
-  { id: "how", label: "Full flow" },
-  { id: "sms", label: "Try SMS" },
-  { id: "community", label: "Community" },
-  { id: "offline", label: "Works offline" },
-  { id: "real", label: "What’s real" },
-  { id: "sources", label: "Sources" },
-  ...(SCREENS.length ? [{ id: "screens" as TabId, label: "Screens" }] : []),
+export const TABS: Array<{ id: TabId; label: string; icon: string; teaser: string }> = [
+  {
+    id: "how",
+    label: "The full flow",
+    icon: "🗺️",
+    teaser: "Five steps, and who needs the internet",
+  },
+  { id: "sms", label: "Try SMS", icon: "💬", teaser: "Text Teranga yourself (simulated)" },
+  {
+    id: "community",
+    label: "Looking out for each other",
+    icon: "🤝",
+    teaser: "Notices, champions and referrals",
+  },
+  {
+    id: "offline",
+    label: "Works offline",
+    icon: "📵",
+    teaser: "What Noor can do with no internet",
+  },
+  { id: "real", label: "What’s real", icon: "✅", teaser: "What works today, and what doesn’t" },
+  { id: "sources", label: "Sources", icon: "🔗", teaser: "Every number, with its link" },
+  ...(SCREENS.length
+    ? [
+        {
+          id: "screens" as TabId,
+          label: "Screens",
+          icon: "🖼️",
+          teaser: "Screenshots from the demo",
+        },
+      ]
+    : []),
 ];
 
 export const PROBLEM_SUB =
@@ -70,6 +94,8 @@ export const FLOW = [
   {
     icon: "📞",
     title: "Noor records and approves",
+    story:
+      "Once, Noor calls the Teranga number. A voice asks her ready-made questions: price, meeting point, how long, what to bring. She answers aloud in Wolof. Teranga hears it, translates it, and texts her what it heard, with the numbers. She presses 1 to approve or 2 to record again. Nothing goes live without her.",
     chip: "Call + SMS",
     ai: "Hears Wolof, translates",
     net: { online: false, text: "No internet" },
@@ -77,6 +103,8 @@ export const FLOW = [
   {
     icon: "🗺️",
     title: "Her Google listing",
+    story:
+      "From her approved answers, Teranga drafts a Google Business listing: description, services, meeting point, how to book. Anything it doesn’t know, like her phone number or opening hours, stays “needs input”. It never invents it. Noor can text LISTING for the draft. Her household champion claims the profile on Google and pastes it in.",
     chip: "SMS + Google Maps",
     ai: "Built from her own words",
     net: {
@@ -87,6 +115,8 @@ export const FLOW = [
   {
     icon: "🧳",
     title: "Tourist asks",
+    story:
+      "A tourist messages Teranga on WhatsApp, by voice or text, in English, German or Dutch. Teranga finds Noor’s approved answer and replies in their language, as text and a voice note. If it has no approved answer, it says so and Noor follows up. A community notice, like a flooded road, shows under the answer.",
     chip: "WhatsApp",
     ai: "Hears the voice, answers in their language",
     net: { online: true, text: "Tourist needs internet" },
@@ -94,6 +124,8 @@ export const FLOW = [
   {
     icon: "🔄",
     title: "Weekly sync",
+    story:
+      "Once a week the household champion’s smartphone syncs. It brings in new tourist questions and feedback, and the AI re-reads public Google reviews. Noor gets a short Wolof SMS: what tourists asked, what reviews say, and up to three things to improve.",
     chip: "Household champion’s smartphone",
     ai: "New questions, feedback and reviews in; insights out",
     net: { online: true, text: "Household champion needs internet. Noor gets the result by SMS" },
@@ -101,6 +133,8 @@ export const FLOW = [
   {
     icon: "⭐",
     title: "Voice-note review",
+    story:
+      "After a tour, a tourist can speak a review. Teranga turns it into clean text, adding nothing they didn’t say, and sends the same Google review link to everyone. The tourist pastes and posts it themselves. Teranga never posts for them.",
     chip: "WhatsApp",
     ai: "Voice to clean text for Google",
     net: { online: true, text: "Tourist needs internet" },
