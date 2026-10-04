@@ -1,0 +1,822 @@
+[
+  {
+    "question": "Can I book an excursion?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "I need to amend/cancel my holiday, how do I go about this?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "cancellation",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do I need a visa to visit The Gambia?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do you need vaccinations to visit The Gambia?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do I need travel insurance and when should I take this out?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is the currency in The Gambia and how can I pay?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are mosquitoes a major problem?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is there any time difference between here and The Gambia?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "When will I receive my travel documents?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do I need a visa to visit Senegal?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are my seat numbers guaranteed?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "I experienced a delay to my flight, am I entitled to compensation?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How can I book assistance at the airport?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/faq",
+    "source_name": "The Gambia Experience - Gambia Holiday FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How much do things cost?",
+    "language": "en",
+    "source_url": "https://www.gambia.co.uk/guide/how-much-do-things-cost",
+    "source_name": "The Gambia Experience - travel guide page 'How much do things cost?'",
+    "retrieved": "2026-10-04",
+    "topic_label": "price",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is Gambia a safe country?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Will a representative visit my hotel?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I go on safari?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I take photos or videos?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What are the beaches like?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are the hotel gradings the same as European destinations?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What happens if I test positive for Covid-19 in resort?",
+    "language": "en",
+    "source_url": "https://alkamba.com/faqs/",
+    "source_name": "Alkamba Tours & Travel International - FAQs",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What tours do you offer in The Gambia?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do you include hotel pickup and drop-off?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "meeting point",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are your tours suitable for families with young children?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "children",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How do I book? Can I book online?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do I need a passport for any of the tours?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are you a licensed and registered tour operator?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can you organise private tours for our group?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How far in advance should I book?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is your cancellation policy?",
+    "language": "en",
+    "source_url": "https://www.sengambiaexperiencetours.com/about-us/contact-us",
+    "source_name": "SenGambia Experience Tours - Contact us page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "cancellation",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do you offer private tours in Gambia?",
+    "language": "en",
+    "source_url": "https://www.gambiantour.com/",
+    "source_name": "Gambia Tours, Senegal Trips (gambiantour.com) - FAQ on home page",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I book a Polish-speaking guide in Gambia?",
+    "language": "en",
+    "source_url": "https://www.gambiantour.com/",
+    "source_name": "Gambia Tours, Senegal Trips (gambiantour.com) - FAQ on home page",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Where do tours start?",
+    "language": "en",
+    "source_url": "https://www.gambiantour.com/",
+    "source_name": "Gambia Tours, Senegal Trips (gambiantour.com) - FAQ on home page",
+    "retrieved": "2026-10-04",
+    "topic_label": "meeting point",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can you build a custom Gambia itinerary?",
+    "language": "en",
+    "source_url": "https://www.gambiantour.com/",
+    "source_name": "Gambia Tours, Senegal Trips (gambiantour.com) - FAQ on home page",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do you offer multi-day Gambia and Senegal tours?",
+    "language": "en",
+    "source_url": "https://www.gambiantour.com/",
+    "source_name": "Gambia Tours, Senegal Trips (gambiantour.com) - FAQ on home page",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is included in the multi-day tours?",
+    "language": "en",
+    "source_url": "https://www.gambiantour.com/",
+    "source_name": "Gambia Tours, Senegal Trips (gambiantour.com) - FAQ on home page",
+    "retrieved": "2026-10-04",
+    "topic_label": "whats included",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "When is the best time to visit The Gambia?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is it safe in The Gambia",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are there modern medical facilities in Gambia?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "can I book and pay for my holiday online?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How can I pay for my holiday?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is the weather like in Gambia?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are there laundry facilities?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/gambia-faq-contact/",
+    "source_name": "Footsteps Eco-Lodge - Gambia FAQs & contact us page",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can we book customized daily excursions upon arrival?",
+    "language": "en",
+    "source_url": "https://footstepsinthegambia.com/reviews-for-footsteps-eco-lodge/",
+    "source_name": "Footsteps Eco-Lodge - reviews page (FAQ block)",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is included in the Gambia River Cruise?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/lazy-day-river-cruise-relax-on-the-gambia-river",
+    "source_name": "Gambia Jobe Tours & Travel - Lazy Day River Cruise page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "whats included",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Where does the Gambia River Cruise start?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/lazy-day-river-cruise-relax-on-the-gambia-river",
+    "source_name": "Gambia Jobe Tours & Travel - Lazy Day River Cruise page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "meeting point",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How long is the Gambia River Cruise?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/lazy-day-river-cruise-relax-on-the-gambia-river",
+    "source_name": "Gambia Jobe Tours & Travel - Lazy Day River Cruise page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "duration",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I swim in the Gambia River?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/lazy-day-river-cruise-relax-on-the-gambia-river",
+    "source_name": "Gambia Jobe Tours & Travel - Lazy Day River Cruise page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is lunch included?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/lazy-day-river-cruise-relax-on-the-gambia-river",
+    "source_name": "Gambia Jobe Tours & Travel - Lazy Day River Cruise page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "food",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is this tour suitable for families?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/lazy-day-river-cruise-relax-on-the-gambia-river",
+    "source_name": "Gambia Jobe Tours & Travel - Lazy Day River Cruise page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "children",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I visit Kunta Kinteh Island from Banjul?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/kunta-kinteh-island-historic-tour",
+    "source_name": "Gambia Jobe Tours & Travel - Kunta Kinteh Island Historic Tour page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Where does the tour start?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/kunta-kinteh-island-historic-tour",
+    "source_name": "Gambia Jobe Tours & Travel - Kunta Kinteh Island Historic Tour page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "meeting point",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How long is the tour?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/kunta-kinteh-island-historic-tour",
+    "source_name": "Gambia Jobe Tours & Travel - Kunta Kinteh Island Historic Tour page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "duration",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What should I bring?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/kunta-kinteh-island-historic-tour",
+    "source_name": "Gambia Jobe Tours & Travel - Kunta Kinteh Island Historic Tour page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "what to bring",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I book a private or group tour?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/kunta-kinteh-island-historic-tour",
+    "source_name": "Gambia Jobe Tours & Travel - Kunta Kinteh Island Historic Tour page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "how to book",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is included in the Gambian Home Cooking Experience?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/gambian-home-cooking-experience",
+    "source_name": "Gambia Jobe Tours & Travel - Gambian Home Cooking Experience page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "whats included",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do I need cooking experience?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/gambian-home-cooking-experience",
+    "source_name": "Gambia Jobe Tours & Travel - Gambian Home Cooking Experience page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What traditional Gambian dishes will we prepare?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/gambian-home-cooking-experience",
+    "source_name": "Gambia Jobe Tours & Travel - Gambian Home Cooking Experience page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "food",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is the tour safe?",
+    "language": "en",
+    "source_url": "https://www.gambiajobetoursandtravel.com/tour-day-adventures-explore-gambia/kankurang-masquerade-culture-day",
+    "source_name": "Gambia Jobe Tours & Travel - Kankurang Masquerade Culture Day page (FAQ)",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Where will I be picked up?",
+    "language": "en",
+    "source_url": "https://bushwhackertours.com/frequently-asked-questions/",
+    "source_name": "Bushwhacker Tours - Frequently asked questions",
+    "retrieved": "2026-10-04",
+    "topic_label": "meeting point",
+    "rewritten": true,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are lunch and drinks provided on the excursions?",
+    "language": "en",
+    "source_url": "https://bushwhackertours.com/frequently-asked-questions/",
+    "source_name": "Bushwhacker Tours - Frequently asked questions",
+    "retrieved": "2026-10-04",
+    "topic_label": "food",
+    "rewritten": true,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What should I bring on an excursion?",
+    "language": "en",
+    "source_url": "https://bushwhackertours.com/frequently-asked-questions/",
+    "source_name": "Bushwhacker Tours - Frequently asked questions",
+    "retrieved": "2026-10-04",
+    "topic_label": "what to bring",
+    "rewritten": true,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is included in the tours?",
+    "language": "en",
+    "source_url": "https://bushwhackertours.com/frequently-asked-questions/",
+    "source_name": "Bushwhacker Tours - Frequently asked questions",
+    "retrieved": "2026-10-04",
+    "topic_label": "whats included",
+    "rewritten": true,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Which currency can I pay in?",
+    "language": "en",
+    "source_url": "https://bushwhackertours.com/frequently-asked-questions/",
+    "source_name": "Bushwhacker Tours - Frequently asked questions",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": true,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are there mosquitoes on the tours?",
+    "language": "en",
+    "source_url": "https://bushwhackertours.com/frequently-asked-questions/",
+    "source_name": "Bushwhacker Tours - Frequently asked questions",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": true,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is it safe to travel with children?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "children",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is it dangerous/ safe to travel around?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is the beach safe to swim/ surf?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Are there sharks?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is there a lot of crime?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "safety",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What is the common dress code?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "what to bring",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Does it rain in December?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do i need a visa?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What kind of vaccines do I need?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Where can I exchange the money - is there ATMs?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Can I use credit or debit cards to pay for goods and services?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "How do you get around?",
+    "language": "en",
+    "source_url": "https://visitthegambia.com/?page_id=4775",
+    "source_name": "Gambia Tourism Authority (GTBoard) - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What about the currency and exchange rate?",
+    "language": "en",
+    "source_url": "https://gambia-birdingtours.com/faq/",
+    "source_name": "Gambia Birding Tours - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "When is the best time to go?",
+    "language": "en",
+    "source_url": "https://gambia-birdingtours.com/faq/",
+    "source_name": "Gambia Birding Tours - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "What to bring, what clothing or footwear do you recommend?",
+    "language": "en",
+    "source_url": "https://gambia-birdingtours.com/faq/",
+    "source_name": "Gambia Birding Tours - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "what to bring",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Do you cater for special diets?",
+    "language": "en",
+    "source_url": "https://gambia-birdingtours.com/faq/",
+    "source_name": "Gambia Birding Tours - FAQ",
+    "retrieved": "2026-10-04",
+    "topic_label": "food",
+    "rewritten": false,
+    "capture": "search_extract"
+  },
+  {
+    "question": "Is it really the most visited nation in the region?",
+    "language": "en",
+    "source_url": "https://en.wikivoyage.org/wiki/Talk:Gambia",
+    "source_name": "Wikivoyage - Talk:Gambia (reader question)",
+    "retrieved": "2026-10-04",
+    "topic_label": "other",
+    "rewritten": false,
+    "capture": "direct_fetch"
+  }
+]

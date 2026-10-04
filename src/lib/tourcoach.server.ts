@@ -1,4 +1,4 @@
-import { moreAsk, noOptIn, connectNoted, FIT_BY_CHOICE, pickPartner, suggestionText, buildListing, ledgerText, type Partner } from "./partners";
+import { moreAsk, noOptIn, connectNoted, FIT_BY_CHOICE, pickPartner, suggestionText, ledgerText, type Partner } from "./partners";
 import { guardCleanup, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, FEEDBACK_DELETED, FEEDBACK_SHARED, FEEDBACK_EMPTY, reviewStepsMessage } from "./feedback";
 // Teranga backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
 // and /api/public/eval-match.
@@ -12,6 +12,8 @@ import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } fro
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { weeklyDigestWhatsApp } from "./digest.templates";
+import { buildListingPack, formatListingPack, listingCopyText, type ApprovedAnswers } from "./listing";
+import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, toSmsText, unknownSms, weeklyDigestSmsWo } from "./sms-text";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
 import { W, bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";
@@ -415,12 +417,13 @@ export async function handleWhatsApp(input: { from: string; body: string; mediaU
 }
 const WEBHOOK_BUDGET_MS = 11000;
 
-async function route(c: Conv, input: { from: string; body: string; mediaUrl: string | null }, save: Save): Promise<string | Reply> {
+async function route(c: Conv, input: { from: string; body: string; mediaUrl: string | null }, save: Save, channel: "whatsapp" | "sms" = "whatsapp"): Promise<string | Reply> {
   const text = input.body.trim();
   const upper = text.toUpperCase();
 
   // DEMO SHORTCUT: champion login by PIN over WhatsApp. Not a real authentication method.
   const pinMatch = /^REVIEW\s+(\S+)$/i.exec(text);
+  if (channel === "sms" && (pinMatch || c.role === "champion")) return "Review answers on WhatsApp, not by SMS.";
   if (pinMatch) {
     if (safeEqual(pinMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
@@ -433,7 +436,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
     return bi(W.visitorMode, "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.");
   }
-  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save, input.mediaUrl);
+  return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save, input.mediaUrl, channel);
 }
 
 /* ---------------- Visitor ---------------- */
@@ -443,7 +446,7 @@ const CLEAR_Q: Record<Lang, string> = {
   nl: "Was dit duidelijk? Antwoord YES of NO",
 };
 
-export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null): Promise<string | Reply> {
+export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null, channel: "whatsapp" | "sms" = "whatsapp"): Promise<string | Reply> {
   const db = supabaseAdmin;
   if (upper === "FEEDBACK" || c.state.startsWith("feedback_")) return visitorFeedback(c, text, upper, save, mediaUrl);
   // Phase 2E (Simulated): opt-in partner suggestion. Asked once; only "<1|2|3> YES" suggests anything.
@@ -497,8 +500,8 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
 
   // Pre-generated voice (only exists for approved answers). Short-lived signed URL for Twilio to fetch.
   let audioUrl: string | undefined;
-  let { data: audio } = await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle();
-  if (!audio?.audio_path) {
+  let { data: audio } = channel === "sms" ? { data: null } : await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle();
+  if (channel !== "sms" && !audio?.audio_path) {
     // On demand, inside this request (8 s budget). Text only if it is not ready in time.
     try { await ensureAnswerAudio(answer.id, [c.lang], 8000); } catch (e) { console.error("[audio] error step=visitor", e); }
     ({ data: audio } = await db.from("answer_audio").select("audio_path").eq("answer_id", answer.id).eq("lang", c.lang).maybeSingle());
@@ -649,17 +652,28 @@ export async function ledgerSummary(): Promise<string> {
   return ledgerText(rows, Object.values(counts).reduce((a, b) => a + b, 0), await connectRequestCount());
 }
 
-/** Draft listing from APPROVED answers only (English text). Nothing is sent to Google. */
-export async function draftListing(): Promise<string> {
+/** Approved English answers by topic; a real answer always wins over a seeded sample. */
+async function approvedAnswers(): Promise<ApprovedAnswers> {
   const { data } = await supabaseAdmin.from("answers")
     .select("english, is_sample, recordings(questions(topic))").eq("review_status", "approved");
-  const by: Record<string, string> = {};
-  let sample = false;
+  const by: ApprovedAnswers = {};
   for (const r of (data ?? []) as unknown as Array<{ english: string | null; is_sample: boolean; recordings: { questions: { topic: string } | null } | null }>) {
-    const t = r.recordings?.questions?.topic;
-    if (t && r.english) { by[t] = r.english; sample ||= r.is_sample; }
+    const topic = r.recordings?.questions?.topic;
+    if (!topic || !r.english) continue;
+    const cur = by[topic];
+    if (!cur || (cur.sample && !r.is_sample)) by[topic] = { text: r.english, sample: r.is_sample };
   }
-  return buildListing(by) + (sample ? "\n(Built from Sample answers)" : "");
+  return by;
+}
+
+export async function currentListingPack() {
+  return buildListingPack(await approvedAnswers());
+}
+
+/** Google listing draft from APPROVED answers only. Nothing is sent to Google: a person claims the profile and pastes it. */
+export async function draftListing(): Promise<Reply> {
+  const pack = await currentListingPack();
+  return { text: formatListingPack(pack), secondText: listingCopyText(pack) ?? undefined };
 }
 
 /* ---------------- Champion ---------------- */
@@ -735,7 +749,11 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const lang = upper.endsWith(" EN") ? "en" : "wo";
     try {
       if (upper.startsWith("COACH MORE")) return await coach.coachMore(undefined, lang);
-      return (await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang)).messages[0];
+      const r = await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang);
+      // Noor also gets a short copy by SMS, so she can keep it and read it without internet. Best effort, one attempt.
+      if (!r.run) return r.messages[0];
+      const note = await smsCopyNote(coachSms(r.run, lang));
+      return r.messages[0].length + note.length <= 1540 ? r.messages[0] + note : { text: r.messages[0], secondText: note.trim() };
     } catch (e) {
       console.error("[coach] error step=coach", e);
       const { COACH_TEMPLATES: t } = await import("./coach.templates");
@@ -771,9 +789,106 @@ async function applyReview(id: string, status: "approved" | "rerecord" | "needs_
   // Voice files are made inside this request (about 10 s) before the confirmation is sent; leftovers via finishAnswers.
   if (status === "approved") {
     try { await ensureAnswerAudio(id, ["en", "de", "nl"], 10000); } catch (e) { console.error("[audio] error step=approve", e); }
+    await notifyApproval(id);
   }
   return true;
 }
+
+/* ---------------- Noor's SMS (works on a feature phone without internet) ---------------- */
+
+type SmsStatus = "sent" | "failed" | "capped";
+
+/** One SMS to Noor's phone (DEMO_SMS_NUMBER). No fallback: used for copies and receipts she does not wait for. */
+export async function sendOperatorSms(body: string): Promise<SmsStatus> {
+  try {
+    return (await twilioSend(env("DEMO_SMS_NUMBER"), env("TWILIO_SMS_FROM"), body)) ? "sent" : "capped";
+  } catch (e) {
+    console.error("[sms] operator SMS failed", (e as Error).message);
+    return "failed";
+  }
+}
+
+/** One line for the helper's WhatsApp reply saying what happened to the SMS copy. */
+async function smsCopyNote(body: string): Promise<string> {
+  const st = await sendOperatorSms(body);
+  const line = {
+    sent: sl("SMS bi dem na ci Noor", "SMS copy sent to Noor's phone"),
+    failed: sl("SMS bi demul", "SMS copy not delivered: US carrier registration pending"),
+    capped: sl("SMS bi demul (cap bu bés bi)", "SMS copy skipped: daily message cap"),
+  }[st];
+  return `\n\n📲 ${line}`;
+}
+
+/** Receipt to Noor when the helper approves one of her answers (set SMS_RECEIPTS=off to turn off). */
+async function notifyApproval(answerId: string) {
+  if (process.env["SMS_RECEIPTS"] === "off") return;
+  try {
+    const { data } = await supabaseAdmin.from("answers").select("is_sample, recordings(questions(topic))").eq("id", answerId).maybeSingle();
+    const row = data as unknown as { is_sample: boolean; recordings: { questions: { topic: string } | null } | null } | null;
+    const topic = row?.recordings?.questions?.topic;
+    if (!topic || row?.is_sample) return;
+    await sendOperatorSms(approvalSms(topic, await currentListingPack(), "wo"));
+  } catch (e) {
+    console.error("[sms] approval receipt failed", e);
+  }
+}
+
+/** Reply to Noor's text. If SMS is blocked (US carrier registration pending) the same text goes to WhatsApp once. */
+async function replyOperatorSms(to: string, body: string) {
+  await sendSmsWithFallback(
+    body,
+    () => twilioSend(to, env("TWILIO_SMS_FROM"), body),
+    () => sendWhatsApp(to, `SMS copy (shown here because US SMS registration is pending):\n${body}`),
+  );
+}
+
+/** Inbound SMS. Noor's number gets COACH / LISTING / WEEK / HELP; everyone else is ignored unless SMS_VISITOR_MODE=on. */
+export async function handleSms(input: { from: string; body: string }): Promise<void> {
+  if (isCarrierKeyword(input.body)) return; // Twilio answers STOP and START itself
+  if (isOperatorCaller(input.from)) {
+    const parsed = parseOperatorSms(input.body);
+    const lang = parsed?.lang ?? "wo";
+    let body: string;
+    try {
+      if (!parsed) body = unknownSms(lang);
+      else if (parsed.cmd === "help") body = helpSms(lang);
+      else if (parsed.cmd === "listing") body = listingSms(await currentListingPack(), lang);
+      else if (parsed.cmd === "week") {
+        const d = await digestData();
+        body = lang === "en" ? weeklyDigestSms(d.total, d.topics, d.unanswered) : weeklyDigestSmsWo(d.total, d.topics, d.unanswered.length);
+      } else {
+        const coach = await import("./coach.server");
+        const r = await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang);
+        body = r.run ? coachSms(r.run, lang) : toSmsText(r.messages[0]);
+      }
+    } catch (e) {
+      console.error("[sms] command failed", e);
+      body = lang === "wo" ? "Teranga: jafe-jafe amna. Yonnee ko ci kanam tuuti." : "Teranga: something went wrong. Please try again in a minute.";
+    }
+    await replyOperatorSms(input.from, body);
+    return;
+  }
+  if (process.env["SMS_VISITOR_MODE"] !== "on") return; // visitors use WhatsApp; text-only SMS for visitors is opt-in
+  await handleVisitorSms(input);
+}
+
+/** Text-only visitor Q&A over SMS (no voice notes, no champion login). Same conversation logic as WhatsApp. */
+async function handleVisitorSms(input: { from: string; body: string }) {
+  const db = supabaseAdmin;
+  const phone_hash = hashPhone(input.from);
+  let { data: conv } = await db.from("conversations").select("*").eq("phone_hash", phone_hash).maybeSingle();
+  if (!conv) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
+  const c = conv as unknown as Conv;
+  const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
+  const r = await route(c, { from: input.from, body: input.body, mediaUrl: null }, save, "sms");
+  const reply: Reply = typeof r === "string" ? { text: r } : r;
+  const parts = [reply.text, reply.secondText].filter((x): x is string => !!x).map((x) => toSmsText(x));
+  for (const body of parts) {
+    try { if (!(await twilioSend(input.from, env("TWILIO_SMS_FROM"), body))) break; }
+    catch (e) { console.error("[sms] visitor reply failed", (e as Error).message); break; }
+  }
+}
+
 
 /** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
 async function championAgent(c: Conv, text: string, mediaUrl: string | null, save: Save) {
@@ -855,7 +970,8 @@ export async function evaluateMatching(custom?: Array<{ text: string; expected_t
 }
 
 /* ---------------- Weekly digest ---------------- */
-export async function sendWeeklyDigest() {
+/** Counts of this week's visitor questions by topic, plus the first unanswered ones. */
+async function digestData() {
   const db = supabaseAdmin;
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
   const { data: vqs } = await db.from("visitor_questions")
@@ -871,19 +987,23 @@ export async function sendWeeklyDigest() {
   }
   const { data: un } = await db.from("unanswered")
     .select("visitor_questions(text, is_sample)").gte("created_at", since).limit(3);
-  const unList = ((un ?? []) as unknown as Array<{ visitor_questions: { text: string; is_sample: boolean } | null }>)
-    .map((u) => u.visitor_questions).filter((v): v is { text: string; is_sample: boolean } => !!v);
-  const body = weeklyDigestSms(rows.length, Object.entries(counts).map(([topic, count]) => ({ topic, count })),
-    unList.map((v) => ({ text: v.text, isSample: v.is_sample })));
-  // The SMS keeps the registered A2P wording; the WhatsApp fallback uses the Wolof-first layout.
+  const unanswered = ((un ?? []) as unknown as Array<{ visitor_questions: { text: string; is_sample: boolean } | null }>)
+    .map((u) => u.visitor_questions).filter((v): v is { text: string; is_sample: boolean } => !!v)
+    .map((v) => ({ text: v.text, isSample: v.is_sample }));
+  return { total: rows.length, topics: Object.entries(counts).map(([topic, count]) => ({ topic, count })), unanswered };
+}
+
+/** Noor gets the digest by SMS in Wolof (counts only, so it works without internet); her helper's WhatsApp fallback has the full text. */
+export async function sendWeeklyDigest() {
+  const d = await digestData();
+  const body = weeklyDigestSmsWo(d.total, d.topics, d.unanswered.length);
   const referrals = Object.values(await monthCounts()).reduce((a, b) => a + b, 0);
-  const waBody = weeklyDigestWhatsApp(rows.length, Object.entries(counts).map(([topic, count]) => ({ topic, count })),
-    unList.map((v) => ({ text: v.text, isSample: v.is_sample })), referrals);
+  const waBody = weeklyDigestWhatsApp(d.total, d.topics, d.unanswered, referrals);
   const to = env("DEMO_SMS_NUMBER");
   const result = await sendSmsWithFallback(body,
     () => twilioSend(to, env("TWILIO_SMS_FROM"), body),
     () => sendWhatsApp(to, waBody));
-  return { ...result, questions: rows.length, unanswered: unList.length };
+  return { ...result, questions: d.total, unanswered: d.unanswered.length };
 }
 
 /* ---------------- Phone-call input (Twilio Voice) for Noor's feature phone ---------------- */

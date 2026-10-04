@@ -114,7 +114,7 @@ export function toStoredRun(x: StoredRun): StoredRun {
 const localizedTopic = (topic: string, lang: CoachLanguage) =>
   TOPIC_TEMPLATES[topic as keyof typeof TOPIC_TEMPLATES]?.[lang] ?? topic;
 
-function actionLines(r: StoredRun, lang: CoachLanguage) {
+export function actionLines(r: StoredRun, lang: CoachLanguage) {
   if (r.reviews_count < MIN_REVIEWS) return [];
   const ordered = [
     ...r.themes.filter((theme) => theme.sentiment === "negative"),

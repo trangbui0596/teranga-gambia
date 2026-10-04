@@ -15,6 +15,7 @@ import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
 import { Route as ApiPublicProcessPendingRouteImport } from './routes/api/public/process-pending'
 import { Route as ApiPublicPurgeRouteImport } from './routes/api/public/purge'
+import { Route as ApiPublicSmsWebhookRouteImport } from './routes/api/public/sms-webhook'
 import { Route as ApiPublicVoiceIncomingRouteImport } from './routes/api/public/voice-incoming'
 import { Route as ApiPublicVoiceRecordedRouteImport } from './routes/api/public/voice-recorded'
 import { Route as ApiPublicVoiceStatusRouteImport } from './routes/api/public/voice-status'
@@ -51,6 +52,11 @@ const ApiPublicPurgeRoute = ApiPublicPurgeRouteImport.update({
   path: '/api/public/purge',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSmsWebhookRoute = ApiPublicSmsWebhookRouteImport.update({
+  id: '/api/public/sms-webhook',
+  path: '/api/public/sms-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicVoiceIncomingRoute = ApiPublicVoiceIncomingRouteImport.update({
   id: '/api/public/voice-incoming',
   path: '/api/public/voice-incoming',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
+  '/api/public/sms-webhook': typeof ApiPublicSmsWebhookRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
+  '/api/public/sms-webhook': typeof ApiPublicSmsWebhookRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
+  '/api/public/sms-webhook': typeof ApiPublicSmsWebhookRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/api/public/eval-match'
     | '/api/public/process-pending'
     | '/api/public/purge'
+    | '/api/public/sms-webhook'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/api/public/eval-match'
     | '/api/public/process-pending'
     | '/api/public/purge'
+    | '/api/public/sms-webhook'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/api/public/eval-match'
     | '/api/public/process-pending'
     | '/api/public/purge'
+    | '/api/public/sms-webhook'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
   ApiPublicProcessPendingRoute: typeof ApiPublicProcessPendingRoute
   ApiPublicPurgeRoute: typeof ApiPublicPurgeRoute
+  ApiPublicSmsWebhookRoute: typeof ApiPublicSmsWebhookRoute
   ApiPublicVoiceIncomingRoute: typeof ApiPublicVoiceIncomingRoute
   ApiPublicVoiceRecordedRoute: typeof ApiPublicVoiceRecordedRoute
   ApiPublicVoiceStatusRoute: typeof ApiPublicVoiceStatusRoute
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPurgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sms-webhook': {
+      id: '/api/public/sms-webhook'
+      path: '/api/public/sms-webhook'
+      fullPath: '/api/public/sms-webhook'
+      preLoaderRoute: typeof ApiPublicSmsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/voice-incoming': {
       id: '/api/public/voice-incoming'
       path: '/api/public/voice-incoming'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
   ApiPublicProcessPendingRoute: ApiPublicProcessPendingRoute,
   ApiPublicPurgeRoute: ApiPublicPurgeRoute,
+  ApiPublicSmsWebhookRoute: ApiPublicSmsWebhookRoute,
   ApiPublicVoiceIncomingRoute: ApiPublicVoiceIncomingRoute,
   ApiPublicVoiceRecordedRoute: ApiPublicVoiceRecordedRoute,
   ApiPublicVoiceStatusRoute: ApiPublicVoiceStatusRoute,
