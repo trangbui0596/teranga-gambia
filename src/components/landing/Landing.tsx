@@ -276,7 +276,7 @@ function Referrals() {
     <section
       id="referrals"
       aria-labelledby="referrals-title"
-      className="mt-8 rounded-2xl border-2 border-primary/60 bg-card p-4 sm:p-6"
+      className="mt-5 rounded-2xl border-2 border-primary/60 bg-card p-4 sm:p-6"
     >
       <p className="text-xs font-bold uppercase tracking-wide text-primary">
         Community feature · simulated partners
@@ -389,6 +389,7 @@ function HowPanel() {
           </Card>
         ))}
       </ul>
+      <Referrals />
       <p className="mt-3 text-sm text-muted-foreground">{TRY_IT}</p>
     </div>
   );
@@ -853,9 +854,6 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
           <a href="#explore" className={pill}>
             Explore ↓
           </a>
-          <a href="#referrals" className={pill}>
-            Fair referrals
-          </a>
           {VIDEO_URL ? (
             <Ext
               href={VIDEO_URL}
@@ -874,7 +872,6 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
         <Chain />
         <Story />
         <Explore initialTab={initialTab} />
-        <Referrals />
       </main>
       <footer className="mx-auto max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">
         <p>
