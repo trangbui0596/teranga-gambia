@@ -13,6 +13,7 @@ import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } fro
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { weeklyDigestWhatsApp } from "./digest.templates";
+import { IDEAS_RULES, IDEAS_UNAVAILABLE, IDEA_MIN_SUPPORT, buildIdeaInput, formatIdeas, ideaApproved, ideaCommand, ideaDismissed, ideaMissing, parseIdeas, verifyIdeas, type IdeaCommand } from "./ideas";
 import { NOTIFY_HINT, NOTIFY_NONE, NOTIFY_OK, channelOf, followupMessage, plainNumber } from "./followup";
 import { buildListingPack, formatListingPack, listingCopyText, type ApprovedAnswers } from "./listing";
 import { ALERT_MENU, ALERT_TTL_HOURS, BILINGUAL_FLAG, COMMUNITY_MENU, alertPosted, alertSms, formatAlertList, formatBilingualItem, formatPulse, noNotices, parseAlertCommand, translationLabel, visitorNotice, type ActiveAlert } from "./community";
@@ -587,7 +588,7 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     id: string; english: string | null; german: string | null; dutch: string | null; is_sample: boolean; flags: string[] | null;
     recordings: { questions: { topic: string } | null } | null;
   }>;
-  const { answer, confidence } = matchQuestion(q, answers);
+  const { answer, confidence } = matchQuestion(q, answers, await extraKeywords());
   const answerText = answer?.[FIELD[c.lang]] ?? null;
 
   const { data: vq } = await db.from("visitor_questions")
@@ -791,7 +792,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   const db = supabaseAdmin;
   const { data: questions } = await db.from("questions").select("id, position, topic").order("position");
   const qs = questions ?? [];
-  const ask = (n: number) => `*Laaj ${n} ci ${TOTAL_QUESTIONS}* · ${topicWo(qs[n - 1]?.topic)}\n_Question ${n} of ${TOTAL_QUESTIONS} · ${topicEn(qs[n - 1]?.topic)}_\n🎙️ ${sl("Tontul ak kàddu", "Reply with a voice note")}`;
+  const total = qs.length || TOTAL_QUESTIONS; // approved extra cards (src/lib/ideas.ts) lengthen the round
+  const ask = (n: number) => `*Laaj ${n} ci ${total}* · ${topicWo(qs[n - 1]?.topic)}\n_Question ${n} of ${total} · ${topicEn(qs[n - 1]?.topic)}_\n🎙️ ${sl("Tontul ak kàddu", "Reply with a voice note")}`;
   const roundHint = `_${W.roundHint}_`;
 
   // Confirmation turn for an agent-proposed review decision: only an explicit YES executes it.
@@ -831,7 +833,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     await save({ state: "idle", current_question_position: null });
     return bi(W.stopped(saved), roundStoppedText(saved));
   }
-  if (cmd === "help") return bi(W.help(c.current_question_position ?? 1, TOTAL_QUESTIONS), recordingHelpText(c.current_question_position ?? 1, TOTAL_QUESTIONS));
+  if (cmd === "help") return bi(W.help(c.current_question_position ?? 1, total), recordingHelpText(c.current_question_position ?? 1, total));
   if (cmd === "review") await save({ state: "idle", current_question_position: null }); // falls through to REVIEW below
 
   if (c.state === "recording" && c.current_question_position && !cmd) {
@@ -851,7 +853,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     }
     // The "Got question N" ack is sent first; handleWhatsApp then awaits the pipeline for this answer.
     const next = n + 1;
-    if (next > TOTAL_QUESTIONS) {
+    if (next > total) {
       await save({ state: "idle", current_question_position: null });
       return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}\n${sl(W.roundComplete, "Round complete. Send REVIEW to review.")}`, finishFirst: answerId };
     }
@@ -868,6 +870,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const f = await sendFollowups();
     return bi(`Yónnee nañu ${f.sent} tontu ci gan yi. ${f.waiting} di xaar.`, `Follow-ups sent to tourists: ${f.sent}. Still waiting: ${f.waiting}.`);
   }
+  const idea = ideaCommand(upper);
+  if (idea) return ideasCommand(idea);
   if (upper === "SYNC") {
     const r = await weeklySync(false);
     return r.report + (await smsCopyNote(r.sms));
@@ -1069,7 +1073,7 @@ async function visitorSmsAnswer(q: string, lang: Lang): Promise<string> {
     id: string; english: string | null; german: string | null; dutch: string | null; is_sample: boolean; flags: string[] | null;
     recordings: { questions: { topic: string } | null } | null;
   }>;
-  const { answer } = matchQuestion(q, answers);
+  const { answer } = matchQuestion(q, answers, await extraKeywords());
   const text = answer?.[FIELD[lang]] ?? null;
   if (!answer || !text) return toSmsText([NOT_SURE[lang], ...(notice ? ["", notice] : [])].join("\n"));
   return toSmsText([
@@ -1077,6 +1081,80 @@ async function visitorSmsAnswer(q: string, lang: Lang): Promise<string> {
     "- " + translationLabel(lang, !!answer.flags?.includes(BILINGUAL_FLAG)),
     ...(notice ? ["", notice] : []),
   ].join("\n"));
+}
+
+/* ---------------- AI-suggested question cards (rules and checks live in src/lib/ideas.ts) ---------------- */
+type IdeaRow = { id: string; topic: string; question: string; keywords: string[]; support: number; examples: string[]; status: string };
+const ideasTable = () => supabaseAdmin.from("question_ideas" as never);
+
+/** Keywords of operator-approved extra cards, for the matcher. Any failure (for example the table is not migrated yet) means "none":
+ *  the fixed ten topics then work exactly as before. */
+async function extraKeywords(): Promise<Record<string, string[]>> {
+  try {
+    const { data, error } = await ideasTable().select("topic, keywords").eq("status", "approved");
+    if (error) return {};
+    return Object.fromEntries(((data ?? []) as unknown as Array<{ topic: string; keywords: string[] }>).map((r) => [r.topic, r.keywords]));
+  } catch { return {}; }
+}
+
+async function proposedIdeas(): Promise<IdeaRow[]> {
+  const { data } = await ideasTable().select("id, topic, question, keywords, support, examples, status").eq("status", "proposed");
+  return ((data ?? []) as unknown as IdeaRow[]).sort((a, b) => b.support - a.support || a.topic.localeCompare(b.topic));
+}
+
+/** The AI reads the questions visitors asked that we could not answer clearly (last 14 days, real visitors only) and proposes new cards.
+ *  Code verifies every claim and counts the visitors; any failure leaves the current list untouched. `generate=false` only reads it. */
+export async function proposeIdeas(generate = true, ai: typeof aiText = aiText, budgetMs = 20000): Promise<{ ideas: IdeaRow[]; unavailable: boolean }> {
+  try {
+    if (generate) {
+      const since = new Date(Date.now() - 14 * 86400000).toISOString();
+      const { data: vqs } = await supabaseAdmin.from("visitor_questions")
+        .select("id, text, matched_answer_id, was_clear, is_sample").eq("is_sample", false).gte("created_at", since);
+      const unclear = ((vqs ?? []) as Array<{ id: string; text: string; matched_answer_id: string | null; was_clear: boolean | null }>)
+        .filter((v) => v.matched_answer_id === null || v.was_clear === false);
+      const { input, lines } = buildIdeaInput(unclear);
+      if (lines.length >= IDEA_MIN_SUPPORT) {
+        const raw = await ai(IDEAS_RULES, input, AbortSignal.timeout(budgetMs));
+        const { data: qs } = await supabaseAdmin.from("questions").select("topic, text_en");
+        const { data: old } = await ideasTable().select("topic, question");
+        const oldRows = (old ?? []) as unknown as Array<{ topic: string; question: string }>;
+        const { ideas, rejected } = verifyIdeas(parseIdeas(raw), lines, {
+          topics: [...(qs ?? []).map((q) => q.topic), ...oldRows.map((o) => o.topic)],
+          questions: [...(qs ?? []).map((q) => q.text_en), ...oldRows.map((o) => o.question)],
+        });
+        if (rejected.length) console.log(`[ideas] rejected ${rejected.length}: ${rejected.map((r) => `${r.topic} (${r.reason})`).join("; ").slice(0, 300)}`);
+        if (ideas.length) {
+          const { error } = await ideasTable().insert(ideas.map((i) => ({ topic: i.topic, question: i.question, keywords: i.keywords, support: i.support, examples: i.examples, week: isoWeek() })) as never);
+          if (error) throw new Error(`ideas save failed: ${error.message}`);
+        }
+      }
+    }
+    return { ideas: await proposedIdeas(), unavailable: false };
+  } catch (e) {
+    console.error("[ideas] failed", (e as Error).message);
+    return { ideas: await proposedIdeas().catch(() => []), unavailable: true };
+  }
+}
+
+/** IDEAS, IDEA n, IDEA NO n for the household champion. Approving adds the card to the recording round; nothing else changes. */
+export async function ideasCommand(cmd: NonNullable<IdeaCommand>): Promise<string> {
+  const { ideas, unavailable } = await proposeIdeas(cmd.kind === "list");
+  if (cmd.kind === "list") {
+    const shown = formatIdeas(ideas.map((i, k) => ({ ...i, n: k + 1 })));
+    return unavailable && !ideas.length ? IDEAS_UNAVAILABLE : shown;
+  }
+  const idea = ideas[cmd.n - 1];
+  if (!idea) return ideaMissing;
+  if (cmd.kind === "dismiss") {
+    await ideasTable().update({ status: "dismissed", decided_at: new Date().toISOString() } as never).eq("id", idea.id).eq("status", "proposed");
+    return ideaDismissed;
+  }
+  const { data: last } = await supabaseAdmin.from("questions").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
+  const position = (last?.position ?? 0) + 1;
+  const { data: q, error } = await supabaseAdmin.from("questions").insert({ position, topic: idea.topic, text_en: idea.question } as never).select("id").single();
+  if (error || !q) return "Could not add the card just now. Nothing changed. Try again.";
+  await ideasTable().update({ status: "approved", question_id: (q as { id: string }).id, decided_at: new Date().toISOString() } as never).eq("id", idea.id).eq("status", "proposed");
+  return ideaApproved(idea.question, position);
 }
 
 /** Weekly sync: re-read the public reviews (fresh = ignore the 24 h cache), add what visitors asked and said this week,
@@ -1098,7 +1176,10 @@ export async function weeklySync(fresh: boolean, budgetMs = 45000) {
   const d = await digestData();
   const byTopic = Object.fromEntries(d.topics.map((t) => [t.topic, t.count]));
   const insight = weeklyInsight({ total: d.total, byTopic, unanswered: byTopic["unanswered"] ?? 0, notClear: d.notClear }, run, prev);
-  return { insight, report: formatWeeklyReport(insight), sms: weeklyInsightSms(insight, "wo") };
+  // The AI reads what visitors asked that we could not answer and proposes new question cards (fresh sync only; SYNC just reads the list).
+  const ideas = await proposeIdeas(fresh, aiText, 12000);
+  const note = ideas.ideas.length ? `\n\n*${ideas.ideas.length} new question card${ideas.ideas.length === 1 ? "" : "s"} suggested by AI* _(from questions visitors asked that we could not answer)_. Send IDEAS to see and approve them.` : "";
+  return { insight, report: formatWeeklyReport(insight) + note, sms: weeklyInsightSms(insight, "wo"), ideas: ideas.ideas.length };
 }
 
 /** The weekly job (POST /api/public/weekly-sync with the digest secret): fresh review scan, then the household champion's report on
@@ -1110,7 +1191,7 @@ export async function runWeeklySync() {
   let whatsapp = false;
   try { whatsapp = await sendWhatsApp(to, r.report); } catch (e) { console.error("[sync] WhatsApp report failed", (e as Error).message); }
   const followups = await sendFollowups().catch((e) => { console.error("[sync] followups failed", e); return { sent: 0, waiting: 0 }; });
-  return { sms, whatsapp, visitors: r.insight.total, actions: r.insight.actions.length, reviewShifts: r.insight.shifts.length, followups };
+  return { sms, whatsapp, visitors: r.insight.total, ideas: r.ideas, actions: r.insight.actions.length, reviewShifts: r.insight.shifts.length, followups };
 }
 
 /** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
@@ -1193,7 +1274,7 @@ export async function sendFollowups(limit = 20): Promise<{ sent: number; waiting
   for (const r of rows) {
     const q = r.visitor_questions?.text;
     if (!q) continue;
-    const { answer } = matchQuestion(q, answers);
+    const { answer } = matchQuestion(q, answers, await extraKeywords());
     const text = answer?.[FIELD[r.lang]] ?? null;
     if (!answer || !text) continue;
     const body = followupMessage(r.lang, q, text + (answer.is_sample ? " (Sample answer)" : ""), translationLabel(r.lang, !!answer.flags?.includes(BILINGUAL_FLAG)));

@@ -103,3 +103,25 @@ describe("home page structure", () => {
     expect(html("sms").includes("Watch the demo")).toBe(VIDEO_URL.length > 0);
   });
 });
+
+import { COACHING_PROMISE, DATA_ANALYSED, REAL_LIVE } from "@/lib/landing-content";
+import tuning from "./fixtures/gambia_tour_questions.json";
+import holdout from "./fixtures/gambia_tour_questions_holdout.json";
+describe("the data we say we analysed", () => {
+  it("states the coaching promise in the live list and in the highlighted panel", () => {
+    expect(REAL_LIVE).toContain(COACHING_PROMISE);
+    expect(COACHING_PROMISE).toBe("Coaching comes from real public Google Maps reviews. Nothing raw is stored.");
+  });
+  it("question and sentence counts match the files they come from", () => {
+    const q = DATA_ANALYSED.find((d) => d.label.includes("visitor questions"))!;
+    expect(Number(q.figure)).toBe((tuning as unknown[]).length + (holdout as unknown[]).length);
+    expect(q.detail).toContain(`${(tuning as unknown[]).length} tuned`);
+    expect(q.detail).toContain(`${(holdout as unknown[]).length} were kept back`);
+    expect(DATA_ANALYSED.find((d) => d.label.includes("Wolof"))!.figure).toBe("54");
+  });
+  it("shows the promise and every figure on the What's real tab", () => {
+    const h = html("real");
+    expect(h).toContain("Coaching comes from real public Google Maps reviews. Nothing raw is stored.");
+    for (const d of DATA_ANALYSED) { expect(h).toContain(`>${d.figure}<`); expect(h).toContain(d.detail.slice(0, 30).replace(/’/g, "&#x27;")); }
+  });
+});

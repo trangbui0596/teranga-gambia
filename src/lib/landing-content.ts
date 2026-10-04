@@ -225,7 +225,7 @@ export const STORYBOOK: StoryPage[] = [
       alt: "A household champion under a tree with a smartphone, chat, star and map icons floating above it",
       credit: "AI-generated illustration",
     },
-    text: "Her household champion syncs new questions, feedback and public reviews from tourists across the whole sector, not only Noor’s. The AI sends Noor a short Wolof SMS on what to improve.",
+    text: "Her household champion syncs new questions, feedback and public reviews from tourists across the whole sector, not only Noor’s. The AI reads real public Google Maps reviews and sends Noor a short Wolof SMS on what to improve. Nothing raw is stored.",
     net: { online: true, text: "Household champion needs internet. Noor gets it by SMS" },
     chip: "One light batch a week: counts and a short summary, no heavy model",
   },
@@ -269,6 +269,30 @@ export const STORYBOOK: StoryPage[] = [
     text: "One call, answers in three languages, a listing, reviews and a community that looks out for each other. See the details, or try it.",
   },
 ];
+
+export const COACHING_PROMISE = "Coaching comes from real public Google Maps reviews. Nothing raw is stored.";
+
+/** What has been analysed so far, with the numbers measured from the live database and the fixtures in this repo (sources in the README).
+ *  No model was trained: the data is read by AI at run time (reviews), used to tune and test the matching rules (questions) and to check the AI (Wolof). */
+export const DATA_ANALYSED = [
+  {
+    figure: "70",
+    label: "real public Google Maps reviews read by AI",
+    detail:
+      "From 15 Gambian tour operators, written between 2019 and 2026 (latest weekly run, 4 Oct 2026). The AI reads each review for themes and prices; only theme counts are kept. No review text and no author names are stored.",
+  },
+  {
+    figure: "185",
+    label: "real visitor questions used to build and test the matching",
+    detail:
+      "From the public FAQ pages of 24 Gambian operators. 82 tuned the rules; 103 were kept back and tested once, untuned.",
+  },
+  {
+    figure: "54",
+    label: "Wolof sentences used to check the AI’s translation",
+    detail: "Open FLEURS/FLORES set, scored against English references (chrF++ 47.6). A small sample, so indicative only.",
+  },
+] as const;
 
 export const REAL_LIVE = [
   "A real phone line and WhatsApp number (Twilio sandbox) run the full loop: call, transcript, Noor’s approval, visitor answers in text and voice, voice reviews, notices and referrals.",

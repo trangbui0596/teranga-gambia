@@ -109,8 +109,26 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 - **Google listing:** `LISTING` (Noor by SMS, or a champion on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the household champion can add, and claim steps. Nothing is sent to Google.
 - **Community Circle:** a community champion (`COMMUNITY <PIN>`, demo PIN) posts notices with `ALERT` (flood, closed road, storm, boats paused, tours closed, all clear), sees them with `ALERTS`, checks translations with `BILINGUAL` and sees an overview with `PULSE`. Notices are fixed templates in English, German, Dutch and Wolof, last 24 hours, are sent to members by SMS and appear under every visitor answer, always labeled as a community notice, not an official warning. Visitors can send `STATUS` to see them. Members other than Noor are simulated in the demo.
 
-- **Weekly sync (`SYNC`, `/api/public/weekly-sync`):** re-reads public Google reviews, compares them with the previous run (themes whose share moved by 5 points or more), adds what visitors asked and marked "not clear" this week, and turns it into up to three plain actions (counts only, no AI). It does not yet scan news sources: none was reachable from our environment to test, so that is a next step.
+- **Weekly sync (`SYNC`, `/api/public/weekly-sync`):** re-reads public Google reviews (the AI labels each review's themes and prices; code verifies every price against the review text and counts the themes), compares with the previous run (themes whose share moved by 5 points or more), adds what visitors asked and marked "not clear" this week, and turns it into up to three plain actions from fixed templates. Nothing raw is stored: review text and author names live in memory for the request, only counts and prices are kept. It does not yet scan news sources: none was reachable from our environment to test, so that is a next step.
 - **SMS first:** everything Noor and the community champion do works over voice and SMS; WhatsApp is the household champion's weekly smartphone session and a convenience for visitors. US SMS delivery waits for carrier registration, so the live demo uses WhatsApp plus the simulator on the home page ("Try SMS").
+
+## AI-suggested question cards
+
+Noor answers 10 fixed question cards. Each week the AI also reads the questions visitors asked that Teranga could not answer clearly (last 14 days, real visitors only, links and phone numbers stripped) and proposes up to three new cards.
+
+- **The AI proposes, code checks, a person decides.** Every card must name keywords that really occur in the visitors' own words, every cited question must contain them, and the number of visitors is counted by code (at least two different visitors), never taken from the AI. Cards that repeat an existing topic or reuse a fixed topic's keywords are rejected. If the AI is down or its answer fails a check, there are simply no suggestions and the fixed cards and keyword matcher work exactly as before.
+- **Household champion commands (WhatsApp):** `IDEAS` lists the suggestions, `IDEA 1` adds card 1 to the recording round (the round then has 11 questions), `IDEA NO 1` skips it for good. The weekly report says when suggestions are waiting.
+- **After approval:** once Noor has recorded and approved an answer, visitors who use the card's keywords get it. The accuracy numbers above measure only the fixed ten topics.
+- Code: `src/lib/ideas.ts` (rules, checks, wording), `proposeIdeas` and `ideasCommand` in `tourcoach.server.ts`, table `question_ideas` (migration `20261004120000_question_ideas.sql`; until it is applied the feature is silently off).
+
+## What has been analysed so far
+
+Coaching comes from real public Google Maps reviews. Nothing raw is stored. Measured from the live database and the files in this repository:
+
+- **70 real public Google Maps reviews** from **15 Gambian tour operators** (written 2019 to 2026; latest weekly run, 4 Oct 2026) were read by the AI for themes and prices. Only counts are kept.
+- **185 real visitor questions** from the public FAQ pages of 24 Gambian operators: 82 tuned the matching rules, 103 were kept back and tested once, untuned.
+- **54 Wolof sentences** (open FLEURS/FLORES set) checked the AI's Wolof to English translation.
+- No model was trained on any of it. The numbers are small and say so.
 
 ## Landing page statistics
 
@@ -168,7 +186,7 @@ Details and what the data did not show: [docs/DATA_INSIGHTS.md](https://github.c
 - **ElevenLabs**: Scribe speech-to-text (Wolof recordings, tourist voice notes) and text-to-speech (English, German, Dutch).
 - **Google Maps Platform (Places)**: public reviews for weekly coaching.
 - **World Bank WDI API**: every statistic, re-checked by `scripts/verify-evidence.mjs`.
-- TanStack Start, React, TypeScript, Tailwind CSS; 472 unit and smoke tests.
+- TanStack Start, React, TypeScript, Tailwind CSS; 508 unit and smoke tests.
 
 ## Docs
 

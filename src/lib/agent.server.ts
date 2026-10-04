@@ -42,7 +42,7 @@ async function pendingRows(): Promise<PendingRow[]> {
 async function resolvePending(ref: string): Promise<PendingRow | null> {
   const rows = await pendingRows();
   const n = Number(ref);
-  if (Number.isInteger(n) && n >= 1 && n <= 10) return rows.find((r) => r.recordings?.questions?.position === n) ?? null;
+  if (Number.isInteger(n) && n >= 1 && n <= 99) return rows.find((r) => r.recordings?.questions?.position === n) ?? null;
   return rows.find((r) => r.id === ref) ?? null;
 }
 

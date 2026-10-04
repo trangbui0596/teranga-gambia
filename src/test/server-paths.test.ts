@@ -7,7 +7,7 @@
 // the Google Maps review fetch (COACH reads the cached run only), and Twilio signature checks in the routes.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeDb } from "./helpers/fake-supabase";
-import { handleSms, handleWhatsApp, hashPhone, purgeFeedback, runWeeklySync, sendFollowups, sendWeeklyDigest, simulateSms } from "@/lib/tourcoach.server";
+import { handleSms, handleWhatsApp, hashPhone, ideasCommand, proposeIdeas, purgeFeedback, runWeeklySync, sendFollowups, sendWeeklyDigest, simulateSms } from "@/lib/tourcoach.server";
 
 vi.mock("@/integrations/supabase/client.server", async () => {
   const { fakeDb: db } = await import("./helpers/fake-supabase");
@@ -1305,7 +1305,8 @@ describe("weekly sync", () => {
       await seedVisitors();
       const r = await runWeeklySync();
       expect(net.other.length).toBeGreaterThan(0);
-      expect(net.other.every((u) => u.startsWith("https://connector-gateway.lovable.dev/google_maps"))).toBe(true);
+      // Google is unreachable, and the AI question-card step (which also needs the AI gateway) must fail soft: the report still goes out.
+      expect(net.other.every((u) => u.startsWith("https://connector-gateway.lovable.dev/google_maps") || u.startsWith("https://ai.gateway.lovable.dev/"))).toBe(true);
       expect(r).toMatchObject({ sms: "sent", whatsapp: true, visitors: 3, followups: { sent: 0, waiting: 0 } });
       expect(net.attempts).toHaveLength(2);
       expect(net.attempts[0]).toMatchObject({ to: NOOR, from: SMS_FROM });
@@ -1835,5 +1836,90 @@ describe("database grants", () => {
     const missing = tables.filter((t) => !new RegExp(`grant[^;]*on\\s+(?:table\\s+)?public\\.${t}\\b[^;]*service_role`, "i").test(sql));
     expect(missing).toEqual([]);
     expect(sql).toMatch(/grant all on public\.community_alerts to service_role/i);
+  });
+});
+
+/* ================= AI-suggested question cards: the AI proposes, code verifies and counts, a person approves ================= */
+describe("AI-suggested question cards", () => {
+  const unclear = (text: string, extra: Record<string, unknown> = {}) => ({ text, lang: "en", matched_answer_id: null, ...extra });
+  const seedUnclear = () => fakeDb.put("visitor_questions", [
+    unclear("Can my father come in a wheelchair on the boat?"), unclear("Is the pier accessible for a wheelchair?"), unclear("Is wheelchair access possible on the long tour"),
+    unclear("Do you have binoculars?"), unclear("A sample question about wheelchairs", { is_sample: true }),
+    { text: "How much does it cost?", lang: "en", matched_answer_id: "x", was_clear: true },
+  ]);
+  const aiSays = (obj: unknown) => (async () => JSON.stringify(obj)) as unknown as typeof import("@/lib/tourcoach.server").aiText;
+  const good = { ideas: [{ topic: "wheelchair access", question: "Can guests in a wheelchair join the tour?", keywords: ["wheelchair", "accessible"], evidence: [0, 1] }] };
+
+  it("stores a verified card with the visitor count computed by code, ignoring sample and already-answered questions", async () => {
+    await seedQuestions(); await seedUnclear();
+    const r = await proposeIdeas(true, aiSays({ ideas: [{ ...good.ideas[0], support: 40 }] }));
+    expect(r.unavailable).toBe(false);
+    expect(r.ideas).toHaveLength(1);
+    expect(fakeDb.rows("question_ideas")[0]).toMatchObject({ topic: "wheelchair access", support: 3, status: "proposed" });
+  });
+
+  it("stores nothing when the AI invents evidence, and never throws when the AI is down", async () => {
+    await seedQuestions(); await seedUnclear();
+    expect((await proposeIdeas(true, aiSays({ ideas: [{ ...good.ideas[0], evidence: [0, 3] }] }))).ideas).toHaveLength(0);
+    const down = (async () => { throw new Error("AI request failed [500]"); }) as unknown as typeof import("@/lib/tourcoach.server").aiText;
+    const r = await proposeIdeas(true, down);
+    expect(r).toMatchObject({ ideas: [], unavailable: true });
+    expect(fakeDb.rows("question_ideas")).toHaveLength(0);
+    expect(consoleErrors.some((l) => l.includes("[ideas] failed"))).toBe(true);
+    consoleErrors.length = 0;
+  });
+
+  it("does not call the AI when fewer than two visitors had an unclear question, and does not repeat a card", async () => {
+    await seedQuestions();
+    let calls = 0;
+    const ai = (async () => { calls++; return JSON.stringify(good); }) as unknown as typeof import("@/lib/tourcoach.server").aiText;
+    await proposeIdeas(true, ai); expect(calls).toBe(0);
+    await seedUnclear();
+    await proposeIdeas(true, ai); await proposeIdeas(true, ai);
+    expect(calls).toBe(2);
+    expect(fakeDb.rows("question_ideas")).toHaveLength(1);
+  });
+
+  it("IDEAS with nothing to suggest says so, without any AI call", async () => {
+    await seedQuestions();
+    expect(await ideasCommand({ kind: "list" })).toContain("No new question cards");
+  });
+
+  it("IDEA 1 adds the card to the recording round, and visitors then get Noor's answer through the card's keywords", async () => {
+    await seedQuestions(); await seedUnclear();
+    await proposeIdeas(true, aiSays(good));
+    const before = await simulateSms("visitor", "Is the pier ok for my father in a wheelchair?", "en");
+    expect(before.reply).toContain("Noor will answer");
+    const msg = await ideasCommand({ kind: "approve", n: 1 });
+    expect(msg).toContain("Added as question 11");
+    const q = fakeDb.rows("questions").find((x) => x["position"] === 11)!;
+    expect(q).toMatchObject({ topic: "wheelchair access", text_en: "Can guests in a wheelchair join the tour?" });
+    expect(fakeDb.rows("question_ideas")[0]).toMatchObject({ status: "approved", question_id: q["id"] });
+    // Noor records and approves an answer for the new card.
+    const [rec] = await fakeDb.put("recordings", { question_id: q["id"], week: "2026-W40", audio_path: "https://api.twilio.com/2010-04-01/Accounts/AC1/Messages/MM1/Media/ME1" });
+    await fakeDb.put("answers", { recording_id: rec!["id"], english: "Yes, the pier has a ramp.", german: "Ja.", dutch: "Ja.", review_status: "approved", approved_at: new Date().toISOString(), stage: "checked", flags: [] });
+    const after = await simulateSms("visitor", "Is the pier ok for my father in a wheelchair?", "en");
+    expect(after.reply).toContain("Yes, the pier has a ramp.");
+  });
+
+  it("IDEA NO 1 dismisses it for good; a wrong number changes nothing", async () => {
+    await seedQuestions(); await seedUnclear();
+    await proposeIdeas(true, aiSays(good));
+    expect(await ideasCommand({ kind: "approve", n: 7 })).toContain("no such suggestion");
+    expect(await ideasCommand({ kind: "dismiss", n: 1 })).toContain("Skipped");
+    expect(fakeDb.rows("question_ideas")[0]).toMatchObject({ status: "dismissed" });
+    expect(fakeDb.rows("questions")).toHaveLength(10);
+    await proposeIdeas(true, aiSays(good)); // the same card is not proposed again
+    expect(fakeDb.rows("question_ideas")).toHaveLength(1);
+    expect(fakeDb.rows("question_ideas")[0]).toMatchObject({ status: "dismissed" });
+  });
+
+  it("the champion's round runs to the new total: Question 1 of 11", async () => {
+    await seedQuestions(); await seedUnclear();
+    await proposeIdeas(true, aiSays(good)); await ideasCommand({ kind: "approve", n: 1 });
+    await handleWhatsApp({ from: `whatsapp:${NOOR}`, body: "REVIEW", mediaUrl: null });
+    net.attempts.length = 0;
+    await handleWhatsApp({ from: `whatsapp:${NOOR}`, body: "START", mediaUrl: null });
+    expect(whatsapp().map((m) => m.body).join("\n")).toContain("Question 1 of 11");
   });
 });

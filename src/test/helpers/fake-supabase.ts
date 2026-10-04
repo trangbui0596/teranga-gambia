@@ -28,6 +28,7 @@ const SCHEMA: Record<string, string[]> = {
   community_alerts: ["id", "kind", "place", "created_at", "expires_at", "cleared_at", "posted_by"],
   visitor_followups: ["id", "visitor_question_id", "phone", "channel", "lang", "created_at"],
   eval_questions: ["id", "text", "expected_topic", "label"],
+  question_ideas: ["id", "topic", "question", "keywords", "support", "examples", "status", "week", "question_id", "created_at", "decided_at"],
 };
 
 const NOT_NULL: Record<string, string[]> = {
@@ -37,6 +38,7 @@ const NOT_NULL: Record<string, string[]> = {
   recommendation_ledger: ["from_operator", "to_operator_id", "visitor_hash"], coach_themes: ["run_id", "theme", "sentiment", "count"],
   community_alerts: ["kind", "expires_at", "posted_by"],
   visitor_followups: ["visitor_question_id", "phone", "channel", "lang"],
+  question_ideas: ["topic", "question", "keywords", "support", "week"],
 };
 
 const ENUMS: Record<string, Record<string, string[]>> = {
@@ -46,6 +48,7 @@ const ENUMS: Record<string, Record<string, string[]>> = {
   coach_themes: { sentiment: ["positive", "negative"] },
   visitor_followups: { channel: ["whatsapp", "sms"], lang: ["en", "de", "nl"] },
   community_alerts: { kind: ["flood", "road", "storm", "boats", "closed", "clear"] },
+  question_ideas: { status: ["proposed", "approved", "dismissed"] },
 };
 
 const uuid = () => globalThis.crypto.randomUUID();
@@ -66,6 +69,7 @@ const DEFAULTS: Record<string, () => Row> = {
   community_alerts: () => ({ id: uuid(), created_at: now() }),
   visitor_followups: () => ({ id: uuid(), created_at: now() }),
   eval_questions: () => ({ id: uuid(), label: "evaluation test data" }),
+  question_ideas: () => ({ id: uuid(), status: "proposed", examples: [], created_at: now() }),
 };
 
 /** Embedded resources, as PostgREST resolves them from foreign keys (only the ones tourcoach.server.ts selects). */

@@ -21,6 +21,8 @@ import {
   PROBLEM_STATEMENT,
   REAL_LIMITS,
   REAL_LIVE,
+  COACHING_PROMISE,
+  DATA_ANALYSED,
   REPO_URL,
   SCREENS,
   SMS_SIM_CHIPS,
@@ -619,8 +621,35 @@ function CommunityPanel() {
 }
 
 function RealPanel() {
+  const indicators = new Set(EVIDENCE.map((e) => e.indicator)).size;
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <section
+        className="rounded-xl border-2 border-foreground bg-primary p-5 text-primary-foreground lg:col-span-2"
+        aria-labelledby="coaching-promise"
+      >
+        <h3 id="coaching-promise" className="font-display text-2xl font-bold leading-snug">
+          {COACHING_PROMISE}
+        </h3>
+        <p className="mt-1 text-sm opacity-90">What Teranga has analysed so far, counted from the live data:</p>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {DATA_ANALYSED.map((d) => (
+            <li key={d.figure} className="rounded-xl bg-card p-3 text-card-foreground">
+              <p className="font-display text-3xl font-bold leading-none">{d.figure}</p>
+              <p className="mt-1 text-sm font-bold leading-snug">{d.label}</p>
+              <p className="mt-1 text-xs leading-snug text-muted-foreground">{d.detail}</p>
+            </li>
+          ))}
+          <li className="rounded-xl bg-card p-3 text-card-foreground">
+            <p className="font-display text-3xl font-bold leading-none">{indicators}</p>
+            <p className="mt-1 text-sm font-bold leading-snug">World Bank indicators, each linked to its source</p>
+            <p className="mt-1 text-xs leading-snug text-muted-foreground">Re-checked against the live World Bank API by a script.</p>
+          </li>
+        </ul>
+        <p className="mt-3 text-xs opacity-90">
+          No model was trained on this data. The AI reads the reviews at run time, the questions tuned and tested the matching rules, and the Wolof sentences checked the AI’s translation.
+        </p>
+      </section>
       <section className="rounded-xl border bg-card p-4" aria-labelledby="live">
         <h3 id="live" className="text-lg font-bold">
           Live and working

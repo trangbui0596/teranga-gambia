@@ -170,16 +170,21 @@ const NONE: Evidence = { hits: 0, strong: 0, lone: 0 };
 
 /** Evidence per topic plus the out-of-scope flags. `hits` = distinct words/phrases (R1), `strong` = hits with a non-weak word,
  *  `lone` = hits made only of a weak word that is on the allow-list for that topic (R2). */
-function analyse(text: string): {
+function analyse(
+  text: string,
+  extra?: Record<string, readonly string[]>,
+): {
   topics: Record<string, Evidence>;
   blocked: boolean;
   soft: boolean;
   stay: boolean;
 } {
   const words = tokenize(text);
+  // `extra` = keywords of operator-approved extra question cards (src/lib/ideas.ts). Fixed topics always win a name clash.
+  const kw: Record<string, readonly string[]> = extra ? { ...extra, ...KEYWORDS } : KEYWORDS;
   let all: Hit[] = [];
-  for (const topic of Object.keys(KEYWORDS))
-    all = all.concat(findHits(words, topic, KEYWORDS[topic] ?? []));
+  for (const topic of Object.keys(kw))
+    all = all.concat(findHits(words, topic, kw[topic] ?? []));
   all = all.concat(
     findHits(words, HARD, OUT_OF_SCOPE),
     findHits(words, SOFT, CONTEXT_WORDS),
@@ -190,7 +195,7 @@ function analyse(text: string): {
     (a) => !all.some((b) => b.from <= a.from && a.to <= b.to && b.to - b.from > a.to - a.from),
   );
   const topics: Record<string, Evidence> = {};
-  for (const topic of Object.keys(KEYWORDS)) {
+  for (const topic of Object.keys(kw)) {
     const spans = new Map<string, string[]>(); // R1: hits on the same words (e.g. "child" and "children") count once
     for (const h of kept)
       if (h.topic === topic) {
@@ -229,6 +234,7 @@ type WithSample = { is_sample?: boolean | null };
 export function matchQuestion<A extends MatchableAnswer & WithSample>(
   text: string,
   answers: A[],
+  extra?: Record<string, readonly string[]>,
 ): { answer: A | null; confidence: number; topic?: string } {
   const byTopic = new Map<string, A>();
   for (const a of answers) {
@@ -236,7 +242,7 @@ export function matchQuestion<A extends MatchableAnswer & WithSample>(
     const cur = byTopic.get(topic);
     if (!cur || (cur.is_sample && !a.is_sample)) byTopic.set(topic, a);
   }
-  const ev = analyse(text);
+  const ev = analyse(text, extra);
   if (ev.blocked) return { answer: null, confidence: 0 }; // R5: about something Noor does not cover
   if (ev.stay && Object.entries(ev.topics).some(([t, e]) => t !== "meeting point" && e.strong > 0))
     return { answer: null, confidence: 0 }; // R5: about the hotel
