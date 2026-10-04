@@ -7,11 +7,12 @@ export const VIDEO_URL = "";
 /** Add screenshots after filming (files in public/screens/); the "Screens" tab appears automatically. */
 export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 
-export type TabId = "how" | "offline" | "community" | "ai" | "real" | "sources" | "screens";
+export type TabId = "how" | "offline" | "sms" | "community" | "ai" | "real" | "sources" | "screens";
 
 export const TABS: Array<{ id: TabId; label: string }> = [
   { id: "how", label: "How it works" },
   { id: "offline", label: "Works offline" },
+  { id: "sms", label: "Try SMS" },
   { id: "community", label: "Community" },
   { id: "ai", label: "AI beyond SMS" },
   { id: "real", label: "What\u2019s real" },
@@ -213,3 +214,10 @@ export const PRIVACY = [
   "Visitor voice reviews are deleted when the visitor says NO, or after 24 hours, unless the visitor chooses to share them with Noor.",
   "Noor’s own recordings are kept until the project owner deletes them. There is no self-serve delete command yet.",
 ];
+
+export const SMS_SIM_NOTE =
+  "Simulation: this shows the text Teranga would send. It uses the same code and the demo data, and nothing is sent to any phone. Real SMS delivery in the US waits for carrier registration.";
+export const SMS_SIM_CHIPS = {
+  noor: ["COACH", "LISTING", "WEEK", "HELP"],
+  visitor: ["How much does it cost?", "Where do we meet?", "Do I need a visa?", "STATUS"],
+};

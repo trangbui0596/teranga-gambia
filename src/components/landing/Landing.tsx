@@ -18,6 +18,8 @@ import {
   REAL_LIMITS,
   REAL_LIVE,
   REPO_URL,
+  SMS_SIM_CHIPS,
+  SMS_SIM_NOTE,
   ROLES,
   SAFEGUARDS,
   SCREENS,
@@ -294,6 +296,158 @@ function AiPanel() {
   );
 }
 
+type Bubble = { from: "me" | "teranga"; text: string; parts?: number };
+
+function SmsPanel() {
+  const [as, setAs] = useState<"noor" | "visitor">("noor");
+  const [lang, setLang] = useState("wo");
+  const [text, setText] = useState("");
+  const [log, setLog] = useState<Bubble[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const pickRole = (r: "noor" | "visitor") => {
+    setAs(r);
+    setLang(r === "noor" ? "wo" : "en");
+    setLog([]);
+  };
+  const send = async (raw: string) => {
+    const t = raw.trim();
+    if (!t || busy) return;
+    setText("");
+    setBusy(true);
+    setLog((l) => [...l, { from: "me", text: t }]);
+    try {
+      const res = await fetch("/api/public/sms-sim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ as, text: t, lang }),
+      });
+      const j = (await res.json()) as { reply?: string; parts?: number };
+      setLog((l) => [
+        ...l,
+        {
+          from: "teranga",
+          text: j.reply ?? "The simulator could not answer just now.",
+          ...(j.parts ? { parts: j.parts } : {}),
+        },
+      ]);
+    } catch {
+      setLog((l) => [...l, { from: "teranga", text: "The simulator could not answer just now." }]);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const langs =
+    as === "noor"
+      ? [
+          ["wo", "Wolof"],
+          ["en", "English"],
+        ]
+      : [
+          ["en", "English"],
+          ["de", "Deutsch"],
+          ["nl", "Nederlands"],
+        ];
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+      <div>
+        <p className="text-lg font-semibold">Text Teranga the way a feature phone would.</p>
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Who is texting">
+          {(["noor", "visitor"] as const).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => pickRole(r)}
+              aria-pressed={as === r}
+              className={`min-h-10 rounded-full border-2 px-4 font-bold ${as === r ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-secondary"}`}
+            >
+              {r === "noor" ? "I am Noor" : "I am a visitor"}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Language">
+          {langs.map(([code, name]) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setLang(code!)}
+              aria-pressed={lang === code}
+              className={`min-h-9 rounded-full border px-3 text-sm font-bold ${lang === code ? "border-foreground bg-secondary" : "border-border bg-card hover:bg-secondary"}`}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-sm font-bold">Try:</p>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {SMS_SIM_CHIPS[as].map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => send(c)}
+              className="min-h-9 rounded-full border border-border bg-card px-3 text-sm hover:bg-secondary"
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        <p className="mt-4 rounded-xl border-2 border-foreground bg-highlight p-3 text-sm text-foreground">
+          {SMS_SIM_NOTE}
+        </p>
+      </div>
+
+      <div className="rounded-3xl border-2 border-foreground/40 bg-card p-3">
+        <div className="min-h-64 space-y-2 rounded-2xl bg-secondary/40 p-3" aria-live="polite">
+          {log.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No messages yet. Tap a suggestion or type below.
+            </p>
+          ) : null}
+          {log.map((b, i) => (
+            <div key={i} className={b.from === "me" ? "flex justify-end" : "flex justify-start"}>
+              <div
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-snug ${b.from === "me" ? "bg-primary text-primary-foreground" : "bg-card font-mono"}`}
+              >
+                {b.text}
+                {b.parts ? (
+                  <span className="mt-1 block text-xs opacity-70">
+                    {b.parts} SMS {b.parts === 1 ? "part" : "parts"}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ))}
+          {busy ? <p className="text-sm text-muted-foreground">…</p> : null}
+        </div>
+        <form
+          className="mt-2 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void send(text);
+          }}
+        >
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={160}
+            aria-label="Your text message"
+            placeholder={as === "noor" ? "COACH, LISTING, WEEK, HELP" : "Ask about the tour"}
+            className="min-h-11 flex-1 rounded-full border-2 border-border bg-background px-4"
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className="min-h-11 rounded-full bg-primary px-5 font-bold text-primary-foreground disabled:opacity-50"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function CommunityPanel() {
   const low = evidence("lowLand");
   return (
@@ -426,6 +580,7 @@ function ScreensPanel() {
 const PANELS: Record<TabId, () => ReactNode> = {
   how: HowPanel,
   offline: OfflinePanel,
+  sms: SmsPanel,
   community: CommunityPanel,
   ai: AiPanel,
   real: RealPanel,

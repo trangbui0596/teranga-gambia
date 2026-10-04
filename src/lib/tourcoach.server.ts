@@ -14,7 +14,9 @@ import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { weeklyDigestWhatsApp } from "./digest.templates";
 import { buildListingPack, formatListingPack, listingCopyText, type ApprovedAnswers } from "./listing";
 import { ALERT_MENU, ALERT_TTL_HOURS, BILINGUAL_FLAG, COMMUNITY_MENU, alertPosted, alertSms, formatAlertList, formatBilingualItem, formatPulse, noNotices, parseAlertCommand, translationLabel, visitorNotice, type ActiveAlert } from "./community";
-import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, toSmsText, unknownSms, weeklyDigestSmsWo } from "./sms-text";
+import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, smsSegments, toSmsText, unknownSms, weeklyDigestSmsWo, type OperatorSmsCommand } from "./sms-text";
+import type { StoredRun } from "./coach";
+import { formatWeeklyReport, weeklyInsight, weeklyInsightSms } from "./weekly-insight";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
 import { W, bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";
@@ -425,12 +427,18 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   // DEMO SHORTCUT: champion login by PIN over WhatsApp. Not a real authentication method.
   const pinMatch = /^REVIEW\s+(\S+)$/i.exec(text);
   const communityMatch = /^COMMUNITY\s+(\S+)$/i.exec(text);
-  if (channel === "sms" && (pinMatch || communityMatch || c.role === "champion")) return "Review answers on WhatsApp, not by SMS.";
+  if (channel === "sms" && pinMatch) return "Review answers on WhatsApp, not by SMS.";
+  // By SMS a community champion can only post and see notices (SMS keeps working when mobile data does not).
+  if (channel === "sms" && c.role === "champion" && !communityMatch && upper !== "EXIT") {
+    return c.state === "community" && /^(ALERT|ALERTS|PULSE|MENU)\b/.test(upper)
+      ? champion(c, upper, null, input.from, save, text)
+      : "Use WhatsApp for this. By SMS: ALERT, ALERTS, PULSE, EXIT.";
+  }
   // DEMO SHORTCUT: the community champion logs in with the same demo PIN. Not a real authentication method.
   if (communityMatch) {
     if (safeEqual(communityMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "community", current_question_position: null, current_review_answer_id: null });
-      return COMMUNITY_MENU;
+      return channel === "sms" ? "Mbootaay: ALERT (send a notice), ALERTS, PULSE. Send EXIT to leave." : COMMUNITY_MENU;
     }
     return bi(W.wrongPin, "Wrong PIN.");
   }
@@ -765,6 +773,10 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     try { await finishAnswers(10000); } catch (e) { console.error("[pipeline] error step=finishAnswers", e); }
     return showNextPending(save);
   }
+  if (upper === "SYNC") {
+    const r = await weeklySync(false);
+    return r.report + (await smsCopyNote(r.sms));
+  }
   if (upper === "LEDGER") return ledgerSummary();
   if (upper === "LISTING") return draftListing();
   if (["COACH", "COACH EN", "COACH MORE", "COACH MORE EN"].includes(upper)) {
@@ -866,53 +878,126 @@ async function replyOperatorSms(to: string, body: string) {
   );
 }
 
-/** Inbound SMS. Noor's number gets COACH / LISTING / WEEK / HELP; everyone else is ignored unless SMS_VISITOR_MODE=on. */
+/** The SMS text for one of Noor's commands. Shared by the real SMS webhook and the public simulator (which sends nothing). */
+async function operatorSmsBody(parsed: OperatorSmsCommand): Promise<string> {
+  const lang = parsed?.lang ?? "wo";
+  try {
+    if (!parsed) return unknownSms(lang);
+    if (parsed.cmd === "help") return helpSms(lang);
+    if (parsed.cmd === "listing") return listingSms(await currentListingPack(), lang);
+    if (parsed.cmd === "week") return weeklyInsightSms((await weeklySync(false)).insight, lang);
+    const coach = await import("./coach.server");
+    const r = await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang);
+    return r.run ? coachSms(r.run, lang) : toSmsText(r.messages[0]);
+  } catch (e) {
+    console.error("[sms] command failed", e);
+    return lang === "wo" ? "Teranga: jafe-jafe amna. Yonnee ko ci kanam tuuti." : "Teranga: something went wrong. Please try again in a minute.";
+  }
+}
+
+/** Inbound SMS. Noor's number gets COACH / LISTING / WEEK / HELP. A community champion can log in with COMMUNITY <PIN> and
+ *  post ALERT notices by SMS (SMS keeps working when mobile data does not). Everyone else is ignored unless SMS_VISITOR_MODE=on. */
 export async function handleSms(input: { from: string; body: string }): Promise<void> {
   if (isCarrierKeyword(input.body)) return; // Twilio answers STOP and START itself
   if (isOperatorCaller(input.from)) {
-    const parsed = parseOperatorSms(input.body);
-    const lang = parsed?.lang ?? "wo";
-    let body: string;
-    try {
-      if (!parsed) body = unknownSms(lang);
-      else if (parsed.cmd === "help") body = helpSms(lang);
-      else if (parsed.cmd === "listing") body = listingSms(await currentListingPack(), lang);
-      else if (parsed.cmd === "week") {
-        const d = await digestData();
-        body = lang === "en" ? weeklyDigestSms(d.total, d.topics, d.unanswered) : weeklyDigestSmsWo(d.total, d.topics, d.unanswered.length);
-      } else {
-        const coach = await import("./coach.server");
-        const r = await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang);
-        body = r.run ? coachSms(r.run, lang) : toSmsText(r.messages[0]);
-      }
-    } catch (e) {
-      console.error("[sms] command failed", e);
-      body = lang === "wo" ? "Teranga: jafe-jafe amna. Yonnee ko ci kanam tuuti." : "Teranga: something went wrong. Please try again in a minute.";
-    }
-    await replyOperatorSms(input.from, body);
+    await replyOperatorSms(input.from, await operatorSmsBody(parseOperatorSms(input.body)));
     return;
   }
-  if (process.env["SMS_VISITOR_MODE"] !== "on") return; // visitors use WhatsApp; text-only SMS for visitors is opt-in
-  await handleVisitorSms(input);
+  await handleOtherSms(input);
 }
 
-/** Text-only visitor Q&A over SMS (no voice notes, no champion login). Same conversation logic as WhatsApp. */
-async function handleVisitorSms(input: { from: string; body: string }) {
+/** Text-only SMS from anyone but Noor: community champion sessions, and visitors when SMS_VISITOR_MODE=on. */
+async function handleOtherSms(input: { from: string; body: string }) {
   const db = supabaseAdmin;
+  const visitorMode = process.env["SMS_VISITOR_MODE"] === "on";
+  const wantsLogin = /^COMMUNITY\s+\S+$/i.test(input.body.trim());
   const phone_hash = hashPhone(input.from);
   let { data: conv } = await db.from("conversations").select("*").eq("phone_hash", phone_hash).maybeSingle();
-  if (!conv) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
+  if (!conv && (visitorMode || wantsLogin)) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
+  if (!conv) return; // a stranger texting a random word: no row, no reply, no cost
   const c = conv as unknown as Conv;
+  const inCommunity = c.role === "champion" && c.state === "community";
+  if (!visitorMode && !wantsLogin && !inCommunity) return;
   const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
   const r = await route(c, { from: input.from, body: input.body, mediaUrl: null }, save, "sms");
   const reply: Reply = typeof r === "string" ? { text: r } : r;
   const parts = [reply.text, reply.secondText].filter((x): x is string => !!x).map((x) => toSmsText(x));
   for (const body of parts) {
     try { if (!(await twilioSend(input.from, env("TWILIO_SMS_FROM"), body))) break; }
-    catch (e) { console.error("[sms] visitor reply failed", (e as Error).message); break; }
+    catch (e) {
+      console.error("[sms] reply failed", (e as Error).message);
+      // A community champion in a notice session still gets the answer on WhatsApp if US SMS is blocked.
+      if (inCommunity || wantsLogin) await sendWhatsApp(input.from, `SMS copy (shown here because US SMS registration is pending):\n${body}`).catch(() => undefined);
+      break;
+    }
   }
 }
 
+/** Public simulator for the home page: what the SMS would say. Reads data, writes nothing, sends nothing. */
+export async function simulateSms(as: "noor" | "visitor", text: string, lang: "en" | "de" | "nl" | "wo"): Promise<{ reply: string; parts: number }> {
+  const body = text.trim().slice(0, 160);
+  let reply: string;
+  if (isCarrierKeyword(body)) reply = "(Twilio handles STOP and START itself; no reply is sent.)";
+  else if (as === "noor") {
+    const parsed = parseOperatorSms(body);
+    reply = await operatorSmsBody(parsed ? { ...parsed, lang: lang === "en" ? "en" : parsed.lang } : null);
+  } else reply = await visitorSmsAnswer(body, lang === "wo" ? "en" : lang);
+  return { reply, parts: smsSegments(reply) };
+}
+
+/** Stateless visitor answer for the simulator: the same matching and labels as WhatsApp, text only. */
+async function visitorSmsAnswer(q: string, lang: Lang): Promise<string> {
+  if (!q) return "Please type your question.";
+  const notice = visitorNotice(await activeAlerts(), lang);
+  if (q.toUpperCase() === "STATUS") return toSmsText(notice || noNotices(lang));
+  const { data } = await supabaseAdmin.from("answers")
+    .select("id, english, german, dutch, is_sample, flags, recordings(questions(topic))").eq("review_status", "approved");
+  const answers = (data ?? []) as unknown as Array<{
+    id: string; english: string | null; german: string | null; dutch: string | null; is_sample: boolean; flags: string[] | null;
+    recordings: { questions: { topic: string } | null } | null;
+  }>;
+  const { answer } = matchQuestion(q, answers);
+  const text = answer?.[FIELD[lang]] ?? null;
+  if (!answer || !text) return toSmsText([NOT_SURE[lang], ...(notice ? ["", notice] : [])].join("\n"));
+  return toSmsText([
+    text + (answer.is_sample ? " (Sample answer)" : ""),
+    "- " + translationLabel(lang, !!answer.flags?.includes(BILINGUAL_FLAG)),
+    ...(notice ? ["", notice] : []),
+  ].join("\n"));
+}
+
+/** Weekly sync: re-read the public reviews (fresh = ignore the 24 h cache), add what visitors asked and said this week,
+ *  and refine the coaching. Counts only. */
+export async function weeklySync(fresh: boolean, budgetMs = 45000) {
+  const coach = await import("./coach.server");
+  let run: StoredRun | null = null;
+  let prev: StoredRun | null = null;
+  try {
+    if (fresh) {
+      prev = await coach.dbStore.latest();
+      const r = await coach.refreshCoaching(aiText, budgetMs);
+      if (r.places_count > 0) run = await coach.dbStore.latest(); else { run = prev; prev = null; }
+    } else {
+      run = await coach.dbStore.latest();
+      prev = await coach.previousRun();
+    }
+  } catch (e) { console.error("[sync] review refresh failed", e); }
+  const d = await digestData();
+  const byTopic = Object.fromEntries(d.topics.map((t) => [t.topic, t.count]));
+  const insight = weeklyInsight({ total: d.total, byTopic, unanswered: byTopic["unanswered"] ?? 0, notClear: d.notClear }, run, prev);
+  return { insight, report: formatWeeklyReport(insight), sms: weeklyInsightSms(insight, "wo") };
+}
+
+/** The weekly job (POST /api/public/weekly-sync with the digest secret): fresh review scan, then the helper's report on
+ *  WhatsApp (the smartphone session) and a short SMS to Noor. */
+export async function runWeeklySync() {
+  const r = await weeklySync(true);
+  const to = env("DEMO_SMS_NUMBER");
+  const sms = await sendOperatorSms(r.sms);
+  let whatsapp = false;
+  try { whatsapp = await sendWhatsApp(to, r.report); } catch (e) { console.error("[sync] WhatsApp report failed", (e as Error).message); }
+  return { sms, whatsapp, visitors: r.insight.total, actions: r.insight.actions.length, reviewShifts: r.insight.shifts.length };
+}
 
 /** Free-text (or voice) champion messages go to the tool-limited AI assistant. One reply per message. */
 async function championAgent(c: Conv, text: string, mediaUrl: string | null, save: Save) {
@@ -1103,10 +1188,10 @@ async function digestData() {
   const db = supabaseAdmin;
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
   const { data: vqs } = await db.from("visitor_questions")
-    .select("id, text, is_sample, answers(recordings(questions(topic)))")
+    .select("id, text, is_sample, was_clear, answers(recordings(questions(topic)))")
     .gte("created_at", since);
   const rows = (vqs ?? []) as unknown as Array<{
-    id: string; text: string; is_sample: boolean; answers: { recordings: { questions: { topic: string } | null } | null } | null;
+    id: string; text: string; is_sample: boolean; was_clear: boolean | null; answers: { recordings: { questions: { topic: string } | null } | null } | null;
   }>;
   const counts: Record<string, number> = {};
   for (const r of rows) {
@@ -1118,7 +1203,7 @@ async function digestData() {
   const unanswered = ((un ?? []) as unknown as Array<{ visitor_questions: { text: string; is_sample: boolean } | null }>)
     .map((u) => u.visitor_questions).filter((v): v is { text: string; is_sample: boolean } => !!v)
     .map((v) => ({ text: v.text, isSample: v.is_sample }));
-  return { total: rows.length, topics: Object.entries(counts).map(([topic, count]) => ({ topic, count })), unanswered };
+  return { total: rows.length, topics: Object.entries(counts).map(([topic, count]) => ({ topic, count })), unanswered, notClear: rows.filter((r) => r.was_clear === false).length };
 }
 
 /** Noor gets the digest by SMS in Wolof (counts only, so it works without internet); her helper's WhatsApp fallback has the full text. */

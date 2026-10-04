@@ -15,11 +15,13 @@ import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
 import { Route as ApiPublicProcessPendingRouteImport } from './routes/api/public/process-pending'
 import { Route as ApiPublicPurgeRouteImport } from './routes/api/public/purge'
+import { Route as ApiPublicSmsSimRouteImport } from './routes/api/public/sms-sim'
 import { Route as ApiPublicSmsWebhookRouteImport } from './routes/api/public/sms-webhook'
 import { Route as ApiPublicVoiceIncomingRouteImport } from './routes/api/public/voice-incoming'
 import { Route as ApiPublicVoiceRecordedRouteImport } from './routes/api/public/voice-recorded'
 import { Route as ApiPublicVoiceStatusRouteImport } from './routes/api/public/voice-status'
 import { Route as ApiPublicWeeklyDigestRouteImport } from './routes/api/public/weekly-digest'
+import { Route as ApiPublicWeeklySyncRouteImport } from './routes/api/public/weekly-sync'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -52,6 +54,11 @@ const ApiPublicPurgeRoute = ApiPublicPurgeRouteImport.update({
   path: '/api/public/purge',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSmsSimRoute = ApiPublicSmsSimRouteImport.update({
+  id: '/api/public/sms-sim',
+  path: '/api/public/sms-sim',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSmsWebhookRoute = ApiPublicSmsWebhookRouteImport.update({
   id: '/api/public/sms-webhook',
   path: '/api/public/sms-webhook',
@@ -77,6 +84,11 @@ const ApiPublicWeeklyDigestRoute = ApiPublicWeeklyDigestRouteImport.update({
   path: '/api/public/weekly-digest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWeeklySyncRoute = ApiPublicWeeklySyncRouteImport.update({
+  id: '/api/public/weekly-sync',
+  path: '/api/public/weekly-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhatsappWebhookRoute =
   ApiPublicWhatsappWebhookRouteImport.update({
     id: '/api/public/whatsapp-webhook',
@@ -91,11 +103,13 @@ export interface FileRoutesByFullPath {
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
+  '/api/public/sms-sim': typeof ApiPublicSmsSimRoute
   '/api/public/sms-webhook': typeof ApiPublicSmsWebhookRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
+  '/api/public/weekly-sync': typeof ApiPublicWeeklySyncRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -105,11 +119,13 @@ export interface FileRoutesByTo {
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
+  '/api/public/sms-sim': typeof ApiPublicSmsSimRoute
   '/api/public/sms-webhook': typeof ApiPublicSmsWebhookRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
+  '/api/public/weekly-sync': typeof ApiPublicWeeklySyncRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesById {
@@ -120,11 +136,13 @@ export interface FileRoutesById {
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
+  '/api/public/sms-sim': typeof ApiPublicSmsSimRoute
   '/api/public/sms-webhook': typeof ApiPublicSmsWebhookRoute
   '/api/public/voice-incoming': typeof ApiPublicVoiceIncomingRoute
   '/api/public/voice-recorded': typeof ApiPublicVoiceRecordedRoute
   '/api/public/voice-status': typeof ApiPublicVoiceStatusRoute
   '/api/public/weekly-digest': typeof ApiPublicWeeklyDigestRoute
+  '/api/public/weekly-sync': typeof ApiPublicWeeklySyncRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRouteTypes {
@@ -136,11 +154,13 @@ export interface FileRouteTypes {
     | '/api/public/eval-match'
     | '/api/public/process-pending'
     | '/api/public/purge'
+    | '/api/public/sms-sim'
     | '/api/public/sms-webhook'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
     | '/api/public/weekly-digest'
+    | '/api/public/weekly-sync'
     | '/api/public/whatsapp-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -150,11 +170,13 @@ export interface FileRouteTypes {
     | '/api/public/eval-match'
     | '/api/public/process-pending'
     | '/api/public/purge'
+    | '/api/public/sms-sim'
     | '/api/public/sms-webhook'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
     | '/api/public/weekly-digest'
+    | '/api/public/weekly-sync'
     | '/api/public/whatsapp-webhook'
   id:
     | '__root__'
@@ -164,11 +186,13 @@ export interface FileRouteTypes {
     | '/api/public/eval-match'
     | '/api/public/process-pending'
     | '/api/public/purge'
+    | '/api/public/sms-sim'
     | '/api/public/sms-webhook'
     | '/api/public/voice-incoming'
     | '/api/public/voice-recorded'
     | '/api/public/voice-status'
     | '/api/public/weekly-digest'
+    | '/api/public/weekly-sync'
     | '/api/public/whatsapp-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -179,11 +203,13 @@ export interface RootRouteChildren {
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
   ApiPublicProcessPendingRoute: typeof ApiPublicProcessPendingRoute
   ApiPublicPurgeRoute: typeof ApiPublicPurgeRoute
+  ApiPublicSmsSimRoute: typeof ApiPublicSmsSimRoute
   ApiPublicSmsWebhookRoute: typeof ApiPublicSmsWebhookRoute
   ApiPublicVoiceIncomingRoute: typeof ApiPublicVoiceIncomingRoute
   ApiPublicVoiceRecordedRoute: typeof ApiPublicVoiceRecordedRoute
   ApiPublicVoiceStatusRoute: typeof ApiPublicVoiceStatusRoute
   ApiPublicWeeklyDigestRoute: typeof ApiPublicWeeklyDigestRoute
+  ApiPublicWeeklySyncRoute: typeof ApiPublicWeeklySyncRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
@@ -231,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPurgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sms-sim': {
+      id: '/api/public/sms-sim'
+      path: '/api/public/sms-sim'
+      fullPath: '/api/public/sms-sim'
+      preLoaderRoute: typeof ApiPublicSmsSimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sms-webhook': {
       id: '/api/public/sms-webhook'
       path: '/api/public/sms-webhook'
@@ -266,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWeeklyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/weekly-sync': {
+      id: '/api/public/weekly-sync'
+      path: '/api/public/weekly-sync'
+      fullPath: '/api/public/weekly-sync'
+      preLoaderRoute: typeof ApiPublicWeeklySyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp-webhook': {
       id: '/api/public/whatsapp-webhook'
       path: '/api/public/whatsapp-webhook'
@@ -283,11 +323,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
   ApiPublicProcessPendingRoute: ApiPublicProcessPendingRoute,
   ApiPublicPurgeRoute: ApiPublicPurgeRoute,
+  ApiPublicSmsSimRoute: ApiPublicSmsSimRoute,
   ApiPublicSmsWebhookRoute: ApiPublicSmsWebhookRoute,
   ApiPublicVoiceIncomingRoute: ApiPublicVoiceIncomingRoute,
   ApiPublicVoiceRecordedRoute: ApiPublicVoiceRecordedRoute,
   ApiPublicVoiceStatusRoute: ApiPublicVoiceStatusRoute,
   ApiPublicWeeklyDigestRoute: ApiPublicWeeklyDigestRoute,
+  ApiPublicWeeklySyncRoute: ApiPublicWeeklySyncRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport

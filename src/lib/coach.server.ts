@@ -141,6 +141,22 @@ export const dbStore: CoachStore = {
   },
 };
 
+/** The run before the latest one, for week-on-week changes. */
+export async function previousRun(): Promise<StoredRun | null> {
+  const { data } = await supabaseAdmin.from("coach_runs" as never).select("*").order("fetched_at", { ascending: false }).range(1, 1);
+  const run = ((data ?? []) as unknown as Array<StoredRun & { id: string }>)[0];
+  if (!run) return null;
+  const { data: th } = await supabaseAdmin.from("coach_themes" as never).select("theme, sentiment, count").eq("run_id", run.id).order("count", { ascending: false });
+  return { ...run, themes: (th ?? []) as unknown as StoredRun["themes"] };
+}
+
+/** Fresh Google Maps run for the weekly sync (ignores the 24 h cache). Failed runs are not saved. */
+export async function refreshCoaching(aiText: AiFn, budgetMs = 45000, store: CoachStore = dbStore, fetcher = fetchAndAnalyze) {
+  const run = await fetcher(aiText, budgetMs);
+  if (run.places_count > 0 || run.api_errors.length === 0) await store.save(run);
+  return run;
+}
+
 /** Cached for 24 h: repeated COACH calls make no Google or AI calls. */
 const fixedMessage = (key: "notReady" | "noRecent" | "nothingMore", lang: CoachLanguage) =>
   `${COACH_TEMPLATES[key][lang]}${lang === "wo" ? `\n${COACH_TEMPLATES.englishHint.wo}\n${COACH_TEMPLATES.machineLabel.wo}\n${COACH_TEMPLATES.machineLabel.en}` : ""}`;
