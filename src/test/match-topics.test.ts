@@ -46,3 +46,20 @@ describe("approval gate", () => {
     expect(finish).not.toHaveBeenCalled();
   });
 });
+
+describe("tie-break and pickup wording", () => {
+  it.each([
+    ["Can we bring our kids?", "children"],
+    ["Can you pick us up from our hotel?", "meeting point"],
+    ["What should I bring with me?", "what to bring"],
+    ["Is it ok to bring a baby?", "children"],
+  ])("%s -> %s", (q, topic) => {
+    const r = matchQuestion(q, samples);
+    expect(r.answer?.recordings.questions.topic).toBe(topic);
+    expect(r.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLD);
+  });
+  it("still unsure when two topics tie on non-generic words", () => {
+    // 'safe' (safety) and 'lunch' (food) both strong, one each: never guess
+    expect(matchQuestion("Is lunch safe?", samples).answer).toBeNull();
+  });
+});

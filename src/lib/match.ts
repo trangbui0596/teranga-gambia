@@ -12,7 +12,7 @@ export const KEYWORDS: Record<string, string[]> = {
   price: ["price", "prices", "cost", "costs", "how much", "fee", "fees", "pay", "dalasi", "euro", "euros", "expensive", "cheap", "money",
     "preis", "preise", "kosten", "kostet", "wie viel", "wieviel", "teuer", "billig", "bezahlen",
     "prijs", "kost", "hoeveel", "duur", "goedkoop", "betalen", "geld"],
-  "meeting point": ["where", "meet", "meeting", "pickup", "pick up", "location", "start", "wo", "treffen", "treffpunkt", "abholen", "waar", "ontmoeten", "verzamelen", "ophalen"],
+  "meeting point": ["where", "meet", "meeting", "pickup", "pick up", "pick us up", "pick me up", "pick you up", "collect us", "location", "start", "wo", "treffen", "treffpunkt", "abholen", "waar", "ontmoeten", "verzamelen", "ophalen"],
   duration: ["how long", "hours", "hour", "duration", "time", "wie lange", "dauer", "dauert", "stunden", "hoe lang", "duurt", "uur", "tijd"],
   "what to bring": ["bring", "wear", "pack", "need", "hat", "water", "shoes", "mitbringen", "mitnehmen", "anziehen", "meenemen", "aantrekken", "schoenen"],
   children: ["kids", "kid", "children", "child", "family", "age", "baby", "kind", "kinder", "familie", "alter", "kinderen", "gezin", "leeftijd"],
@@ -25,16 +25,24 @@ export const KEYWORDS: Record<string, string[]> = {
 
 const norm = (t: string) => " " + t.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\s]/gu, " ").split(/\s+/).filter(Boolean).join(" ") + " ";
 
-/** Keyword hits for one topic (phrases count as one hit; single words also match longer forms, e.g. "booking"). */
-export function topicHits(text: string, topic: string): number {
+/** Very common words that appear in questions about other topics too ("Can we bring our kids?"). They count as hits,
+ *  but are ignored when two topics tie, so the more specific topic wins. */
+const GENERIC = new Set(["bring", "need", "time", "where", "start", "wo", "age", "pay", "drink", "include"]);
+
+/** Keyword hits for one topic (phrases count as one hit; single words also match longer forms, e.g. "booking").
+ *  `strong` = hits that did not come from a generic word. */
+export function topicHitsDetailed(text: string, topic: string): { hits: number; strong: number } {
   const t = norm(text);
   const words = t.trim().split(" ");
-  let hits = 0;
+  let hits = 0, strong = 0;
   for (const k of KEYWORDS[topic] ?? []) {
-    if (k.includes(" ")) { if (t.includes(` ${k} `)) hits++; }
-    else if (words.some((w) => w === k || (k.length > 4 && w.startsWith(k)))) hits++;
+    const hit = k.includes(" ") ? t.includes(` ${k} `) : words.some((w) => w === k || (k.length > 4 && w.startsWith(k)));
+    if (hit) { hits++; if (!GENERIC.has(k)) strong++; }
   }
-  return hits;
+  return { hits, strong };
+}
+export function topicHits(text: string, topic: string): number {
+  return topicHitsDetailed(text, topic).hits;
 }
 
 type WithSample = { is_sample?: boolean | null };
@@ -47,10 +55,18 @@ export function matchQuestion<A extends MatchableAnswer & WithSample>(text: stri
     const cur = byTopic.get(topic);
     if (!cur || (cur.is_sample && !a.is_sample)) byTopic.set(topic, a);
   }
-  const scores = [...byTopic].map(([topic, answer]) => ({ topic, answer, hits: topicHits(text, topic) })).sort((x, y) => y.hits - x.hits);
+  const scores = [...byTopic].map(([topic, answer]) => ({ topic, answer, ...topicHitsDetailed(text, topic) })).sort((x, y) => y.hits - x.hits || y.strong - x.strong);
   const best = scores[0];
   if (!best || best.hits === 0) return { answer: null, confidence: 0 };
-  const tie = scores[1] && scores[1].hits === best.hits;
-  const confidence = tie ? 0.3 : best.hits >= 2 ? 0.9 : 0.65;
-  return { answer: confidence >= CONFIDENCE_THRESHOLD ? best.answer : null, confidence, topic: best.topic };
+  const tied = scores.filter((x) => x.hits === best.hits);
+  let winner = best;
+  let confidence = best.hits >= 2 ? 0.9 : 0.65;
+  if (tied.length > 1) {
+    // Tie: only a topic with MORE non-generic hits than every other tied topic wins; otherwise stay unsure (never guess).
+    const top = Math.max(...tied.map((x) => x.strong));
+    const leaders = tied.filter((x) => x.strong === top);
+    if (leaders.length === 1 && top > 0) { winner = leaders[0]!; confidence = 0.65; } else confidence = 0.3;
+  }
+  const best2 = winner;
+  return { answer: confidence >= CONFIDENCE_THRESHOLD ? best2.answer : null, confidence, topic: best2.topic };
 }
