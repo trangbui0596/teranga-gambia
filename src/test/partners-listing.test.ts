@@ -36,3 +36,23 @@ describe("2F draft listing", () => {
     expect(t).toMatch(/\[Noor's tour name\]/);
   });
 });
+
+describe("visitor-language partner texts", () => {
+  it("German and Dutch keep the opt-in, no-payment and simulated labels", async () => {
+    const { moreAsk, connectNoted, noOptIn } = await import("@/lib/partners");
+    for (const l of ["de", "nl"] as const) {
+      expect(moreAsk(l)).toMatch(/YES/);
+      expect(suggestionText(P[0]!, l)).toMatch(/CONNECT/);
+      expect(suggestionText(P[0]!, l)).not.toMatch(/\+?\d{7,}/);
+      expect(suggestionText(null, l)).toMatch(/imuli|imule/i);
+      expect(connectNoted(l)).toMatch(/gesimuleerd|simuliert/i);
+      expect(noOptIn(l)).toMatch(/opt-in/i);
+    }
+    expect(suggestionText(P[0]!, "de")).toMatch(/Keine Bezahlung/);
+    expect(suggestionText(P[0]!, "nl")).toMatch(/Geen betaling/);
+  });
+  it("ledger shows waiting contact requests only when there are some", () => {
+    expect(ledgerText([{ name: "x", received: 1 }], 1)).not.toMatch(/Contact requests/);
+    expect(ledgerText([{ name: "x", received: 1 }], 1, 2)).toMatch(/Contact requests waiting: 2/);
+  });
+});

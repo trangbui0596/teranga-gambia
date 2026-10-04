@@ -33,11 +33,23 @@ export const FEEDBACK_EMPTY: Record<FbLang, string> = {
   nl: "Sorry, dat kon ik niet verstaan. Stuur het opnieuw, of NO om te stoppen.",
 };
 
+/** Shown with the review link: the visitor posts it themselves (copy, paste, own stars). Nothing is posted for them. */
+export const REVIEW_STEPS: Record<FbLang, string> = {
+  en: "To post it: tap the link, paste your words (press and hold the message above to copy it) and choose your own stars. Nothing is posted for you.",
+  de: "So veröffentlichen Sie es: Link antippen, Ihren Text einfügen (die Nachricht oben gedrückt halten, um sie zu kopieren) und selbst Sterne wählen. Es wird nichts für Sie veröffentlicht.",
+  nl: "Zo plaats je het: tik op de link, plak je tekst (houd het bericht hierboven ingedrukt om te kopiëren) en kies zelf je sterren. Er wordt niets voor je geplaatst.",
+};
+
 export const NO_LINK = "[review link not set yet, Simulated]";
 
 /** Same link text for every visitor: takes no rating or sentiment input by design. */
 export function reviewLinkMessage(url: string | undefined | null): string {
   return url && /^https:\/\//.test(url) ? url : NO_LINK;
+}
+
+/** Second message after POST: how to post, then the same link everyone gets. */
+export function reviewStepsMessage(lang: FbLang, url: string | undefined | null): string {
+  return `${REVIEW_STEPS[lang]}\n${reviewLinkMessage(url)}`;
 }
 
 export const CLEANUP_INSTRUCTIONS = [

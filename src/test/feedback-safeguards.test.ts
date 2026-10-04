@@ -39,3 +39,17 @@ describe("visitor review safeguards", () => {
     expect(guardCleanup(raw, "").text).toBe(raw);
   });
 });
+
+import { reviewStepsMessage, REVIEW_STEPS } from "@/lib/feedback";
+describe("review steps message", () => {
+  it("tells the visitor to post it themselves and gives the same link to everyone", () => {
+    for (const l of ["en", "de", "nl"] as const) {
+      const m = reviewStepsMessage(l, "https://g.page/r/x");
+      expect(m).toContain(REVIEW_STEPS[l]);
+      expect(m.endsWith("https://g.page/r/x")).toBe(true);
+    }
+    expect(reviewStepsMessage("en", undefined)).toContain(NO_LINK);
+    expect(REVIEW_STEPS.en).toMatch(/Nothing is posted for you/);
+    expect(reviewStepsMessage.length).toBe(2); // language and link only: no rating or sentiment input
+  });
+});

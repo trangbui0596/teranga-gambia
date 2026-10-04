@@ -1,5 +1,5 @@
-import { MORE_ASK, FIT_BY_CHOICE, pickPartner, suggestionText, buildListing, ledgerText, type Partner } from "./partners";
-import { guardCleanup, reviewLinkMessage, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, FEEDBACK_DELETED, FEEDBACK_SHARED, FEEDBACK_EMPTY } from "./feedback";
+import { moreAsk, noOptIn, connectNoted, FIT_BY_CHOICE, pickPartner, suggestionText, buildListing, ledgerText, type Partner } from "./partners";
+import { guardCleanup, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, FEEDBACK_DELETED, FEEDBACK_SHARED, FEEDBACK_EMPTY, reviewStepsMessage } from "./feedback";
 // Teranga backend logic (server-only). Used by /api/public/whatsapp-webhook, /api/public/weekly-digest
 // and /api/public/eval-match.
 import { createHash, createHmac, timingSafeEqual } from "crypto";
@@ -11,6 +11,7 @@ import { numbersHeard } from "./numbers";
 import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } from "./champion-commands";
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
+import { weeklyDigestWhatsApp } from "./digest.templates";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
 import { W, bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";
@@ -446,18 +447,18 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
   const db = supabaseAdmin;
   if (upper === "FEEDBACK" || c.state.startsWith("feedback_")) return visitorFeedback(c, text, upper, save, mediaUrl);
   // Phase 2E (Simulated): opt-in partner suggestion. Asked once; only "<1|2|3> YES" suggests anything.
-  if (upper === "MORE" || upper === "RECOMMEND") { await save({ state: "more_wait" }); return MORE_ASK; }
+  if (upper === "MORE" || upper === "RECOMMEND") { await save({ state: "more_wait" }); return moreAsk(c.lang); }
   if (c.state === "more_wait") {
     const m = /^([123])\s*,?\s*YES$/.exec(upper);
-    if (!m) { await save({ state: "idle" }); return "No suggestion made (no opt-in). (Simulated)"; }
-    const r = await recommendPartner(c.phone_hash, m[1]!);
+    if (!m) { await save({ state: "idle" }); return noOptIn(c.lang); }
+    const r = await recommendPartner(c.phone_hash, m[1]!, c.lang);
     await save({ state: "idle", last_recommendation_id: r.ledgerId } as Partial<Conv>);
     return r.text;
   }
   if (upper === "CONNECT" && c.last_recommendation_id) {
     await db.from("recommendation_ledger" as never).update({ connect_requested: true } as never).eq("id", c.last_recommendation_id);
     await save({ last_recommendation_id: null } as Partial<Conv>);
-    return "Noted (Simulated). Noor or the champion will pass on the contact. Your number is not shared automatically. No payment involved.";
+    return connectNoted(c.lang);
   }
   if (upper === "EN" || upper === "DE" || upper === "NL") {
     await save({ lang: upper.toLowerCase() as Lang });
@@ -582,7 +583,7 @@ export async function visitorFeedback(c: Conv, text: string, upper: string, save
       if (!t) { await done(); return FEEDBACK_PROMPT[L]; }
       await db.from("visitor_feedback" as never).update({ status: "posted" } as never).eq("id", fid);
       // Stays in feedback_ready so SHARE / NO still work; purged after 24h unless shared.
-      return { text: t, secondText: reviewLinkMessage(process.env['GOOGLE_REVIEW_URL']) };
+      return { text: t, secondText: reviewStepsMessage(L, process.env['GOOGLE_REVIEW_URL']) };
     }
     return FEEDBACK_OPTIONS[L];
   }
@@ -624,21 +625,28 @@ async function monthCounts(): Promise<Record<string, number>> {
 }
 
 /** visitorHash must already be the salted hash; raw numbers are never stored or shared. */
-export async function recommendPartner(visitorHash: string, choice: string): Promise<{ text: string; ledgerId: string | null }> {
+export async function recommendPartner(visitorHash: string, choice: string, lang: Lang = "en"): Promise<{ text: string; ledgerId: string | null }> {
   const fit = FIT_BY_CHOICE[choice];
   const { data } = await supabaseAdmin.from("partner_operators" as never).select("id, name, tour_type, fit, language_support");
   const p = fit ? pickPartner((data ?? []) as Partner[], await monthCounts(), fit) : null;
-  if (!p) return { text: suggestionText(null), ledgerId: null };
+  if (!p) return { text: suggestionText(null, lang), ledgerId: null };
   const { data: row } = await supabaseAdmin.from("recommendation_ledger" as never)
     .insert({ from_operator: "Noor", to_operator_id: p.id, visitor_hash: visitorHash, is_sample: true } as never).select("id").single();
-  return { text: suggestionText(p), ledgerId: (row as { id: string } | null)?.id ?? null };
+  return { text: suggestionText(p, lang), ledgerId: (row as { id: string } | null)?.id ?? null };
+}
+
+/** Contact requests (CONNECT) this month that a person still has to pass on. */
+async function connectRequestCount(): Promise<number> {
+  const { count } = await supabaseAdmin.from("recommendation_ledger" as never)
+    .select("id", { count: "exact", head: true }).eq("connect_requested", true).gte("created_at", monthStart());
+  return count ?? 0;
 }
 
 export async function ledgerSummary(): Promise<string> {
   const { data } = await supabaseAdmin.from("partner_operators" as never).select("id, name").order("name");
   const counts = await monthCounts();
   const rows = ((data ?? []) as Array<{ id: string; name: string }>).map((p) => ({ name: p.name, received: counts[p.id] ?? 0 }));
-  return ledgerText(rows, Object.values(counts).reduce((a, b) => a + b, 0));
+  return ledgerText(rows, Object.values(counts).reduce((a, b) => a + b, 0), await connectRequestCount());
 }
 
 /** Draft listing from APPROVED answers only (English text). Nothing is sent to Google. */
@@ -867,10 +875,14 @@ export async function sendWeeklyDigest() {
     .map((u) => u.visitor_questions).filter((v): v is { text: string; is_sample: boolean } => !!v);
   const body = weeklyDigestSms(rows.length, Object.entries(counts).map(([topic, count]) => ({ topic, count })),
     unList.map((v) => ({ text: v.text, isSample: v.is_sample })));
+  // The SMS keeps the registered A2P wording; the WhatsApp fallback uses the Wolof-first layout.
+  const referrals = Object.values(await monthCounts()).reduce((a, b) => a + b, 0);
+  const waBody = weeklyDigestWhatsApp(rows.length, Object.entries(counts).map(([topic, count]) => ({ topic, count })),
+    unList.map((v) => ({ text: v.text, isSample: v.is_sample })), referrals);
   const to = env("DEMO_SMS_NUMBER");
   const result = await sendSmsWithFallback(body,
     () => twilioSend(to, env("TWILIO_SMS_FROM"), body),
-    () => sendWhatsApp(to, body));
+    () => sendWhatsApp(to, waBody));
   return { ...result, questions: rows.length, unanswered: unList.length };
 }
 
