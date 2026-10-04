@@ -431,7 +431,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   // coaching, the weekly report, notices. Recording is by phone call. (Demo PIN over SMS is a shortcut, not real sign-in.)
   if (channel === "sms" && c.role === "champion" && !pinMatch && !communityMatch && upper !== "EXIT") {
     if (upper === "START") return "To record your answers, call the Teranga number.";
-    return /^(REVIEW|[123]|LISTING|COACH( EN)?|SYNC|LEDGER|ALERT|ALERTS|PULSE|MENU|COMMUNITY)$|^ALERT\b/.test(upper)
+    return /^(REVIEW|LISTING|COACH( EN)?|SYNC|LEDGER|ALERT|ALERTS|PULSE|MENU|COMMUNITY)$|^ALERT\b/.test(upper) || (/^[123]$/.test(upper) && c.state === "reviewing")
       ? champion(c, upper, null, input.from, save, text, channel)
       : "Not an SMS command. By SMS: REVIEW, 1 2 3, LISTING, COACH, SYNC, ALERT, EXIT. Send BILINGUAL on WhatsApp.";
   }
@@ -947,12 +947,13 @@ async function handleOtherSms(input: { from: string; body: string }) {
   const r = await route(c, { from: input.from, body: input.body, mediaUrl: null }, save, "sms");
   const reply: Reply = typeof r === "string" ? { text: r } : r;
   const parts = [reply.text, reply.secondText].filter((x): x is string => !!x).map((x) => toSmsText(x));
-  for (const body of parts) {
-    try { if (!(await twilioSend(input.from, env("TWILIO_SMS_FROM"), body))) break; }
+  for (let i = 0; i < parts.length; i++) {
+    try { if (!(await twilioSend(input.from, env("TWILIO_SMS_FROM"), parts[i]!))) break; }
     catch (e) {
       console.error("[sms] reply failed", (e as Error).message);
-      // A community champion in a notice session still gets the answer on WhatsApp if US SMS is blocked.
-      if (inCommunity || wantsLogin) await sendWhatsApp(input.from, `SMS copy (shown here because US SMS registration is pending):\n${body}`).catch(() => undefined);
+      // A helper or community champion still gets the answer on WhatsApp if US SMS is blocked: ALL remaining parts, so the
+      // next review card is never hidden behind a "1" that approves an unseen answer.
+      if (inCommunity || wantsLogin) for (const rest of parts.slice(i)) await sendWhatsApp(input.from, `SMS copy (shown here because US SMS registration is pending):\n${rest}`).catch(() => undefined);
       break;
     }
   }
