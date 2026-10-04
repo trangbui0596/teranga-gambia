@@ -25,7 +25,7 @@ export const PROBLEM_SUB =
 
 /** World Bank format: Because of this tool, [user] will [action] by [when] that they would otherwise [not do / do late / do worse]; we know because [evidence]. */
 export const PROBLEM_STATEMENT =
-  "Because of Teranga, a Gambian tourism operator on a basic phone can, within a week, answer tourists in English, German and Dutch in her own approved words. One phone call asks her ten ready-made questions and she answers aloud in Wolof, with no internet or Google Translate. Each week after, new tourist questions and review insights reach her by plain SMS. Without it, she misses or answers late the enquiries she can’t read. We know because the World Bank figures above show how much tourism earns and how many Gambians are still offline.";
+  "Because of Teranga, a Gambian tourism operator will turn one phone call in Wolof into answers every tourist can read in English, German or Dutch within a week, and keep learning from what tourists ask every week after, all without internet, instead of missing or answering late the enquiries she can’t read. We know because the World Bank figures above show how much tourism earns and how many Gambians are still offline.";
 
 export const NOT_MEASURED =
   "We did not measure how many enquiries are lost today, and we claim no number for it.";
