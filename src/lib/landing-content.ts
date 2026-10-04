@@ -14,9 +14,9 @@ export const TABS: Array<{ id: TabId; label: string; icon: string; teaser: strin
   { id: "sms", label: "Try SMS", icon: "💬", teaser: "Text Teranga yourself (simulated)" },
   {
     id: "community",
-    label: "A community notice",
-    icon: "⚠️",
-    teaser: "What it says and who sees it",
+    label: "Neighbours together",
+    icon: "🤝",
+    teaser: "Referrals between operators, and one message that warns everyone",
   },
   {
     id: "offline",
@@ -81,9 +81,38 @@ export const OFFLINE_NOTE =
   "US carrier registration for SMS is still in review, so the live demo runs the same commands on WhatsApp, which mirrors them. The simulator on this page shows the SMS texts.";
 export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sample inputs:";
 
-export const COMMUNITY_TITLE = "A champion in every household. A champion in every community.";
+export const COMMUNITY_TITLE = "Neighbours who look out for each other";
 export const COMMUNITY_INTRO =
-  "Floods and storms hit every operator on a road or river at once. One trusted person can reach them all.";
+  "When one operator is full, a neighbour gets the visitor. When the river rises, one message warns everyone.";
+export const REFERRALS_TITLE = "Fair referrals";
+export const REFERRALS_SUB =
+  "A visitor wants something Noor doesn’t offer? A neighbour welcomes them. Partners take turns, so every operator gets a share.";
+export const REFERRAL_STEPS = [
+  {
+    icon: "🧳",
+    title: "The visitor says yes",
+    body: "Picks nature, culture or food and agrees to a suggestion.",
+    chip: "WhatsApp",
+  },
+  {
+    icon: "🔄",
+    title: "One neighbour, in turn",
+    body: "The partner with the fewest referrals this month.",
+    chip: "Fair rotation",
+  },
+  {
+    icon: "🤝",
+    title: "A person connects them",
+    body: "Noor or the community champion passes on the contact.",
+    chip: "Human step",
+  },
+];
+export const REFERRAL_FACTS = [
+  "No money changes hands",
+  "The visitor’s number is never shared",
+  "Partners shown are fictional",
+];
+
 export const CHAIN_TITLE = "Who is in the chain";
 export const CHAIN = [
   { icon: "🧳", name: "Tourist", line: "Asks in their own language" },

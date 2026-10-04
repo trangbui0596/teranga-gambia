@@ -8,6 +8,10 @@ import {
   STORYBOOK,
   COMMUNITY_INTRO,
   COMMUNITY_TITLE,
+  REFERRALS_TITLE,
+  REFERRALS_SUB,
+  REFERRAL_STEPS,
+  REFERRAL_FACTS,
   NOT_MEASURED,
   OFFLINE_EXAMPLE_NOTE,
   OFFLINE_INTRO,
@@ -569,16 +573,53 @@ function CommunityPanel() {
         </span>
       </p>
       <section
+        className="mt-4 rounded-2xl border-2 border-primary/60 bg-background p-4 sm:p-5"
+        aria-labelledby="referrals-title"
+      >
+        <p className="text-xs font-bold uppercase tracking-wide text-primary">Simulated partners</p>
+        <h4 id="referrals-title" className="font-display text-xl font-black sm:text-2xl">
+          {REFERRALS_TITLE}
+        </h4>
+        <p className="mt-1 max-w-3xl leading-snug">{REFERRALS_SUB}</p>
+        <ol className="mt-3 grid gap-3 sm:grid-cols-3" aria-label="How a referral works">
+          {REFERRAL_STEPS.map((r, i) => (
+            <li key={r.title} className="rounded-xl border bg-card p-3 text-center">
+              <p className="text-4xl" aria-hidden="true">
+                {r.icon}
+              </p>
+              <h5 className="font-display text-lg font-black leading-tight">
+                {i + 1}. {r.title}
+              </h5>
+              <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+                {r.chip}
+              </p>
+              <p className="mt-2 text-sm leading-snug">{r.body}</p>
+            </li>
+          ))}
+        </ol>
+        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Safeguards">
+          {REFERRAL_FACTS.map((f) => (
+            <li
+              key={f}
+              className="rounded-full bg-secondary px-3 py-1 text-sm font-bold text-secondary-foreground"
+            >
+              ✓ {f}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section
         className="mt-4 rounded-xl border-2 border-primary bg-card p-4"
         aria-labelledby="notice"
       >
         <h4 id="notice" className="text-lg font-bold">
-          What is a community notice?
+          One message that warns everyone
         </h4>
         <p className="leading-snug">
-          A one-line alert from the community champion when something changes what tourists should
-          expect, like a flood or a closed road. Six fixed kinds, no free text except the place. It
-          reaches members by SMS and tourists under every answer, for 24 hours.
+          When a road floods or a tour is called off, the community champion sends one short notice.
+          Six fixed kinds, so nothing is mistranslated when it matters. Members read it by SMS, and
+          tourists see it under every answer for 24 hours. It is a community notice, never an
+          official warning.
         </p>
         <div className="mt-3 grid gap-3 lg:grid-cols-3">
           <div>
