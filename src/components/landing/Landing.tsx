@@ -2,33 +2,22 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, Fragme
 import { EVIDENCE, INDICATOR_NAMES, RETRIEVED, evidence, wdiUrl } from "@/lib/evidence";
 import {
   CHANNELS,
-  COMMUNITY,
   CHAIN_TITLE,
   CHAIN,
   CHAIN_SUPPORT,
   STORYBOOK,
-  REFERRALS_TITLE,
-  REFERRALS_SUB,
-  REFERRAL_STEPS,
-  REFERRAL_FACTS,
   COMMUNITY_INTRO,
   COMMUNITY_TITLE,
-  EXTRAS,
-  FLOW,
-  HOW_BANNER,
-  FLOW_NET_NOTE,
   NOT_MEASURED,
   OFFLINE_EXAMPLE_NOTE,
   OFFLINE_INTRO,
   OFFLINE_NOTE,
-  PEOPLE,
   PRIVACY,
   PROBLEM_SUB,
   PROBLEM_STATEMENT,
   REAL_LIMITS,
   REAL_LIVE,
   REPO_URL,
-  ROLES,
   SCREENS,
   SMS_SIM_CHIPS,
   SMS_SIM_NOTE,
@@ -37,7 +26,6 @@ import {
   TILES,
   TRY_IT,
   VIDEO_URL,
-  WHY_WHATSAPP,
   type TabId,
 } from "@/lib/landing-content";
 import { alertSms, visitorNotice } from "@/lib/community";
@@ -378,160 +366,6 @@ function Storybook() {
   );
 }
 
-function Referrals() {
-  return (
-    <section
-      id="referrals"
-      aria-labelledby="referrals-title"
-      className="mt-5 rounded-2xl border-2 border-primary/60 bg-card p-4 sm:p-6"
-    >
-      <p className="text-xs font-bold uppercase tracking-wide text-primary">
-        Community feature · simulated partners
-      </p>
-      <h2 id="referrals-title" className="font-display text-2xl font-black sm:text-3xl">
-        {REFERRALS_TITLE}
-      </h2>
-      <p className="mt-1 max-w-3xl">{REFERRALS_SUB}</p>
-      <ol className="mt-4 grid gap-3 sm:grid-cols-3" aria-label="How a referral works">
-        {REFERRAL_STEPS.map((r, i) => (
-          <li key={r.title} className="rounded-xl border bg-background p-3 text-center">
-            <p className="text-4xl" aria-hidden="true">
-              {r.icon}
-            </p>
-            <h3 className="font-display text-lg font-black leading-tight">
-              {i + 1}. {r.title}
-            </h3>
-            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-              {r.chip}
-            </p>
-            <p className="mt-2 text-sm leading-snug">{r.body}</p>
-          </li>
-        ))}
-      </ol>
-      <ul className="mt-4 flex flex-wrap gap-2" aria-label="Safeguards">
-        {REFERRAL_FACTS.map((f) => (
-          <li
-            key={f}
-            className="rounded-full bg-secondary px-3 py-1 text-sm font-bold text-secondary-foreground"
-          >
-            ✓ {f}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function Card({
-  title,
-  tag,
-  icon,
-  children,
-}: {
-  title: string;
-  tag?: string;
-  icon?: string;
-  children: ReactNode;
-}) {
-  return (
-    <li className="rounded-xl border bg-card p-4">
-      {icon ? (
-        <p className="text-3xl" aria-hidden="true">
-          {icon}
-        </p>
-      ) : null}
-      <h3 className="text-lg font-bold leading-snug">{title}</h3>
-      {tag ? (
-        <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-          {tag}
-        </p>
-      ) : null}
-      <p className="mt-2 leading-snug">{children}</p>
-    </li>
-  );
-}
-
-function HowPanel() {
-  return (
-    <div>
-      <p className="mb-2 text-sm font-semibold">
-        {FLOW_NET_NOTE} <span aria-hidden="true">🟢</span> no internet ·{" "}
-        <span aria-hidden="true">🌐</span> internet needed
-      </p>
-      <ol className="grid gap-2 lg:grid-cols-5" aria-label="The flow">
-        {FLOW.map((f, i) => (
-          <li
-            key={f.title}
-            className="relative rounded-xl border-2 border-primary/60 bg-card p-3 text-center"
-          >
-            <p className="text-4xl" aria-hidden="true">
-              {f.icon}
-            </p>
-            <h3 className="font-display text-lg font-black leading-tight">
-              {i + 1}. {f.title}
-            </h3>
-            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-              {f.chip}
-            </p>
-            <p className="mt-2 text-sm leading-snug">
-              <span className="font-bold text-primary">AI </span>
-              {f.ai}
-            </p>
-            <p
-              className={`mt-2 rounded-lg px-2 py-1 text-xs font-bold leading-snug ${f.net.online ? "bg-secondary text-secondary-foreground" : "bg-primary/15 text-primary"}`}
-            >
-              <span aria-hidden="true">{f.net.online ? "🌐 " : "🟢 "}</span>
-              {f.net.text}
-            </p>
-            {i < FLOW.length - 1 ? (
-              <span
-                aria-hidden="true"
-                className="absolute -bottom-3 left-1/2 z-10 -translate-x-1/2 text-xl text-primary lg:-right-3 lg:bottom-auto lg:left-auto lg:top-1/2 lg:-translate-y-1/2 lg:translate-x-0"
-              >
-                <span className="lg:hidden">↓</span>
-                <span className="hidden lg:inline">→</span>
-              </span>
-            ) : null}
-          </li>
-        ))}
-      </ol>
-      <h3 className="mt-6 font-display text-xl font-black">Step by step</h3>
-      <ol className="mt-2 space-y-3" aria-label="Step by step">
-        {FLOW.map((f, i) => (
-          <li key={f.title} className="flex gap-3 rounded-xl border bg-card p-3">
-            <span
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary font-black text-primary-foreground"
-              aria-hidden="true"
-            >
-              {i + 1}
-            </span>
-            <span>
-              <span className="block font-bold leading-tight">
-                <span aria-hidden="true">{f.icon} </span>
-                {f.title}
-              </span>
-              <span className="mt-1 block text-sm leading-snug">{f.story}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-4 rounded-xl bg-secondary p-3 font-semibold text-secondary-foreground">
-        {HOW_BANNER} {WHY_WHATSAPP}
-      </p>
-
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-        {EXTRAS.map((c) => (
-          <Card key={c.title} title={c.title} tag={c.tag}>
-            {c.body}
-          </Card>
-        ))}
-      </ul>
-      <Referrals />
-      <p className="mt-3 text-sm text-muted-foreground">{TRY_IT}</p>
-    </div>
-  );
-}
-
 function OfflinePanel() {
   return (
     <div>
@@ -762,20 +596,6 @@ function CommunityPanel() {
           </div>
         </div>
       </section>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-        {ROLES.map((r) => (
-          <Card key={r.name} title={r.name} icon={r.icon} tag={r.role}>
-            {r.line}
-          </Card>
-        ))}
-      </ul>
-      <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {COMMUNITY.map((c) => (
-          <Card key={c.title} title={c.title} icon={c.icon} tag={c.tag}>
-            {c.body}
-          </Card>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -878,7 +698,6 @@ function ScreensPanel() {
 }
 
 const PANELS: Record<TabId, () => ReactNode> = {
-  how: HowPanel,
   sms: SmsPanel,
   community: CommunityPanel,
   offline: OfflinePanel,
@@ -910,66 +729,46 @@ function Explore({ initialTab }: { initialTab: TabId | null }) {
     }
   };
 
+  const Panel = open ? PANELS[open] : null;
   return (
     <section id="explore" aria-labelledby="explore-title" className="mt-8 scroll-mt-4">
       <h2 id="explore-title" className="text-2xl font-black sm:text-3xl">
         Explore Teranga
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">More detail, one chapter at a time.</p>
-      <ol className="mt-4 space-y-3">
-        {TABS.map((t, i) => {
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="More detail">
+        {TABS.map((t) => {
           const isOpen = t.id === open;
-          const Panel = PANELS[t.id];
           return (
-            <li
+            <button
               key={t.id}
-              className={`rounded-2xl border-2 bg-card transition-colors ${isOpen ? "border-primary" : "border-border"}`}
+              type="button"
+              id={`tab-${t.id}`}
+              aria-expanded={isOpen}
+              aria-controls={`panel-${t.id}`}
+              onClick={() => toggle(t.id)}
+              title={t.teaser}
+              className={`min-h-11 rounded-full border-2 px-4 font-bold outline-none transition-colors focus-visible:ring-4 focus-visible:ring-ring/40 ${
+                isOpen
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card hover:bg-secondary"
+              }`}
             >
-              <h3 className="m-0">
-                <button
-                  type="button"
-                  id={`tab-${t.id}`}
-                  aria-expanded={isOpen}
-                  aria-controls={`panel-${t.id}`}
-                  onClick={() => toggle(t.id)}
-                  className="flex w-full items-center gap-3 rounded-2xl p-3 text-left outline-none focus-visible:ring-4 focus-visible:ring-ring/40 sm:p-4"
-                >
-                  <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-2xl"
-                    aria-hidden="true"
-                  >
-                    {t.icon}
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-xs font-bold uppercase tracking-wide text-primary">
-                      Chapter {i + 1}
-                    </span>
-                    <span className="block font-display text-lg font-black leading-tight sm:text-xl">
-                      {t.label}
-                    </span>
-                    <span className="block text-sm leading-snug text-muted-foreground">
-                      {t.teaser}
-                    </span>
-                  </span>
-                  <span className="text-2xl font-black text-primary" aria-hidden="true">
-                    {isOpen ? "–" : "+"}
-                  </span>
-                </button>
-              </h3>
-              {isOpen ? (
-                <div
-                  role="region"
-                  id={`panel-${t.id}`}
-                  aria-labelledby={`tab-${t.id}`}
-                  className="border-t px-3 pb-4 pt-4 sm:px-4"
-                >
-                  <Panel />
-                </div>
-              ) : null}
-            </li>
+              <span aria-hidden="true">{t.icon} </span>
+              {t.label}
+            </button>
           );
         })}
-      </ol>
+      </div>
+      {Panel && open ? (
+        <div
+          role="region"
+          id={`panel-${open}`}
+          aria-labelledby={`tab-${open}`}
+          className="mt-4 rounded-2xl border-2 border-primary/60 bg-card p-3 sm:p-5"
+        >
+          <Panel />
+        </div>
+      ) : null}
     </section>
   );
 }

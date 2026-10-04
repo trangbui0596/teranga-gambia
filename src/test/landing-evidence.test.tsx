@@ -89,7 +89,7 @@ describe("home page statistics are sourced, never invented", () => {
 
 describe("home page structure", () => {
   it("shows the problem first, before the tabs", () => {
-    const h = html("how");
+    const h = html("sms");
     expect(h.indexOf("The problem")).toBeLessThan(h.indexOf("Explore Teranga"));
     expect(h).toContain("Teranga backend is running");
   });
@@ -100,6 +100,6 @@ describe("home page structure", () => {
 
   it("Screens tab and demo button appear only once there is something to show", () => {
     expect(TABS.some((t) => t.id === "screens")).toBe(SCREENS.length > 0);
-    expect(html("how").includes("Watch the demo")).toBe(VIDEO_URL.length > 0);
+    expect(html("sms").includes("Watch the demo")).toBe(VIDEO_URL.length > 0);
   });
 });

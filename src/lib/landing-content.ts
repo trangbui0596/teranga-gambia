@@ -8,21 +8,15 @@ export const VIDEO_URL = "";
 /** Add screenshots after filming (files in public/screens/); the "Screens" tab appears automatically. */
 export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 
-export type TabId = "how" | "sms" | "community" | "offline" | "real" | "sources" | "screens";
+export type TabId = "sms" | "community" | "offline" | "real" | "sources" | "screens";
 
 export const TABS: Array<{ id: TabId; label: string; icon: string; teaser: string }> = [
-  {
-    id: "how",
-    label: "The full flow, in detail",
-    icon: "🗺️",
-    teaser: "Five steps, internet badges and fair referrals",
-  },
   { id: "sms", label: "Try SMS", icon: "💬", teaser: "Text Teranga yourself (simulated)" },
   {
     id: "community",
-    label: "Looking out for each other",
-    icon: "🤝",
-    teaser: "Notices, champions and referrals",
+    label: "A community notice",
+    icon: "⚠️",
+    teaser: "What it says and who sees it",
   },
   {
     id: "offline",
@@ -63,106 +57,8 @@ export const TILES = [
   { id: "selfEmployed", icon: "🛠️", label: "are self-employed" },
 ];
 
-export const PEOPLE = [
-  {
-    icon: "📞",
-    name: "Noor",
-    role: "Tourism operator",
-    line: "Basic phone. Records and approves her own answers, by call and SMS.",
-  },
-  {
-    icon: "📱",
-    name: "Household champion",
-    role: "Family member with a smartphone",
-    line: "Syncs tourist questions, feedback and Google reviews each week.",
-  },
-  {
-    icon: "🤝",
-    name: "Community champion",
-    role: "One person for a whole circle",
-    line: "Posts notices. Checks translations.",
-  },
-  {
-    icon: "🧳",
-    name: "Tourist",
-    role: "From anywhere",
-    line: "Asks on WhatsApp, by voice or text, in their language.",
-  },
-];
-
-export const FLOW = [
-  {
-    icon: "📞",
-    title: "Noor records and approves",
-    story:
-      "Once, Noor calls the Teranga number. A voice asks her ready-made questions: price, meeting point, how long, what to bring. She answers aloud in Wolof. Teranga hears it, translates it, and texts her what it heard, with the numbers. She presses 1 to approve or 2 to record again. Nothing goes live without her.",
-    chip: "Call + SMS",
-    ai: "Hears Wolof, translates",
-    net: { online: false, text: "No internet" },
-  },
-  {
-    icon: "🗺️",
-    title: "Her Google listing",
-    story:
-      "From her approved answers, Teranga drafts a Google Business listing: description, services, meeting point, how to book. Anything it doesn’t know, like her phone number or opening hours, stays “needs input”. It never invents it. Noor can text LISTING for the draft. Her household champion claims the profile on Google and pastes it in.",
-    chip: "SMS + Google Maps",
-    ai: "Built from her own words",
-    net: {
-      online: false,
-      text: "Noor: no internet. Claiming it on Google needs internet (household champion)",
-    },
-  },
-  {
-    icon: "🧳",
-    title: "Tourist asks",
-    story:
-      "A tourist messages Teranga on WhatsApp, by voice or text, in English, German or Dutch. Teranga finds Noor’s approved answer and replies in their language, as text and a voice note. If it has no approved answer, it says so and Noor follows up. A community notice, like a flooded road, shows under the answer.",
-    chip: "WhatsApp",
-    ai: "Hears the voice, answers in their language",
-    net: { online: true, text: "Tourist needs internet" },
-  },
-  {
-    icon: "🔄",
-    title: "Weekly sync",
-    story:
-      "Once a week the household champion’s smartphone syncs. It brings in new tourist questions and feedback, and the AI re-reads public Google reviews. Noor gets a short Wolof SMS: what tourists asked, what reviews say, and up to three things to improve.",
-    chip: "Household champion’s smartphone",
-    ai: "New questions, feedback and reviews in; insights out",
-    net: { online: true, text: "Household champion needs internet. Noor gets the result by SMS" },
-  },
-  {
-    icon: "⭐",
-    title: "Voice-note review",
-    story:
-      "After a tour, a tourist can speak a review. Teranga turns it into clean text, adding nothing they didn’t say, and sends the same Google review link to everyone. The tourist pastes and posts it themselves. Teranga never posts for them.",
-    chip: "WhatsApp",
-    ai: "Voice to clean text for Google",
-    net: { online: true, text: "Tourist needs internet" },
-  },
-];
-export const FLOW_NET_NOTE =
-  "Noor never needs the internet. Tourists and the household champion do.";
-
-export const HOW_BANNER =
-  "AI does what plain SMS can’t: hears Wolof, translates, listens to tourists, speaks back.";
-export const WHY_WHATSAPP =
-  "Why WhatsApp for tourists? They already have data and it carries voice. Noor never needs it.";
-
 export const TRY_IT =
   "The demo runs on a private Twilio sandbox, so it isn’t open to the public. The recorded walkthrough is the way to see it.";
-
-export const EXTRAS = [
-  {
-    title: "Google listing",
-    tag: "Draft: a person publishes it",
-    body: "Built only from Noor’s approved answers. Shows what’s missing. Nothing is sent to Google.",
-  },
-  {
-    title: "One-tap review",
-    tag: "Built up to the link",
-    body: "A tourist speaks, Teranga writes it clean, they paste it into Google. Never posted for them.",
-  },
-];
 
 export const CHANNELS = [
   { channel: "Phone call", icon: "📞", who: "Noor", use: "Records her answers. No internet." },
@@ -188,28 +84,6 @@ export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sampl
 export const COMMUNITY_TITLE = "A champion in every household. A champion in every community.";
 export const COMMUNITY_INTRO =
   "Floods and storms hit every operator on a road or river at once. One trusted person can reach them all.";
-export const ROLES = PEOPLE.filter((p) => p.name.includes("champion"));
-export const COMMUNITY = [
-  {
-    icon: "⚠️",
-    title: "Community notices",
-    tag: "Built",
-    body: "One notice: SMS to members, and under every tourist answer in their language. Fixed wording. Never an official warning.",
-  },
-  {
-    icon: "🤝",
-    title: "Fair referrals",
-    tag: "Simulated partners",
-    body: "Rotating tour suggestions. No money. Fictional partners.",
-  },
-  {
-    icon: "📈",
-    title: "Shared coaching",
-    tag: "Real public data",
-    body: "Learn from the whole sector’s reviews, not just your own.",
-  },
-];
-
 export const CHAIN_TITLE = "Who is in the chain";
 export const CHAIN = [
   { icon: "🧳", name: "Tourist", line: "Asks in their own language" },
@@ -321,31 +195,6 @@ export const STORYBOOK: StoryPage[] = [
     text: "One call, answers in three languages, a listing, reviews and a community that looks out for each other. See the details, or try it.",
   },
 ];
-
-export const REFERRALS_TITLE = "Fair referrals";
-export const REFERRALS_SUB =
-  "Wants something Noor doesn’t offer? A neighbour gets the visitor. Partners take turns.";
-export const REFERRAL_STEPS = [
-  {
-    icon: "🧳",
-    title: "Visitor opts in",
-    body: "Picks nature, culture or food.",
-    chip: "WhatsApp",
-  },
-  {
-    icon: "🔄",
-    title: "One partner, in turn",
-    body: "Fewest referrals this month.",
-    chip: "Fair rotation",
-  },
-  {
-    icon: "🤝",
-    title: "A person connects",
-    body: "Noor or the community champion passes on the contact.",
-    chip: "Human step",
-  },
-];
-export const REFERRAL_FACTS = ["No money", "Number never shared", "Fictional partners"];
 
 export const REAL_LIVE = [
   "A real phone line and WhatsApp number (Twilio sandbox) run the full loop: call, transcript, review, approval, visitor answers, voice notes.",
