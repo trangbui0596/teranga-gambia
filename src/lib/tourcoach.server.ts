@@ -5,6 +5,7 @@ import { guardCleanup, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, 
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
+import { looksArabicScript } from "./script-guard";
 import { gateApproval, STILL_PROCESSING } from "./approval";
 import { runInBackground } from "./background.server";
 import { numbersHeard } from "./numbers";
@@ -194,7 +195,8 @@ export async function sttBlob(blob: Blob, type: string, languageCode: string | n
   });
   if (!res.ok) { console.error(`ElevenLabs STT failed [${res.status}]: ${(await res.text()).slice(0, 300)}`); return null; }
   const j = (await res.json()) as { text?: string; language_code?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
-  const text = (j.text ?? "").trim();
+  let text = (j.text ?? "").trim();
+  if (languageCode === "wol" && looksArabicScript(text)) { console.warn("[stt] Wolof transcript came back in Arabic script; treating as not understood"); text = ""; }
   const lps = (j.words ?? []).filter((w) => w.type !== "spacing" && typeof w.logprob === "number").map((w) => Math.exp(w.logprob!));
   const confidence = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : j.language_probability ?? null;
   return { status: res.status, text, language: j.language_code ?? null, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
