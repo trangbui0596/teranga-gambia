@@ -8,21 +8,20 @@ export const VIDEO_URL = "";
 /** Add screenshots after filming (files in public/screens/); the "Screens" tab appears automatically. */
 export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 
-export type TabId = "how" | "offline" | "sms" | "community" | "ai" | "real" | "sources" | "screens";
+export type TabId = "how" | "sms" | "community" | "offline" | "real" | "sources" | "screens";
 
 export const TABS: Array<{ id: TabId; label: string }> = [
   { id: "how", label: "How it works" },
-  { id: "offline", label: "Works offline" },
   { id: "sms", label: "Try SMS" },
   { id: "community", label: "Community" },
-  { id: "ai", label: "AI beyond SMS" },
-  { id: "real", label: "What\u2019s real" },
+  { id: "offline", label: "Works offline" },
+  { id: "real", label: "What’s real" },
   { id: "sources", label: "Sources" },
   ...(SCREENS.length ? [{ id: "screens" as TabId, label: "Screens" }] : []),
 ];
 
 export const PROBLEM_SUB =
-  "Visitors write in English, German and Dutch. The people who run the tours speak Wolof and work from a basic phone. Every enquiry an operator can’t read or answer is a booking she can’t win.";
+  "Tourists write in English, German and Dutch. Noor speaks Wolof on a basic phone. Every enquiry she can’t read is a booking she can’t win.";
 
 /** World Bank format: Because of this tool, [user] will [action] by [when] that they would otherwise [not do / do late / do worse]; we know because [evidence]. */
 export const PROBLEM_STATEMENT =
@@ -31,193 +30,140 @@ export const PROBLEM_STATEMENT =
 export const NOT_MEASURED =
   "We did not measure how many enquiries are lost today, and we claim no number for it.";
 
-export const STEPS = [
+export const TILES = [
+  { id: "receipts", icon: "💰", label: "tourism earnings" },
+  { id: "exportShare", icon: "📊", label: "of all exports" },
+  { id: "arrivals", icon: "✈️", label: "visitors" },
+  { id: "online", icon: "🌐", label: "use the Internet" },
+  { id: "mobile", icon: "📱", label: "SIMs per 100 people" },
+  { id: "selfEmployed", icon: "🛠️", label: "are self-employed" },
+];
+
+export const PEOPLE = [
   {
-    title: "Noor records once",
-    channel: "Phone call",
-    body: "Prompted by the question card, she answers the common visitor questions out loud, in Wolof, on a basic phone. No internet needed.",
-    ai: "Speech recognition hears Wolof; machine translation into English, German and Dutch, with a round-trip check.",
+    icon: "📞",
+    name: "Noor",
+    role: "Tour operator",
+    line: "Basic phone. Records and approves her own answers, by call and SMS.",
   },
   {
-    title: "Her household champion approves every answer",
-    channel: "SMS",
-    body: "She gets the Wolof transcript and the numbers it heard as a text and replies 1 to approve, 2 to record again or 3 to ask a bilingual reviewer. Nothing reaches a visitor before she does.",
-    ai: "It shows the numbers it heard, so a household champion who doesn’t read English can confirm a price.",
+    icon: "📱",
+    name: "Household champion",
+    role: "Family member with a smartphone",
+    line: "Syncs the tourists’ WhatsApp questions. The AI re-reads reviews each week.",
   },
   {
-    title: "Google finds her, WhatsApp is the way in",
-    channel: "Google listing",
-    body: "Her approved answers build her Google listing draft, with her WhatsApp number as the “ask us” link. A person publishes it. Tourists find Noor on Google Maps and tap to message her.",
-    ai: "The listing is written from her own words only. It never invents a phone number or hours.",
+    icon: "🤝",
+    name: "Community champion",
+    role: "One person for a whole circle",
+    line: "Posts notices. Checks translations.",
   },
   {
-    title: "A tourist asks, in their own language",
-    channel: "WhatsApp",
-    body: "By voice note or text, in English, German or Dutch. If Noor’s approved answer exists they get it as text and an AI voice. If not: “Not sure, Noor will answer”, and they can reply NOTIFY to hear back.",
-    ai: "Speech recognition detects the language and hears the question; an AI voice answers in that language. Matching is plain rules, so it can’t invent an answer.",
-  },
-  {
-    title: "The weekly sync closes the loop",
-    channel: "SMS and WhatsApp",
-    body: "New questions go to Noor and her household champion or community champion. Once they are answered and approved, the tourists who asked are messaged. The sync also re-reads public reviews and refines Noor’s coaching.",
-    ai: "It learns from what tourists asked and found unclear, and from how public reviews moved since last week.",
-  },
-  {
-    title: "After the tour, one voice note",
-    channel: "WhatsApp",
-    body: "The tourist speaks their review. Teranga writes it down cleanly, they copy it into Google and choose their own stars. Fewer steps means more reviews, and more reviews help Noor’s listing get found.",
-    ai: "Speech recognition plus a clean-up that changes no facts and no feeling. Teranga never posts for them.",
+    icon: "🧳",
+    name: "Tourist",
+    role: "From anywhere",
+    line: "Asks on WhatsApp, by voice or text, in their language.",
   },
 ];
 
-export const WHY_WHATSAPP = {
-  title: "Why visitors use WhatsApp, and what the AI does there",
-  body: "Noor needs no internet, but tourists already have it, and most already have WhatsApp. They find her on Google Maps, tap her WhatsApp number and ask in their own language, by voice if they like. Noor never has to read or write English.",
-  items: [
-    "Hears the tourist: speech recognition detects English, German or Dutch and turns the voice note into a question.",
-    "Answers in their language: Noor’s approved Wolof answer was already translated; an AI voice speaks it.",
-    "Stays honest: matching is rules over approved answers, and it says “Not sure, Noor will answer” instead of guessing.",
-    "Writes the review for them to paste: voice to clean text, nothing posted on their behalf.",
-  ],
-};
+export const FLOW = [
+  {
+    icon: "📞",
+    title: "Noor records and approves",
+    chip: "Call + SMS",
+    ai: "Hears Wolof, translates",
+  },
+  { icon: "🗺️", title: "Her Google listing", chip: "Google Maps", ai: "Built from her own words" },
+  {
+    icon: "🧳",
+    title: "Tourist asks",
+    chip: "WhatsApp",
+    ai: "Hears the voice, answers in their language",
+  },
+  {
+    icon: "🔄",
+    title: "Weekly sync",
+    chip: "Household champion’s smartphone",
+    ai: "New questions in, review insights out",
+  },
+  {
+    icon: "⭐",
+    title: "Voice-note review",
+    chip: "WhatsApp",
+    ai: "Voice to clean text for Google",
+  },
+];
+
+export const HOW_BANNER =
+  "AI does what plain SMS can’t: hears Wolof, translates, listens to tourists, speaks back.";
+export const WHY_WHATSAPP =
+  "Why WhatsApp for tourists? They already have data and it carries voice. Noor never needs it.";
 
 export const TRY_IT =
   "The demo runs on a private Twilio sandbox, so it isn’t open to the public. The recorded walkthrough is the way to see it.";
 
-export const AI_INTRO = "A plain SMS tool can’t do any of this.";
-
-export const AI_DOES = [
-  {
-    title: "Hears Wolof",
-    body: "Speech recognition turns Noor’s phone call into text. SMS needs typing. A call needs nothing.",
-  },
-  {
-    title: "Translates, then checks itself",
-    body: "Wolof to English, German and Dutch, with a round-trip check that flags answers whose meaning drifted. Every answer says it is machine-translated.",
-  },
-  {
-    title: "Hears the visitor too",
-    body: "A tourist sends a voice note in English, German or Dutch. Speech recognition detects the language and hears the question, and the answer comes back in that language as text and an AI voice. SMS can do neither.",
-  },
-  {
-    title: "Speaks the answer",
-    body: "Visitors get an AI voice note in their language. SMS is text only.",
-  },
-  {
-    title: "Reads the prices",
-    body: "It shows the numbers it heard in Wolof (“yuñi ak juróom teemeer” shows as about 1500), so a household champion who doesn’t read English can confirm a price.",
-  },
-  {
-    title: "Turns a spoken review into text",
-    body: "A visitor talks. Teranga writes it down cleanly, changing no facts and no feeling. The visitor posts it themselves.",
-  },
-  {
-    title: "Reads the market",
-    body: "It reads many public Google reviews, finds the themes and gives Noor plain advice in Wolof.",
-  },
-];
-
-export const SAFEGUARDS = {
-  title: "Built to never make things up",
-  items: [
-    "Visitor questions are matched to approved answers by fixed keyword rules. Nothing is generated, so it can’t invent an answer. Its real risk is picking the wrong approved one, so we measured that on real questions (see What’s real).",
-    "The household champion’s chat agent can only propose changes. They run after an explicit YES.",
-  ],
-};
-
 export const EXTRAS = [
   {
-    title: "A Google listing built from her own answers",
+    title: "Google listing",
     tag: "Draft: a person publishes it",
-    body: "Once the household champion approves answers, Teranga builds a Google Business Profile pack from Noor\u2019s own words: a description inside Google\u2019s 750-character limit, services, meeting point and booking. It shows what is missing, which question card to record next, and what only the household champion can add. Noor gets the progress by SMS. Nothing is sent to Google: a person claims the profile and pastes it.",
+    body: "Built only from Noor’s approved answers. Shows what’s missing. Nothing is sent to Google.",
   },
   {
-    title: "One-tap Google review, in the visitor\u2019s own words",
+    title: "One-tap review",
     tag: "Built up to the link",
-    body: "A visitor can say their review out loud. Teranga writes it down as clean text and sends the same Google review link every visitor gets. They tap the link, paste, and choose their own stars. There is no review gating, and Teranga never posts for them.",
+    body: "A tourist speaks, Teranga writes it clean, they paste it into Google. Never posted for them.",
   },
 ];
 
-export const OFFLINE_INTRO =
-  "Noor never needs the internet, and neither do her household champion or community champion: everything they do is a phone call or a text message. WhatsApp is for visitors.";
 export const CHANNELS = [
-  {
-    channel: "Phone call",
-    who: "Noor",
-    use: "Records her answers in Wolof. No internet, no smartphone.",
-  },
+  { channel: "Phone call", icon: "📞", who: "Noor", use: "Records her answers. No internet." },
   {
     channel: "SMS",
-    who: "Noor, her household champion, the community champion",
-    use: "Everything that is text: reviewing answers (reply 1, 2 or 3), coaching, Google listing progress, community notices, the weekly learning. Works with no internet on a feature phone.",
+    icon: "💬",
+    who: "Noor and both champions",
+    use: "Review, coaching, listing, notices. No internet.",
   },
   {
     channel: "WhatsApp",
-    who: "Visitors",
-    use: "Tourists ask by voice note or text and get text plus an AI voice in their language. It is also the stand-in for SMS in the live demo until US carrier registration clears, and the place for translation checks.",
+    icon: "🟢",
+    who: "Tourists",
+    use: "Voice or text questions, answered in their language.",
   },
 ];
-export const OFFLINE_ROWS = [
-  {
-    who: "Noor, on a basic phone",
-    does: "Records her answers by phone call. Keeps her coaching, Google listing progress, approval receipts, community notices and weekly learning as plain SMS in Wolof. Can text COACH, LISTING, WEEK or HELP to get them again.",
-    net: "No internet",
-  },
-  {
-    who: "Her household champion",
-    does: "Reviews and approves the answers by SMS: the Wolof transcript and numbers arrive as a text, she replies 1, 2 or 3. The weekly sync adds what visitors asked and found unclear.",
-    net: "No internet",
-  },
-  {
-    who: "The community champion",
-    does: "Logs in and posts or checks community notices by SMS, so notices still go out when mobile data does not. Checks translations on WhatsApp. Members receive notices by SMS.",
-    net: "None for notices",
-  },
-  {
-    who: "Visitors",
-    does: "Ask on WhatsApp by voice or text and get text plus an AI voice note. A text-only SMS mode for visitors without data is built and switched off by default.",
-    net: "WhatsApp needs data",
-  },
-];
+export const OFFLINE_INTRO =
+  "Noor, her household champion and the community champion never need the internet for the core loop.";
 export const OFFLINE_NOTE =
-  "US carrier registration for SMS is still in review, so the live demo runs on WhatsApp and the simulator on this page shows the same texts. Once registered, nothing changes in the code. The texts are written for feature phones: plain letters, at most three parts, and always an opt-out line.";
+  "US carrier registration for SMS is still in review, so the live demo runs the same commands on WhatsApp, which mirrors them. The simulator on this page shows the SMS texts.";
 export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sample inputs:";
 
 export const COMMUNITY_TITLE = "A champion in every household. A champion in every community.";
 export const COMMUNITY_INTRO =
-  "Operators share the same roads, rivers and rainy season, so some jobs are too big for one household. Teranga gives each operator a household champion for her own answers, and gives the whole circle a community champion: one trusted person who looks after what no single household can.";
-export const ROLES = [
-  {
-    title: "Household champion",
-    tag: "Built",
-    body: "A family member of one operator. Reviews that operator\u2019s answers on WhatsApp, in Wolof, about once a week.",
-  },
-  {
-    title: "Community champion",
-    tag: "Built, demo PIN",
-    body: "One trusted person for a circle of operators: an association, a village, a guides\u2019 group. Posts community notices, checks translations and passes on referral requests.",
-  },
-];
+  "Floods and storms hit every operator on a road or river at once. One trusted person can reach them all.";
+export const ROLES = PEOPLE.filter((p) => p.name.includes("champion"));
 export const COMMUNITY = [
   {
+    icon: "⚠️",
     title: "Community notices",
     tag: "Built",
-    body: "When a road floods or boats stop, the community champion sends one notice. Members get an SMS in Wolof. Visitors see it under every answer in English, German or Dutch. The wording is fixed, so nothing is machine-translated in an emergency, and every notice says it is a community notice, not an official warning.",
+    body: "One notice: SMS to members, and under every tourist answer in their language. Fixed wording. Never an official warning.",
   },
   {
+    icon: "🌐",
     title: "Translation checks",
     tag: "Built",
-    body: "When a household champion is not sure a translation is right, the answer goes to a bilingual reviewer in the community. Approved answers carry the label \u201CEnglish checked by a bilingual reviewer\u201D. German and Dutch stay machine translations of that English.",
+    body: "A bilingual reviewer approves the English. Tourists see “English checked”.",
   },
   {
+    icon: "🤝",
     title: "Fair referrals",
     tag: "Simulated partners",
-    body: "A visitor can ask for a suggestion for another tour. It rotates fairly between partner operators, no money changes hands, and the community champion passes on contact requests. The partners in the demo are fictional.",
+    body: "Rotating tour suggestions. No money. Fictional partners.",
   },
   {
+    icon: "📈",
     title: "Shared coaching",
     tag: "Real public data",
-    body: "Coaching reads many public Google reviews of Gambian operators, so every member learns from the whole sector and not only from their own few reviews.",
+    body: "Learn from the whole sector’s reviews, not just your own.",
   },
 ];
 

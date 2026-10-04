@@ -1,35 +1,34 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { EVIDENCE, INDICATOR_NAMES, RETRIEVED, evidence, wdiUrl } from "@/lib/evidence";
 import {
-  AI_DOES,
-  AI_INTRO,
-  COMMUNITY,
   CHANNELS,
+  COMMUNITY,
   COMMUNITY_INTRO,
   COMMUNITY_TITLE,
   EXTRAS,
+  FLOW,
+  HOW_BANNER,
   NOT_MEASURED,
-  PROBLEM_STATEMENT,
   OFFLINE_EXAMPLE_NOTE,
   OFFLINE_INTRO,
   OFFLINE_NOTE,
-  OFFLINE_ROWS,
+  PEOPLE,
   PRIVACY,
   PROBLEM_SUB,
+  PROBLEM_STATEMENT,
   REAL_LIMITS,
   REAL_LIVE,
   REPO_URL,
+  ROLES,
+  SCREENS,
   SMS_SIM_CHIPS,
   SMS_SIM_NOTE,
-  ROLES,
-  SAFEGUARDS,
-  SCREENS,
   SOURCES_TOOLS,
-  STEPS,
   TABS,
+  TILES,
   TRY_IT,
-  WHY_WHATSAPP,
   VIDEO_URL,
+  WHY_WHATSAPP,
   type TabId,
 } from "@/lib/landing-content";
 import { alertSms } from "@/lib/community";
@@ -42,7 +41,10 @@ const SAMPLE_PACK = buildListingPack({
   children: { text: "Sample answer.", sample: true },
 });
 const SMS_EXAMPLES = [
-  { label: "After the household champion approves an answer", text: approvalSms("price", SAMPLE_PACK, "wo") },
+  {
+    label: "After the household champion approves an answer",
+    text: approvalSms("price", SAMPLE_PACK, "wo"),
+  },
   { label: "When the community champion posts a notice", text: alertSms("road", "Tendaba road") },
   { label: "Her Google listing progress (she texts LISTING)", text: listingSms(SAMPLE_PACK, "wo") },
 ];
@@ -83,46 +85,6 @@ function Stat({ id, className }: { id: string; className?: string }) {
   );
 }
 
-function StatRow({ id }: { id: string }) {
-  const e = evidence(id);
-  return (
-    <li className="grid grid-cols-[6.25rem_1fr] sm:grid-cols-[7.25rem_1fr] items-baseline gap-x-3 py-2">
-      <span className="font-display text-xl font-black leading-tight text-primary sm:text-2xl">
-        {e.value}
-      </span>
-      <span className="leading-snug">
-        {e.label}
-        <span className="block text-sm text-muted-foreground">
-          {e.year}
-          {e.note ? ` · ${e.note}` : ""} · <Ext href={e.href}>World Bank {e.indicator}</Ext>
-        </span>
-      </span>
-    </li>
-  );
-}
-
-function StatGroup({
-  title,
-  ids,
-  children,
-}: {
-  title: string;
-  ids: string[];
-  children?: ReactNode;
-}) {
-  return (
-    <div>
-      <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{title}</h3>
-      <ul className="mt-1 divide-y divide-border/60">
-        {ids.map((id) => (
-          <StatRow key={id} id={id} />
-        ))}
-      </ul>
-      {children}
-    </div>
-  );
-}
-
 function Hero() {
   return (
     <section aria-labelledby="problem" className="pt-6 sm:pt-8">
@@ -134,49 +96,56 @@ function Hero() {
         Tourism earned The Gambia <Stat id="receipts" /> in {evidence("receipts").year}.{" "}
         <Ext href={evidence("online").href}>Half the country</Ext> is still offline.
       </h1>
-      <p className="mt-4 max-w-3xl text-lg leading-snug sm:text-xl">{PROBLEM_SUB}</p>
+      <p className="mt-3 max-w-3xl text-lg leading-snug sm:text-xl">{PROBLEM_SUB}</p>
 
-      <aside aria-label="The numbers" className="mt-6 rounded-2xl border bg-card p-4 sm:p-5">
-        <div className="grid gap-x-10 gap-y-4 lg:grid-cols-2">
-          <StatGroup
-            title="Tourism · 2019, the last year before COVID"
-            ids={["receipts", "exportShare", "arrivals"]}
-          >
-            <p className="mt-1 text-sm text-muted-foreground">
-              Then COVID: in {evidence("receipts2020").year}, receipts fell to{" "}
-              <Stat id="receipts2020" /> and arrivals to <Stat id="arrivals2020" />.
-            </p>
-          </StatGroup>
-          <div className="space-y-3 lg:border-l lg:pl-10">
-            <StatGroup title="Connectivity · 2024" ids={["online", "mobile"]} />
-            <StatGroup title="Who does the work · 2025" ids={["selfEmployed"]}>
-              <p className="mt-1 text-sm text-muted-foreground">Noor is one of them.</p>
-            </StatGroup>
-          </div>
-        </div>
-        <p className="mt-3 border-t pt-2 text-xs text-muted-foreground">
-          Source: World Bank, World Development Indicators, The Gambia. Retrieved {retrievedLabel}.
-          Every number links to its data page.
-        </p>
-      </aside>
+      <ul
+        aria-label="The numbers"
+        className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"
+      >
+        {TILES.map((t) => {
+          const e = evidence(t.id);
+          return (
+            <li key={t.id} className="rounded-xl border bg-card p-3">
+              <p className="text-2xl" aria-hidden="true">
+                {t.icon}
+              </p>
+              <p className="font-display text-xl font-black leading-tight text-primary">
+                {e.value}
+              </p>
+              <p className="text-sm leading-tight">{t.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {e.year} · <Ext href={e.href}>World Bank</Ext>
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Tourism figures are 2019, the last year before COVID. In {evidence("receipts2020").year}:{" "}
+        <Stat id="receipts2020" /> and <Stat id="arrivals2020" /> visitors. SIMs are subscriptions,
+        not people. Source: World Bank WDI, The Gambia, retrieved {retrievedLabel}. Every number
+        links to its data page.
+      </p>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         <blockquote className="rounded-xl border-2 border-primary bg-card p-4">
           <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
             Teranga closes the gap
           </p>
-          <p className="text-lg font-semibold leading-snug">{PROBLEM_STATEMENT}</p>
+          <p className="text-base font-semibold leading-snug sm:text-lg">{PROBLEM_STATEMENT}</p>
           <p className="mt-2 text-sm text-muted-foreground">
             This is the gap we target, not a measured result. {NOT_MEASURED}
           </p>
         </blockquote>
-
         <div
           className="flex flex-col items-stretch justify-center gap-2 text-center"
           aria-label="The gap Teranga closes"
         >
           <div className="rounded-xl border bg-card px-3 py-2">
-            <p className="font-bold">Visitors</p>
+            <p className="text-xl" aria-hidden="true">
+              🧳
+            </p>
+            <p className="font-bold">Tourists</p>
             <p className="text-sm text-muted-foreground">English · German · Dutch</p>
           </div>
           <div className="rounded-xl bg-primary px-3 py-1.5 font-bold text-primary-foreground">
@@ -185,6 +154,9 @@ function Hero() {
             <span aria-hidden="true"> ↕</span>
           </div>
           <div className="rounded-xl border bg-card px-3 py-2">
+            <p className="text-xl" aria-hidden="true">
+              📞
+            </p>
             <p className="font-bold">Noor (fictional)</p>
             <p className="text-sm text-muted-foreground">Wolof · basic phone</p>
           </div>
@@ -194,9 +166,24 @@ function Hero() {
   );
 }
 
-function Card({ title, tag, children }: { title: string; tag?: string; children: ReactNode }) {
+function Card({
+  title,
+  tag,
+  icon,
+  children,
+}: {
+  title: string;
+  tag?: string;
+  icon?: string;
+  children: ReactNode;
+}) {
   return (
     <li className="rounded-xl border bg-card p-4">
+      {icon ? (
+        <p className="text-3xl" aria-hidden="true">
+          {icon}
+        </p>
+      ) : null}
       <h3 className="text-lg font-bold leading-snug">{title}</h3>
       {tag ? (
         <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
@@ -211,52 +198,62 @@ function Card({ title, tag, children }: { title: string; tag?: string; children:
 function HowPanel() {
   return (
     <div>
-      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {STEPS.map((s, i) => (
-          <li key={s.title} className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground"
-                aria-hidden="true"
-              >
-                {i + 1}
-              </span>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-                {s.channel}
-              </span>
-            </div>
-            <h3 className="mt-2 text-lg font-bold leading-snug">{s.title}</h3>
-            <p className="mt-1 leading-snug">{s.body}</p>
-            <p className="mt-2 border-l-4 border-primary pl-2 text-sm leading-snug text-muted-foreground">
-              <span className="font-bold text-foreground">AI: </span>
-              {s.ai}
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Who does what">
+        {PEOPLE.map((p) => (
+          <li key={p.name} className="rounded-xl border bg-card p-3 text-center">
+            <p className="text-4xl" aria-hidden="true">
+              {p.icon}
             </p>
+            <h3 className="font-bold leading-snug">{p.name}</h3>
+            <p className="text-xs font-bold text-primary">{p.role}</p>
+            <p className="mt-1 text-sm leading-snug">{p.line}</p>
+          </li>
+        ))}
+      </ul>
+
+      <ol className="mt-5 grid gap-2 lg:grid-cols-5" aria-label="The flow">
+        {FLOW.map((f, i) => (
+          <li
+            key={f.title}
+            className="relative rounded-xl border-2 border-primary/60 bg-card p-3 text-center"
+          >
+            <p className="text-4xl" aria-hidden="true">
+              {f.icon}
+            </p>
+            <h3 className="font-display text-lg font-black leading-tight">
+              {i + 1}. {f.title}
+            </h3>
+            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+              {f.chip}
+            </p>
+            <p className="mt-2 text-sm leading-snug">
+              <span className="font-bold text-primary">AI </span>
+              {f.ai}
+            </p>
+            {i < FLOW.length - 1 ? (
+              <span
+                aria-hidden="true"
+                className="absolute -bottom-3 left-1/2 z-10 -translate-x-1/2 text-xl text-primary lg:-right-3 lg:bottom-auto lg:left-auto lg:top-1/2 lg:-translate-y-1/2 lg:translate-x-0"
+              >
+                <span className="lg:hidden">↓</span>
+                <span className="hidden lg:inline">→</span>
+              </span>
+            ) : null}
           </li>
         ))}
       </ol>
-      <section
-        className="mt-4 rounded-xl border-2 border-primary bg-card p-4"
-        aria-labelledby="why-wa"
-      >
-        <h3 id="why-wa" className="text-lg font-bold">
-          {WHY_WHATSAPP.title}
-        </h3>
-        <p className="mt-1 leading-snug">{WHY_WHATSAPP.body}</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          {WHY_WHATSAPP.items.map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
-      </section>
-      <h3 className="mt-6 text-lg font-bold">Also built</h3>
-      <ul className="mt-2 grid gap-3 lg:grid-cols-2">
+      <p className="mt-4 rounded-xl bg-secondary p-3 font-semibold text-secondary-foreground">
+        {HOW_BANNER} {WHY_WHATSAPP}
+      </p>
+
+      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {EXTRAS.map((c) => (
           <Card key={c.title} title={c.title} tag={c.tag}>
             {c.body}
           </Card>
         ))}
       </ul>
-      <p className="mt-4 text-sm text-muted-foreground">{TRY_IT}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{TRY_IT}</p>
     </div>
   );
 }
@@ -265,30 +262,19 @@ function OfflinePanel() {
   return (
     <div>
       <p className="text-lg font-semibold">{OFFLINE_INTRO}</p>
-      <div className="mt-3 overflow-hidden rounded-xl border bg-card">
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {CHANNELS.map((c) => (
-          <div
-            key={c.channel}
-            className="grid gap-1 border-b p-3 last:border-b-0 sm:grid-cols-[8rem_14rem_1fr] sm:gap-4"
-          >
-            <p className="font-display text-lg font-black text-primary">{c.channel}</p>
+          <div key={c.channel} className="rounded-xl border bg-card p-4 text-center">
+            <p className="text-4xl" aria-hidden="true">
+              {c.icon}
+            </p>
+            <p className="font-display text-xl font-black text-primary">{c.channel}</p>
             <p className="font-bold">{c.who}</p>
-            <p className="leading-snug">{c.use}</p>
+            <p className="text-sm leading-snug">{c.use}</p>
           </div>
         ))}
       </div>
-      <ul className="mt-3 grid gap-3 lg:grid-cols-2">
-        {OFFLINE_ROWS.map((r) => (
-          <li key={r.who} className="rounded-xl border bg-card p-4">
-            <h3 className="text-lg font-bold leading-snug">{r.who}</h3>
-            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-              Internet: {r.net}
-            </p>
-            <p className="mt-2 leading-snug">{r.does}</p>
-          </li>
-        ))}
-      </ul>
-      <h3 className="mt-6 text-lg font-bold">What Noor keeps on her phone</h3>
+      <h3 className="mt-5 text-lg font-bold">What Noor keeps on her phone</h3>
       <p className="text-sm text-muted-foreground">{OFFLINE_EXAMPLE_NOTE}</p>
       <ul className="mt-2 grid gap-3 lg:grid-cols-3">
         {SMS_EXAMPLES.map((m) => (
@@ -303,30 +289,6 @@ function OfflinePanel() {
       <p className="mt-4 rounded-xl border-2 border-foreground bg-highlight p-3 text-sm text-foreground">
         {OFFLINE_NOTE}
       </p>
-    </div>
-  );
-}
-
-function AiPanel() {
-  return (
-    <div>
-      <p className="text-lg font-semibold">{AI_INTRO}</p>
-      <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {AI_DOES.map((a) => (
-          <li key={a.title} className="rounded-xl border-2 border-primary/70 bg-card p-4">
-            <h3 className="text-lg font-bold leading-snug">{a.title}</h3>
-            <p className="mt-1 leading-snug">{a.body}</p>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-4 rounded-xl bg-secondary p-4 text-secondary-foreground">
-        <h3 className="text-lg font-bold">{SAFEGUARDS.title}</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          {SAFEGUARDS.items.map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }
@@ -488,25 +450,23 @@ function CommunityPanel() {
   return (
     <div>
       <h3 className="text-xl font-black leading-snug sm:text-2xl">{COMMUNITY_TITLE}</h3>
-      <p className="mt-2 max-w-3xl leading-snug">{COMMUNITY_INTRO}</p>
-      <p className="mt-2 max-w-3xl leading-snug">
-        Almost a fifth of The Gambia’s land (<Stat id="lowLand" />, {low.year}) is less than 5
-        metres above sea level. When water rises, every operator on that road or river is affected
-        at once.{" "}
+      <p className="mt-1 max-w-3xl leading-snug">
+        {COMMUNITY_INTRO} Almost a fifth of the country’s land (<Stat id="lowLand" />, {low.year})
+        is under 5 metres above sea level.{" "}
         <span className="text-sm text-muted-foreground">
-          Source: <Ext href={low.href}>World Bank {low.indicator}</Ext>.
+          <Ext href={low.href}>World Bank {low.indicator}</Ext>
         </span>
       </p>
-      <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {ROLES.map((r) => (
-          <Card key={r.title} title={r.title} tag={r.tag}>
-            {r.body}
+          <Card key={r.name} title={r.name} icon={r.icon} tag={r.role}>
+            {r.line}
           </Card>
         ))}
       </ul>
-      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {COMMUNITY.map((c) => (
-          <Card key={c.title} title={c.title} tag={c.tag}>
+          <Card key={c.title} title={c.title} icon={c.icon} tag={c.tag}>
             {c.body}
           </Card>
         ))}
@@ -614,10 +574,9 @@ function ScreensPanel() {
 
 const PANELS: Record<TabId, () => ReactNode> = {
   how: HowPanel,
-  offline: OfflinePanel,
   sms: SmsPanel,
   community: CommunityPanel,
-  ai: AiPanel,
+  offline: OfflinePanel,
   real: RealPanel,
   sources: SourcesPanel,
   screens: ScreensPanel,

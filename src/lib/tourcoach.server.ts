@@ -428,6 +428,11 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   // DEMO SHORTCUT: champion login by PIN over WhatsApp. Not a real authentication method.
   const pinMatch = /^REVIEW\s+(\S+)$/i.exec(text);
   const communityMatch = /^COMMUNITY\s+(\S+)$/i.exec(text);
+  // Noor approves her own answers: her number needs no PIN to review (the PIN is for the household and community champions).
+  if (upper === "REVIEW" && c.role !== "champion" && isOperatorCaller(input.from)) {
+    await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
+    c.role = "champion"; c.state = "idle";
+  }
   // By SMS the household champion and the community champion can do everything that is text: review (1 / 2 / 3), listing,
   // coaching, the weekly report, notices. Recording is by phone call. (Demo PIN over SMS is a shortcut, not real sign-in.)
   if (channel === "sms" && c.role === "champion" && !pinMatch && !communityMatch && upper !== "EXIT") {
@@ -938,6 +943,8 @@ async function operatorSmsBody(parsed: OperatorSmsCommand, fallbackLang: "wo" | 
 export async function handleSms(input: { from: string; body: string }): Promise<void> {
   if (isCarrierKeyword(input.body)) return; // Twilio answers STOP and START itself
   if (isOperatorCaller(input.from)) {
+    // Noor reviews and approves her own answers by SMS: REVIEW, then 1 (approve), 2 (record again) or 3 (bilingual reviewer).
+    if (/^(REVIEW|[123])$/i.test(input.body.trim())) { await handleOtherSms(input, true); return; }
     await replyOperatorSms(input.from, await operatorSmsBody(parseOperatorSms(input.body)));
     return;
   }
@@ -945,7 +952,7 @@ export async function handleSms(input: { from: string; body: string }): Promise<
 }
 
 /** Text-only SMS from anyone but Noor: community champion sessions, and visitors when SMS_VISITOR_MODE=on. */
-async function handleOtherSms(input: { from: string; body: string }) {
+async function handleOtherSms(input: { from: string; body: string }, trusted = false) {
   const db = supabaseAdmin;
   const visitorMode = process.env["SMS_VISITOR_MODE"] === "on";
   const wantsLogin = /^(COMMUNITY|REVIEW)\s+\S+$/i.test(input.body.trim());
@@ -953,11 +960,12 @@ async function handleOtherSms(input: { from: string; body: string }) {
   let { data: conv } = await db.from("conversations").select("*").eq("phone_hash", phone_hash).maybeSingle();
   const pin = /^(?:COMMUNITY|REVIEW)\s+(\S+)$/i.exec(input.body.trim())?.[1];
   const pinOk = !!pin && safeEqual(pin, env("DEMO_CHAMPION_PIN"));
-  if (!conv && (visitorMode || pinOk)) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
+  if (!conv && (visitorMode || pinOk || trusted)) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
   if (!conv) return; // a stranger texting a random word: no row, no reply, no cost
   const c = conv as unknown as Conv;
   const inCommunity = c.role === "champion"; // a household champion or community champion who logged in by SMS or WhatsApp
-  if (!visitorMode && !wantsLogin && !inCommunity) return;
+  const noorReview = trusted && /^(REVIEW|[123])$/i.test(input.body.trim());
+  if (!visitorMode && !wantsLogin && !inCommunity && !noorReview) return;
   const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
   const r = await route(c, { from: input.from, body: input.body, mediaUrl: null }, save, "sms");
   const reply: Reply = typeof r === "string" ? { text: r } : r;
