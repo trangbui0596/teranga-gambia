@@ -75,9 +75,9 @@ export const CHANNELS = [
     use: "Tourists ask by voice or text. The champion syncs once a week.",
   },
 ];
-export const DEMO_CHANNEL_TITLE = "Demo note: WhatsApp is a temporary stand-in for SMS";
+export const DEMO_CHANNEL_TITLE = "Demo note";
 export const DEMO_CHANNEL_NOTE =
-  "Teranga is built for SMS and voice: that is what Noor and the champions use, so it works with no internet. The US carrier has not yet approved our SMS registration, so for now this demo runs the same commands on WhatsApp. Once the carrier approves, the same texts go out by SMS. The Try SMS box below shows the exact SMS texts. Tourists use WhatsApp by design: they have data, and it carries voice.";
+  "WhatsApp temporarily stands in for SMS until the US carrier approves our registration.";
 export const OFFLINE_INTRO =
   "Noor never needs the internet. Her household champion needs it about once a week, and tourists need it to ask.";
 export const OFFLINE_NOTE =

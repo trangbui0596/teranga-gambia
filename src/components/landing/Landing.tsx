@@ -97,63 +97,71 @@ function Stat({ id, className }: { id: string; className?: string }) {
   );
 }
 
-function DemoChannelNote() {
+/** A slim bar above the header: out of the page flow, one sentence, details one click away. */
+function DemoChannelBar() {
   return (
-    <aside
-      aria-label="Demo note"
-      className="mx-auto max-w-5xl rounded-xl border-2 border-dashed border-foreground bg-highlight p-3 text-foreground sm:p-4"
-    >
-      <p className="text-sm font-bold">{DEMO_CHANNEL_TITLE}</p>
-      <p className="mt-1 text-sm leading-snug">{DEMO_CHANNEL_NOTE}</p>
+    <aside aria-label={DEMO_CHANNEL_TITLE} className="bg-highlight px-4 py-1.5 text-center text-sm leading-snug text-foreground">
+      <span className="font-bold">{DEMO_CHANNEL_TITLE}:</span> {DEMO_CHANNEL_NOTE}{" "}
+      <a
+        href="#offline"
+        className="font-bold underline underline-offset-2"
+        onClick={() => {
+          window.setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 60);
+        }}
+      >
+        Details
+      </a>
     </aside>
   );
 }
 
-function ReviewsRead() {
+/** One quiet line on the front page; the detail lives in Explore, What's real. */
+function ReviewsStrip() {
+  const r = REVIEWS_READ;
+  return (
+    <p className="mx-auto mt-5 max-w-5xl rounded-xl bg-secondary/60 px-4 py-3 text-center text-sm leading-snug sm:text-base">
+      <span className="font-bold">Real data, read by the AI:</span> {r.reviews} public Google Maps reviews from {r.places} Gambian
+      operators. Nothing raw is stored.{" "}
+      <a
+        href="#real"
+        className="whitespace-nowrap font-bold text-primary underline underline-offset-2"
+        onClick={() => {
+          window.setTimeout(() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" }), 60);
+        }}
+      >
+        See what it found
+      </a>
+    </p>
+  );
+}
+
+/** The per-theme counts of the latest coaching run. Closed by default so it never crowds a page. */
+function ReviewThemes() {
   const r = REVIEWS_READ;
   const max = Math.max(...r.themes.map((t) => t.positive + t.negative));
   return (
-    <section
-      aria-labelledby="reviews-read"
-      className="mx-auto max-w-5xl rounded-xl border-2 border-primary bg-card p-4 sm:p-6"
-    >
-      <p className="text-sm font-bold uppercase tracking-widest text-primary">Real data, read by the AI</p>
-      <h2 id="reviews-read" className="mt-1 font-display text-2xl font-black leading-tight sm:text-3xl">
-        {r.reviews} real public Google Maps reviews of {r.places} Gambian tourism operators
-      </h2>
-      <p className="mt-1 text-base font-semibold">{COACHING_PROMISE}</p>
-      <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {[
-          [String(r.reviews), "reviews read"],
-          [String(r.places), "operators"],
-          [`${r.from}–${r.to}`, "when they were written"],
-          [String(r.themeMentions), "theme mentions found"],
-        ].map(([n, l]) => (
-          <li key={l} className="rounded-xl border bg-background p-3">
-            <p className="font-display text-2xl font-black leading-none text-primary">{n}</p>
-            <p className="mt-1 text-sm leading-tight">{l}</p>
-          </li>
-        ))}
-      </ul>
-      <h3 className="mt-5 text-sm font-bold">What the AI found, by theme (counts of reviews)</h3>
-      <ul className="mt-2 space-y-1.5">
+    <details className="mt-3 rounded-xl bg-background p-3">
+      <summary className="cursor-pointer text-sm font-bold">
+        What the AI found, by theme ({r.themeMentions} mentions: {r.positive} positive, {r.negative} complaints)
+      </summary>
+      <ul className="mt-3 space-y-1.5">
         {r.themes.map((t) => (
-          <li key={t.theme} className="grid grid-cols-[9.5rem_1fr_auto] items-center gap-2 text-sm sm:grid-cols-[13rem_1fr_auto]">
+          <li key={t.theme} className="grid grid-cols-[8.5rem_1fr_auto] items-center gap-2 text-sm sm:grid-cols-[12rem_1fr_auto]">
             <span className="leading-tight">{t.theme}</span>
-            <span className="flex h-3 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+            <span className="flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
               <span className="bg-primary" style={{ width: `${(t.positive / max) * 100}%` }} />
               <span className="bg-foreground" style={{ width: `${(t.negative / max) * 100}%` }} />
             </span>
             <span className="tabular-nums text-xs text-muted-foreground">
-              {t.positive} positive · {t.negative} complaint{t.negative === 1 ? "" : "s"}
+              {t.positive} · {t.negative}
             </span>
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Latest weekly run, 4 Oct 2026: {r.positive} positive mentions and {r.negative} complaints. The AI reads each review; Teranga keeps only these counts. No review text and no author names are stored. It is a small sample (Google shows a few reviews per place), so it is context for coaching, not a market study.
+      <p className="mt-2 text-xs text-muted-foreground">
+        Reviews that mention each theme: positive · complaint. Latest weekly run, 4 Oct 2026. The AI reads each review; Teranga keeps only these counts. A small sample (Google shows a few reviews per place): context for coaching, not a market study.
       </p>
-    </section>
+    </details>
   );
 }
 
@@ -709,6 +717,9 @@ function RealPanel() {
             <p className="mt-1 text-xs leading-snug text-muted-foreground">Re-checked against the live World Bank API by a script.</p>
           </li>
         </ul>
+        <div className="mt-3 text-foreground">
+          <ReviewThemes />
+        </div>
         <p className="mt-3 text-xs opacity-90">
           No model was trained on this data. The AI reads the reviews at run time, the questions tuned and tested the matching rules, and the Wolof sentences checked the AI’s translation.
         </p>
@@ -887,6 +898,7 @@ export function Landing({ initialTab = null }: { initialTab?: TabId | null }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="pattern-kente h-2" aria-hidden="true" />
+      <DemoChannelBar />
       <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 pt-4">
         <div>
           <span className="font-display text-2xl font-black">Teranga</span>
@@ -913,10 +925,9 @@ export function Landing({ initialTab = null }: { initialTab?: TabId | null }) {
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
-        <DemoChannelNote />
         <Chain />
         <Storybook />
-        <ReviewsRead />
+        <ReviewsStrip />
         <Explore initialTab={initialTab} />
       </main>
       <footer className="mx-auto max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">

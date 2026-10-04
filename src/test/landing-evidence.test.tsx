@@ -126,14 +126,17 @@ describe("the data we say we analysed", () => {
   });
 });
 
-import { DEMO_CHANNEL_NOTE, DEMO_CHANNEL_TITLE } from "@/lib/landing-content";
+import { DEMO_CHANNEL_NOTE } from "@/lib/landing-content";
 describe("demo channel note", () => {
-  it("says on the front page that WhatsApp stands in for SMS until the carrier approves it", () => {
+  it("says in one slim bar above the header that WhatsApp is a temporary stand-in for SMS", () => {
     const h = html("real");
-    expect(h).toContain("Demo note");
-    expect(h).toContain(DEMO_CHANNEL_TITLE);
-    expect(DEMO_CHANNEL_NOTE).toContain("has not yet approved our SMS registration");
-    expect(DEMO_CHANNEL_NOTE).toContain("Tourists use WhatsApp by design");
+    expect(h).toContain("Demo note:");
+    expect(h).toContain(DEMO_CHANNEL_NOTE);
+    expect(h).toContain('href="#offline"');
+    expect(h.indexOf("Demo note:")).toBeLessThan(h.indexOf("<header")); // out of the page flow
+    expect(DEMO_CHANNEL_NOTE.length).toBeLessThan(110);
+    expect(DEMO_CHANNEL_NOTE).toContain("temporarily stands in for SMS");
+    expect(DEMO_CHANNEL_NOTE).toContain("carrier approves our registration");
   });
 });
 
@@ -141,9 +144,11 @@ import { REVIEWS_READ } from "@/lib/landing-content";
 describe("real reviews read by the AI, on the front page", () => {
   it("shows the amount of data and the promise without opening any tab", () => {
     const h = html("sms");
-    expect(h).toContain("70 real public Google Maps reviews of 15 Gambian tourism operators");
+    expect(h).toContain("70 public Google Maps reviews from 15 Gambian");
     expect(h).toContain("Nothing raw is stored");
-    expect(h).toContain("theme mentions found");
+    expect(h).toContain('href="#real"'); // one quiet line; the chart is not on the front page
+    expect(h).not.toContain("What the AI found, by theme");
+    expect(html("real")).toContain("What the AI found, by theme");
   });
   it("the totals match the per-theme counts", () => {
     const pos = REVIEWS_READ.themes.reduce((a, t) => a + t.positive, 0);
@@ -152,9 +157,5 @@ describe("real reviews read by the AI, on the front page", () => {
     expect(pos).toBe(REVIEWS_READ.positive);
     expect(neg).toBe(REVIEWS_READ.negative);
     expect(pos + neg).toBe(REVIEWS_READ.themeMentions);
-  });
-  it("the demo note says WhatsApp is temporary until the carrier approves SMS", () => {
-    expect(DEMO_CHANNEL_TITLE).toContain("temporary stand-in for SMS");
-    expect(DEMO_CHANNEL_NOTE).toContain("has not yet approved our SMS registration");
   });
 });
