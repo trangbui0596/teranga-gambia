@@ -31,7 +31,7 @@ import {
   WHY_WHATSAPP,
   type TabId,
 } from "@/lib/landing-content";
-import { alertSms } from "@/lib/community";
+import { alertSms, visitorNotice } from "@/lib/community";
 import { buildListingPack } from "@/lib/listing";
 import { approvalSms, listingSms } from "@/lib/sms-text";
 
@@ -40,6 +40,12 @@ const SAMPLE_PACK = buildListingPack({
   price: { text: "Sample answer.", sample: true },
   children: { text: "Sample answer.", sample: true },
 });
+const NOTICE_NOW = Date.parse("2026-10-04T12:00:00Z");
+const NOTICE_DEMO = visitorNotice(
+  [{ kind: "road", place: "Tendaba road", created_at: "2026-10-04T11:30:00Z" }],
+  "en",
+  NOTICE_NOW,
+);
 const SMS_EXAMPLES = [
   {
     label: "After the household champion approves an answer",
@@ -457,6 +463,37 @@ function CommunityPanel() {
           <Ext href={low.href}>World Bank {low.indicator}</Ext>
         </span>
       </p>
+      <section
+        className="mt-4 rounded-xl border-2 border-primary bg-card p-4"
+        aria-labelledby="notice"
+      >
+        <h4 id="notice" className="text-lg font-bold">
+          What is a community notice?
+        </h4>
+        <p className="leading-snug">
+          A one-line alert from the community champion when something changes what tourists should
+          expect, like a flood or a closed road. Six fixed kinds, no free text except the place. It
+          reaches members by SMS and tourists under every answer, for 24 hours.
+        </p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-3">
+          <div>
+            <p className="mb-1 text-sm font-bold">1. The community champion texts</p>
+            <pre className="whitespace-pre-wrap rounded-2xl bg-primary p-3 font-mono text-sm text-primary-foreground">
+              ALERT 2 Tendaba road
+            </pre>
+          </div>
+          <div>
+            <p className="mb-1 text-sm font-bold">2. Noor’s phone (SMS, Wolof)</p>
+            <pre className="whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-secondary p-3 font-mono text-sm text-secondary-foreground">
+              {alertSms("road", "Tendaba road")}
+            </pre>
+          </div>
+          <div>
+            <p className="mb-1 text-sm font-bold">3. Under a tourist’s answer (example)</p>
+            <pre className="whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-card p-3 font-mono text-sm ring-1 ring-border">{`We meet at the beach gate.\n\n${NOTICE_DEMO}`}</pre>
+          </div>
+        </div>
+      </section>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {ROLES.map((r) => (
           <Card key={r.name} title={r.name} icon={r.icon} tag={r.role}>
