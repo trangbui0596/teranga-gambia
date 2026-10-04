@@ -9,7 +9,7 @@ const plain = (value: string) => value
 
 /** count = answers saved, asked = questions asked in this call. */
 export function callSummarySms(count: number, asked: number): string {
-  return `Teranga: Got ${count} of ${asked} answers from your call. Your family helper will check them. Reply STOP to opt out.`;
+  return `Teranga: Got ${count} of ${asked} answers from your call. Your household champion will check them. Reply STOP to opt out.`;
 }
 
 export function weeklyDigestSms(

@@ -116,7 +116,7 @@ describe("listing and receipts by SMS", () => {
     children: { text: "Children are welcome.", sample: false },
   });
 
-  it("tells Noor the progress, the cards to record and what only the helper can add", () => {
+  it("tells Noor the progress, the cards to record and what only the household champion can add", () => {
     const s = listingSms(some, "en");
     expect(s).toContain("Answers approved: 2 of 10");
     expect(s).toMatch(/record card \d/);

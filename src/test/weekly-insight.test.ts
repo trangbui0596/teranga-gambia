@@ -71,7 +71,7 @@ describe("weekly insight", () => {
     expect(formatWeeklyReport(i)).toContain("No new action");
   });
 
-  it("the helper's report is Wolof first with English glosses and the unverified footer", () => {
+  it("the household champion's report is Wolof first with English glosses and the unverified footer", () => {
     const t = formatWeeklyReport(weeklyInsight(v, now, prev));
     expect(t).toContain("Li nu jàng ayubés bi");
     expect(t).toContain("*12*");

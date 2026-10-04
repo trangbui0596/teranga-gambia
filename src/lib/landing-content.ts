@@ -39,10 +39,10 @@ export const STEPS = [
     ai: "Speech recognition hears Wolof; machine translation into English, German and Dutch, with a round-trip check.",
   },
   {
-    title: "Her helper approves every answer",
+    title: "Her household champion approves every answer",
     channel: "SMS",
     body: "She gets the Wolof transcript and the numbers it heard as a text and replies 1 to approve, 2 to record again or 3 to ask a bilingual reviewer. Nothing reaches a visitor before she does.",
-    ai: "It shows the numbers it heard, so a helper who doesn’t read English can confirm a price.",
+    ai: "It shows the numbers it heard, so a household champion who doesn’t read English can confirm a price.",
   },
   {
     title: "Google finds her, WhatsApp is the way in",
@@ -59,7 +59,7 @@ export const STEPS = [
   {
     title: "The weekly sync closes the loop",
     channel: "SMS and WhatsApp",
-    body: "New questions go to Noor and her helper or community champion. Once they are answered and approved, the tourists who asked are messaged. The sync also re-reads public reviews and refines Noor’s coaching.",
+    body: "New questions go to Noor and her household champion or community champion. Once they are answered and approved, the tourists who asked are messaged. The sync also re-reads public reviews and refines Noor’s coaching.",
     ai: "It learns from what tourists asked and found unclear, and from how public reviews moved since last week.",
   },
   {
@@ -105,7 +105,7 @@ export const AI_DOES = [
   },
   {
     title: "Reads the prices",
-    body: "It shows the numbers it heard in Wolof (“yuñi ak juróom teemeer” shows as about 1500), so a helper who doesn’t read English can confirm a price.",
+    body: "It shows the numbers it heard in Wolof (“yuñi ak juróom teemeer” shows as about 1500), so a household champion who doesn’t read English can confirm a price.",
   },
   {
     title: "Turns a spoken review into text",
@@ -121,7 +121,7 @@ export const SAFEGUARDS = {
   title: "Built to never make things up",
   items: [
     "Visitor questions are matched to approved answers by fixed keyword rules. Nothing is generated, so it can’t invent an answer. Its real risk is picking the wrong approved one, so we measured that on real questions (see What’s real).",
-    "The helper’s chat agent can only propose changes. They run after an explicit YES.",
+    "The household champion’s chat agent can only propose changes. They run after an explicit YES.",
   ],
 };
 
@@ -129,7 +129,7 @@ export const EXTRAS = [
   {
     title: "A Google listing built from her own answers",
     tag: "Draft: a person publishes it",
-    body: "Once the helper approves answers, Teranga builds a Google Business Profile pack from Noor\u2019s own words: a description inside Google\u2019s 750-character limit, services, meeting point and booking. It shows what is missing, which question card to record next, and what only the helper can add. Noor gets the progress by SMS. Nothing is sent to Google: a person claims the profile and pastes it.",
+    body: "Once the household champion approves answers, Teranga builds a Google Business Profile pack from Noor\u2019s own words: a description inside Google\u2019s 750-character limit, services, meeting point and booking. It shows what is missing, which question card to record next, and what only the household champion can add. Noor gets the progress by SMS. Nothing is sent to Google: a person claims the profile and pastes it.",
   },
   {
     title: "One-tap Google review, in the visitor\u2019s own words",
@@ -139,7 +139,7 @@ export const EXTRAS = [
 ];
 
 export const OFFLINE_INTRO =
-  "Noor never needs the internet, and neither do her helper or community champion: everything they do is a phone call or a text message. WhatsApp is for visitors.";
+  "Noor never needs the internet, and neither do her household champion or community champion: everything they do is a phone call or a text message. WhatsApp is for visitors.";
 export const CHANNELS = [
   {
     channel: "Phone call",
@@ -148,7 +148,7 @@ export const CHANNELS = [
   },
   {
     channel: "SMS",
-    who: "Noor, her household helper, the community champion",
+    who: "Noor, her household champion, the community champion",
     use: "Everything that is text: reviewing answers (reply 1, 2 or 3), coaching, Google listing progress, community notices, the weekly learning. Works with no internet on a feature phone.",
   },
   {
@@ -164,7 +164,7 @@ export const OFFLINE_ROWS = [
     net: "No internet",
   },
   {
-    who: "Her household helper",
+    who: "Her household champion",
     does: "Reviews and approves the answers by SMS: the Wolof transcript and numbers arrive as a text, she replies 1, 2 or 3. The weekly sync adds what visitors asked and found unclear.",
     net: "No internet",
   },
@@ -207,7 +207,7 @@ export const COMMUNITY = [
   {
     title: "Translation checks",
     tag: "Built",
-    body: "When a household helper is not sure a translation is right, the answer goes to a bilingual reviewer in the community. Approved answers carry the label \u201CEnglish checked by a bilingual reviewer\u201D. German and Dutch stay machine translations of that English.",
+    body: "When a household champion is not sure a translation is right, the answer goes to a bilingual reviewer in the community. Approved answers carry the label \u201CEnglish checked by a bilingual reviewer\u201D. German and Dutch stay machine translations of that English.",
   },
   {
     title: "Fair referrals",

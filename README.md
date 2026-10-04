@@ -9,7 +9,7 @@ A Gambian tour operator answers visitors in English, German and Dutch with her o
 ## How it works
 
 1. **Record.** Noor phones the Teranga number and answers common visitor questions out loud, in Wolof (10 question cards; the demo call asks 2 by default). No internet needed.
-2. **Review.** A family helper gets the Wolof transcript, the numbers it heard and any flags on WhatsApp, and approves each answer.
+2. **Review.** A household champion gets the Wolof transcript, the numbers it heard and any flags on WhatsApp, and approves each answer.
 3. **Answer.** Visitors ask on WhatsApp in English, German or Dutch. They get the approved answer as text plus an AI-generated voice note, labeled machine-translated. If the match is weak the bot says "Not sure, Noor will answer" and never guesses.
 4. **Coach.** Plain advice for Noor in Wolof, built from real public Google Maps reviews (small sample, no raw review text stored).
 
@@ -20,18 +20,18 @@ There is no web UI beyond the landing page at `/` (problem and sourced statistic
 - **Hears Wolof speech.** Noor answers by phone and ElevenLabs Scribe turns her voice into text. Plain SMS needs typing and has no voice.
 - **Translates and checks.** Machine translation Wolof to English to German and Dutch, with a round-trip consistency check that flags answers whose meaning drifted. All labeled machine-translated and unverified.
 - **Speaks answers back.** Visitors get an AI-generated voice note in their language. SMS is text only.
-- **Reads numbers heard in Wolof.** It shows them (for example "yuñi ak juróom teemeer" as about 1500) so a helper who does not read English can confirm prices.
+- **Reads numbers heard in Wolof.** It shows them (for example "yuñi ak juróom teemeer" as about 1500) so a household champion who does not read English can confirm prices.
 - **Cleans up a spoken visitor review** into text ready to paste, changing no facts and no sentiment. The visitor posts it; nothing is published for them.
 - **Summarizes many public Google reviews** into plain Wolof advice, and says so when there is not enough data.
 
 ## Beyond answers: the wider community
 
-- **Cross-community recommendations (simulated demo).** A visitor sends `MORE`, picks nature, culture or food and says YES (opt-in). Teranga suggests a partner operator, rotating fairly (the partner with the fewest suggestions this month). No money, no number shared; `CONNECT` asks a person to pass on the contact, and the helper sees waiting requests with `LEDGER`. The partners are fictional sample operators. Texts are available in English, German and Dutch.
+- **Cross-community recommendations (simulated demo).** A visitor sends `MORE`, picks nature, culture or food and says YES (opt-in). Teranga suggests a partner operator, rotating fairly (the partner with the fewest suggestions this month). No money, no number shared; `CONNECT` asks a person to pass on the contact, and the household champion sees waiting requests with `LEDGER`. The partners are fictional sample operators. Texts are available in English, German and Dutch.
 - **One-tap Google review.** A visitor sends `FEEDBACK` and speaks their review. Teranga writes it down as clean text (no facts or sentiment changed), then on `POST` sends that text as its own message (easy to copy) and the same Google review link everyone gets (`GOOGLE_REVIEW_URL`). The visitor taps, pastes and picks their own stars; nothing is posted for them and there is no review gating.
 - **Google Business listing draft (simulated).** `LISTING` builds a draft from approved answers only; missing fields say "needs input". Nothing is sent to Google.
 
 Safeguards, not AI features: visitor questions are answered by fixed keyword rules over approved answers
-(no generation), so it never makes up an answer. The chat agent for the family helper can only propose
+(no generation), so it never makes up an answer. The chat agent for the household champion can only propose
 changes, which run after an explicit YES.
 
 ## Architecture
@@ -60,7 +60,7 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 | Route | Purpose |
 | --- | --- |
 | `/api/public/weekly-digest` | Weekly digest message |
-| `/api/public/weekly-sync` | Weekly sync: fresh public-review scan + what visitors asked and found unclear; report to the helper on WhatsApp, short SMS to Noor |
+| `/api/public/weekly-sync` | Weekly sync: fresh public-review scan + what visitors asked and found unclear; report to the household champion on WhatsApp, short SMS to Noor |
 | `/api/public/process-pending` | Finish unfinished voice answers |
 | `/api/public/purge` | Delete unshared visitor reviews older than 24 hours |
 | `/api/public/coach-run` | Run or return cached review coaching |
@@ -83,11 +83,11 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 ## Offline SMS, Google listing and the community layer
 
 - **Noor needs no internet.** She records by phone call. Coaching, Google listing progress, approval receipts, community notices and the weekly digest reach her as plain SMS (GSM-7 letters, at most three parts, opt-out line always kept). She can text `COACH`, `LISTING`, `WEEK` or `HELP` (`EN` for English). Wolof SMS text is machine-written and unverified.
-- **Google listing:** `LISTING` (helper, on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the helper can add, and claim steps. Nothing is sent to Google.
+- **Google listing:** `LISTING` (helper, on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the household champion can add, and claim steps. Nothing is sent to Google.
 - **Community Circle:** a community champion (`COMMUNITY <PIN>`, demo PIN) posts notices with `ALERT` (flood, closed road, storm, boats paused, tours closed, all clear), sees them with `ALERTS`, checks translations with `BILINGUAL` and sees an overview with `PULSE`. Notices are fixed templates in English, German, Dutch and Wolof, last 24 hours, are sent to members by SMS and appear under every visitor answer, always labeled as a community notice, not an official warning. Visitors can send `STATUS` to see them. Members other than Noor are simulated in the demo.
 
 - **Weekly sync (`SYNC`, `/api/public/weekly-sync`):** re-reads public Google reviews, compares them with the previous run (themes whose share moved by 5 points or more), adds what visitors asked and marked "not clear" this week, and turns it into up to three plain actions (counts only, no AI). It does not yet scan news sources: none was reachable from our environment to test, so that is a next step.
-- **SMS first:** everything Noor and the community champion do works over voice and SMS; WhatsApp is the household helper's weekly smartphone session and a convenience for visitors. US SMS delivery waits for carrier registration, so the live demo uses WhatsApp plus the simulator on the home page ("Try SMS").
+- **SMS first:** everything Noor and the community champion do works over voice and SMS; WhatsApp is the household champion's weekly smartphone session and a convenience for visitors. US SMS delivery waits for carrier registration, so the live demo uses WhatsApp plus the simulator on the home page ("Try SMS").
 
 ## Landing page statistics
 

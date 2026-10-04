@@ -1,4 +1,4 @@
-// Weekly digest for Noor's family helper on WhatsApp: Wolof first, small English in italics (same layout as the review
+// Weekly digest for Noor's household champion on WhatsApp: Wolof first, small English in italics (same layout as the review
 // messages). Fixed templates, counts only: no runtime AI and nothing invented. The SMS version stays in sms.ts (registered
 // A2P wording). UNVERIFIED Wolof written by Claude, see champion.templates.ts.
 import { bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";

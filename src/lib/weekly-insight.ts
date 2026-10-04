@@ -125,7 +125,7 @@ export function actionText(a: Action): { wo: string; en: string } {
   }
 }
 
-/** WhatsApp report for the household helper (the weekly smartphone session). */
+/** WhatsApp report for the household champion (the weekly smartphone session). */
 export function formatWeeklyReport(i: Insight): string {
   const blocks: string[] = [`*Li nu jàng ayubés bi* _(What we learned this week)_`];
   if (i.total === 0)

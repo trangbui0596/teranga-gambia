@@ -72,7 +72,7 @@ describe("Google listing pack", () => {
     expect(s.endsWith("...")).toBe(true);
   });
 
-  it("the helper's WhatsApp message is Wolof first, says nothing is sent to Google, and flags sample data", () => {
+  it("the household champion's WhatsApp message is Wolof first, says nothing is sent to Google, and flags sample data", () => {
     const text = formatListingPack(buildListingPack({ price: A("1500 dalasi per adult.", true) }));
     expect(text).toContain("Sa listing ci Google");
     expect(text).toContain("business.google.com");

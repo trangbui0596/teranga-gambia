@@ -428,7 +428,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   // DEMO SHORTCUT: champion login by PIN over WhatsApp. Not a real authentication method.
   const pinMatch = /^REVIEW\s+(\S+)$/i.exec(text);
   const communityMatch = /^COMMUNITY\s+(\S+)$/i.exec(text);
-  // By SMS the household helper and the community champion can do everything that is text: review (1 / 2 / 3), listing,
+  // By SMS the household champion and the community champion can do everything that is text: review (1 / 2 / 3), listing,
   // coaching, the weekly report, notices. Recording is by phone call. (Demo PIN over SMS is a shortcut, not real sign-in.)
   if (channel === "sms" && c.role === "champion" && !pinMatch && !communityMatch && upper !== "EXIT") {
     if (upper === "START") return "To record your answers, call the Teranga number.";
@@ -447,7 +447,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   if (pinMatch) {
     if (safeEqual(pinMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
-      if (channel === "sms") return "Helper: REVIEW = check answers (then 1 approve, 2 record again, 3 bilingual). LISTING, COACH, SYNC. To record, call the Teranga number. EXIT to leave.";
+      if (channel === "sms") return "Household champion: REVIEW = check answers (then 1 approve, 2 record again, 3 bilingual). LISTING, COACH, SYNC. To record, call the Teranga number. EXIT to leave.";
       return `${W.menuTitle}\n${bi(W.menu, W.menuEn)}`;
     }
     return bi(W.wrongPin, "Wrong PIN.");
@@ -862,7 +862,7 @@ async function applyReview(id: string, status: "approved" | "rerecord" | "needs_
   // Voice files are made inside this request (about 10 s) before the confirmation is sent; leftovers via finishAnswers.
   if (status === "approved") {
     try { await ensureAnswerAudio(id, ["en", "de", "nl"], 10000); } catch (e) { console.error("[audio] error step=approve", e); }
-    // The receipt to Noor must never delay the helper's confirmation (Twilio waits about 15 s): give it 3 s at most.
+    // The receipt to Noor must never delay the household champion's confirmation (Twilio waits about 15 s): give it 3 s at most.
     await Promise.race([notifyApproval(id), new Promise<void>((resolve) => setTimeout(resolve, 3000))]);
   }
   return true;
@@ -882,7 +882,7 @@ export async function sendOperatorSms(body: string): Promise<SmsStatus> {
   }
 }
 
-/** One line for the helper's WhatsApp reply saying what happened to the SMS copy. */
+/** One line for the household champion's WhatsApp reply saying what happened to the SMS copy. */
 async function smsCopyNote(body: string): Promise<string> {
   const st = await sendOperatorSms(body);
   const line = {
@@ -893,7 +893,7 @@ async function smsCopyNote(body: string): Promise<string> {
   return `\n\n📲 ${line}`;
 }
 
-/** Receipt to Noor when the helper approves one of her answers (set SMS_RECEIPTS=off to turn off). */
+/** Receipt to Noor when the household champion approves one of her answers (set SMS_RECEIPTS=off to turn off). */
 async function notifyApproval(answerId: string) {
   if (process.env["SMS_RECEIPTS"] === "off") return;
   try {
@@ -956,7 +956,7 @@ async function handleOtherSms(input: { from: string; body: string }) {
   if (!conv && (visitorMode || pinOk)) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
   if (!conv) return; // a stranger texting a random word: no row, no reply, no cost
   const c = conv as unknown as Conv;
-  const inCommunity = c.role === "champion"; // a helper or community champion who logged in by SMS or WhatsApp
+  const inCommunity = c.role === "champion"; // a household champion or community champion who logged in by SMS or WhatsApp
   if (!visitorMode && !wantsLogin && !inCommunity) return;
   const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
   const r = await route(c, { from: input.from, body: input.body, mediaUrl: null }, save, "sms");
@@ -966,7 +966,7 @@ async function handleOtherSms(input: { from: string; body: string }) {
     try { if (!(await twilioSend(input.from, env("TWILIO_SMS_FROM"), parts[i]!))) break; }
     catch (e) {
       console.error("[sms] reply failed", (e as Error).message);
-      // A helper or community champion still gets the answer on WhatsApp if US SMS is blocked: ALL remaining parts, so the
+      // A household champion or community champion still gets the answer on WhatsApp if US SMS is blocked: ALL remaining parts, so the
       // next review card is never hidden behind a "1" that approves an unseen answer.
       if (inCommunity || wantsLogin) for (const rest of parts.slice(i)) await sendWhatsApp(input.from, `SMS copy (shown here because US SMS registration is pending):\n${rest}`).catch(() => undefined);
       break;
@@ -1029,7 +1029,7 @@ export async function weeklySync(fresh: boolean, budgetMs = 45000) {
   return { insight, report: formatWeeklyReport(insight), sms: weeklyInsightSms(insight, "wo") };
 }
 
-/** The weekly job (POST /api/public/weekly-sync with the digest secret): fresh review scan, then the helper's report on
+/** The weekly job (POST /api/public/weekly-sync with the digest secret): fresh review scan, then the household champion's report on
  *  WhatsApp (the smartphone session) and a short SMS to Noor. */
 export async function runWeeklySync() {
   const r = await weeklySync(true);
@@ -1166,7 +1166,7 @@ async function addFlag(answerId: string, flag: string) {
   await supabaseAdmin.from("answers").update({ flags: [...flags, flag] }).eq("id", answerId);
 }
 
-/** Next answer a household helper sent to "a bilingual reviewer" (option 3). Sample answers are never shown. */
+/** Next answer a household champion sent to "a bilingual reviewer" (option 3). Sample answers are never shown. */
 async function showNextBilingual(save: Save): Promise<string> {
   const { data } = await supabaseAdmin.from("answers")
     .select("id, transcript_src, english, flags, recordings(questions(topic))")
@@ -1292,7 +1292,7 @@ async function digestData() {
   return { total: rows.length, topics: Object.entries(counts).map(([topic, count]) => ({ topic, count })), unanswered, notClear: rows.filter((r) => r.was_clear === false).length };
 }
 
-/** Noor gets the digest by SMS in Wolof (counts only, so it works without internet); her helper's WhatsApp fallback has the full text. */
+/** Noor gets the digest by SMS in Wolof (counts only, so it works without internet); her household champion's WhatsApp fallback has the full text. */
 export async function sendWeeklyDigest() {
   const d = await digestData();
   const body = weeklyDigestSmsWo(d.total, d.topics, d.topics.find((t) => t.topic === "unanswered")?.count ?? 0);

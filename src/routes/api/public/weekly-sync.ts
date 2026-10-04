@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 // POST with header x-digest-secret. The weekly sync: fresh scan of public Google reviews, what visitors asked and said
-// this week, refined coaching. The helper gets the full report on WhatsApp (her smartphone session) and Noor a short SMS.
+// this week, refined coaching. The household champion gets the full report on WhatsApp (her smartphone session) and Noor a short SMS.
 export const Route = createFileRoute("/api/public/weekly-sync")({
   server: {
     handlers: {

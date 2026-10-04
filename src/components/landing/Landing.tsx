@@ -42,7 +42,7 @@ const SAMPLE_PACK = buildListingPack({
   children: { text: "Sample answer.", sample: true },
 });
 const SMS_EXAMPLES = [
-  { label: "After the helper approves an answer", text: approvalSms("price", SAMPLE_PACK, "wo") },
+  { label: "After the household champion approves an answer", text: approvalSms("price", SAMPLE_PACK, "wo") },
   { label: "When the community champion posts a notice", text: alertSms("road", "Tendaba road") },
   { label: "Her Google listing progress (she texts LISTING)", text: listingSms(SAMPLE_PACK, "wo") },
 ];

@@ -169,7 +169,7 @@ export function coachSms(r: StoredRun, lang: CoachLanguage = "wo"): string {
 
 /* ---------------- Google listing ---------------- */
 
-/** Progress line for Noor: answers approved, listing fields ready, which cards to record next, what only the helper can add. */
+/** Progress line for Noor: answers approved, listing fields ready, which cards to record next, what only the household champion can add. */
 export function listingSms(p: ListingPack, lang: CoachLanguage = "wo"): string {
   const wo = lang === "wo";
   const cards = nextCards(p);
@@ -186,14 +186,14 @@ export function listingSms(p: ListingPack, lang: CoachLanguage = "wo"): string {
     helper.length
       ? wo
         ? `Sa mbokk mi war na def: ${helper.join(", ")}.`
-        : `Your helper must add: ${helper.join(", ")}.`
+        : `Your household champion must add: ${helper.join(", ")}.`
       : "",
     wo ? "Wolof bu masin tekki, wóoragul." : "",
   ].filter(Boolean);
   return withOptOut(lines.join("\n"));
 }
 
-/** Receipt when the helper approves one of Noor's answers. */
+/** Receipt when the household champion approves one of Noor's answers. */
 export function approvalSms(topic: string, p: ListingPack, lang: CoachLanguage = "wo"): string {
   const wo = lang === "wo";
   const cardNo = TOPIC_CARD[topic];
@@ -249,7 +249,7 @@ export const unknownSms = (lang: CoachLanguage = "wo") =>
 
 /* ---------------- Weekly digest in Wolof ---------------- */
 
-/** Wolof digest for Noor: counts only. The questions themselves are English, so they stay on the helper's WhatsApp. */
+/** Wolof digest for Noor: counts only. The questions themselves are English, so they stay on the household champion's WhatsApp. */
 export function weeklyDigestSmsWo(
   total: number,
   topics: Array<{ topic: string; count: number }>,

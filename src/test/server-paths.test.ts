@@ -455,11 +455,11 @@ describe("handleSms: community session by SMS", () => {
     expect(conv(CS)).toMatchObject({ role: "champion", state: "community" });
   });
 
-  it("REVIEW <PIN> from a community session switches to the household helper session", async () => {
+  it("REVIEW <PIN> from a community session switches to the household champion session", async () => {
     await login();
     net.attempts.length = 0;
     await handleSms({ from: CS, body: "REVIEW 4821" });
-    expect(net.attempts[0]!.body).toContain("Helper: REVIEW = check answers");
+    expect(net.attempts[0]!.body).toContain("Household champion: REVIEW = check answers");
     expect(conv(CS)).toMatchObject({ role: "champion", state: "idle" });
   });
 
@@ -507,8 +507,8 @@ describe("handleSms: community session by SMS", () => {
   });
 });
 
-/* ================= 2b2. household helper by SMS ================= */
-describe("handleSms: household helper session (REVIEW <PIN> by SMS)", () => {
+/* ================= 2b2. household champion by SMS ================= */
+describe("handleSms: household champion session (REVIEW <PIN> by SMS)", () => {
   const HS = "+15550009999";
   const login = () => handleSms({ from: HS, body: "REVIEW 4821" });
   const toHelper = () => net.attempts.filter((m) => m.to === HS);
@@ -522,7 +522,7 @@ describe("handleSms: household helper session (REVIEW <PIN> by SMS)", () => {
     expect(conv(HS)).toMatchObject({ role: "champion", state: "idle" });
     expect(net.attempts).toHaveLength(1);
     expect(net.attempts[0]).toMatchObject({ to: HS, from: SMS_FROM });
-    expect(net.attempts[0]!.body).toContain("Helper: REVIEW = check answers");
+    expect(net.attempts[0]!.body).toContain("Household champion: REVIEW = check answers");
     expect(net.attempts[0]!.body.length).toBeLessThanOrEqual(459);
     expect(hasEmoji(net.attempts[0]!.body)).toBe(false);
   });
@@ -704,7 +704,7 @@ describe("handleSms: household helper session (REVIEW <PIN> by SMS)", () => {
   // The fallback is "once": after a blocked first SMS only that part goes to WhatsApp and the loop stops. After "1" the
   // helper's session already points at the NEXT answer (state reviewing), but its review card never reaches her, so a
   // blind "1" would approve an answer she has not seen.
-  it("KNOWN BUG: when SMS is blocked after '1', the next review card still reaches the helper", async () => {
+  it("KNOWN BUG: when SMS is blocked after '1', the next review card still reaches the household champion", async () => {
     await pending({ topic: "price" });
     await pending({ topic: "food" });
     await login();
@@ -1648,7 +1648,7 @@ describe("handleWhatsApp: household champion", () => {
     expect(replyTo(out, HC).map((m) => m.body).join("\n")).toContain("SMS copy sent to Noor's phone");
   });
 
-  it("COACH tells the helper when the SMS copy was not delivered", async () => {
+  it("COACH tells the household champion when the SMS copy was not delivered", async () => {
     await seedCoachRun();
     net.smsFails = true;
     const out = await wa(HC, "COACH");

@@ -1,6 +1,6 @@
 // Community Circle (Mbootaay): a community champion leads a group of operators, on top of each operator's household
 // helper. The community champion posts notices when a flood, storm or closed road changes what visitors should expect,
-// checks translations that household helpers cannot, and mediates referrals. Pure functions, no I/O.
+// checks translations that household champions cannot, and mediates referrals. Pure functions, no I/O.
 // Notices use FIXED templates in English, German, Dutch and Wolof, so nothing is machine-translated at the moment it
 // matters. Only a short place name is free text. UNVERIFIED Wolof: written by Claude, not checked by a native speaker.
 import { bi, sl, topicEn, topicWo, UNVERIFIED_FOOTER } from "./champion.templates";
@@ -204,7 +204,7 @@ export function formatPulse(p: Pulse): string {
   ].join("\n");
 }
 
-/* ---------------- Bilingual review: the community checks what a household helper cannot ---------------- */
+/* ---------------- Bilingual review: the community checks what a household champion cannot ---------------- */
 
 export type BilingualItem = { topic: string | null; transcript: string | null; english: string | null; numbers: string; flags: string[] };
 

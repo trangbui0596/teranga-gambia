@@ -41,6 +41,6 @@ describe("call flow", () => {
   });
 
   it("summary uses the number asked", () => {
-    expect(callSummarySms(2, 2)).toBe("Teranga: Got 2 of 2 answers from your call. Your family helper will check them. Reply STOP to opt out.");
+    expect(callSummarySms(2, 2)).toBe("Teranga: Got 2 of 2 answers from your call. Your household champion will check them. Reply STOP to opt out.");
   });
 });

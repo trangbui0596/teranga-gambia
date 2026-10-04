@@ -1,4 +1,4 @@
-// Google Business Profile listing pack built ONLY from answers the helper approved (pure, no I/O).
+// Google Business Profile listing pack built ONLY from answers the household champion approved (pure, no I/O).
 // Nothing is sent to Google: a person creates or claims the profile at business.google.com and pastes this in.
 // Fields that the ten recorded answers cannot supply (name, phone, hours, photos) stay "needs input"; nothing is invented.
 // UNVERIFIED Wolof: written by Claude, not checked by a native speaker (see champion.templates.ts).
@@ -144,7 +144,7 @@ export function buildListingPack(a: ApprovedAnswers, contact: ListingContact = {
       limit: DESCRIPTION_LIMIT,
       value: description || null,
       state: approvedCount >= 3 ? "ready" : approvedCount >= 1 ? "check" : "needs_input",
-      // The description is built from Noor's recorded answers, so an empty one points to a card, not to the helper.
+      // The description is built from Noor's recorded answers, so an empty one points to a card, not to the household champion.
       ...(approvedCount === 0 ? { card: cardOf("whats included") } : {}),
     },
     services.length
@@ -229,7 +229,7 @@ export function nextCards(p: ListingPack, max = 4): number[] {
 }
 export const missingCards = nextCards;
 
-/** Fields only the family helper can fill (no recorded answer can supply them). */
+/** Fields only the household champion can fill (no recorded answer can supply them). */
 export const helperFields = (p: ListingPack): ListingField[] =>
   p.fields.filter((f) => f.state === "needs_input" && !f.card);
 
@@ -262,7 +262,7 @@ export const CLAIM_STEPS = bi(
   ].join("\n"),
 );
 
-/** WhatsApp message for the family helper: Wolof first, English small. Draft only, never published by Teranga. */
+/** WhatsApp message for the household champion: Wolof first, English small. Draft only, never published by Teranga. */
 export function formatListingPack(p: ListingPack): string {
   const blocks: string[] = [
     `*Sa listing ci Google* _(Your Google listing, draft)_\n*Tontu yi nangu nañu: ${p.approved} ci ${p.cardsTotal}* _(Answers approved: ${p.approved} of ${p.cardsTotal})_\n*Listing: ${p.ready} ci ${p.total} paré* _(Listing: ${p.ready} of ${p.total} ready)_`,

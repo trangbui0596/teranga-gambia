@@ -52,7 +52,7 @@ export function formatPendingQueue(items: PendingItem[], busy: number, _wolofLab
   return { text, answerId: item.id as string | null };
 }
 
-/** The same review card as plain SMS for the household helper: the Wolof transcript is shortened (never the choices) so the
+/** The same review card as plain SMS for the household champion: the Wolof transcript is shortened (never the choices) so the
  *  numbers and 1 / 2 / 3 always fit in three parts. */
 export function formatReviewSms(p: { index: number; total: number; topic?: string | null; transcript: string | null; numbers: string; flags: string[] }): string {
   const confirm = /please confirm/i.test(p.numbers) ? ` (${W.confirm})` : "";
