@@ -36,15 +36,15 @@ export const STEPS = [
     body: "She answers the common visitor questions out loud, in Wolof, on a basic phone. No internet needed.",
   },
   {
-    title: "A family helper approves every answer",
-    body: "On WhatsApp she sees the Wolof transcript, the numbers it heard and any flags, then approves. Nothing reaches a visitor before she does.",
+    title: "A family helper approves every answer, by SMS",
+    body: "She gets the Wolof transcript and the numbers it heard as a text, then replies 1 to approve, 2 to record again or 3 to ask a bilingual reviewer. Nothing reaches a visitor before she does. WhatsApp does the same while US SMS registration is pending.",
   },
   {
-    title: "Visitors ask in their own language",
-    body: "In English, German or Dutch on WhatsApp. They get Noor’s approved answer as text and an AI voice note, labeled machine-translated. When it isn’t sure, it says “Not sure, Noor will answer.”",
+    title: "Visitors ask in their own language, by voice or text",
+    body: "Tourists use WhatsApp, where they already have data. They send a voice note or text in English, German or Dutch, and get Noor’s approved answer as text and an AI voice note in their language, labeled machine-translated. When it isn’t sure, it says “Not sure, Noor will answer.”",
   },
   {
-    title: "Noor gets coaching in Wolof",
+    title: "Noor gets coaching in Wolof, by SMS",
     body: "From real public Google Maps reviews: what visitors praise, what they complain about, and what to do next. Every week the sync re-reads the reviews, adds what visitors asked and found unclear, and refines the advice. If there isn’t enough data, it says so.",
   },
 ];
@@ -62,6 +62,10 @@ export const AI_DOES = [
   {
     title: "Translates, then checks itself",
     body: "Wolof to English, German and Dutch, with a round-trip check that flags answers whose meaning drifted. Every answer says it is machine-translated.",
+  },
+  {
+    title: "Hears the visitor too",
+    body: "A tourist sends a voice note in English, German or Dutch. Speech recognition detects the language and hears the question, and the answer comes back in that language as text and an AI voice. SMS can do neither.",
   },
   {
     title: "Speaks the answer",
@@ -103,7 +107,24 @@ export const EXTRAS = [
 ];
 
 export const OFFLINE_INTRO =
-  "Everything Noor and her community need works over a phone call and plain text messages. WhatsApp is the household helper’s weekly smartphone session, and a convenience for visitors.";
+  "Noor never needs the internet, and neither do her helper or community champion: everything they do is a phone call or a text message. WhatsApp is for visitors.";
+export const CHANNELS = [
+  {
+    channel: "Phone call",
+    who: "Noor",
+    use: "Records her answers in Wolof. No internet, no smartphone.",
+  },
+  {
+    channel: "SMS",
+    who: "Noor, her household helper, the community champion",
+    use: "Everything that is text: reviewing answers (reply 1, 2 or 3), coaching, Google listing progress, community notices, the weekly learning. Works with no internet on a feature phone.",
+  },
+  {
+    channel: "WhatsApp",
+    who: "Visitors",
+    use: "Tourists ask by voice note or text and get text plus an AI voice in their language. It is also the stand-in for SMS in the live demo until US carrier registration clears, and the place for translation checks.",
+  },
+];
 export const OFFLINE_ROWS = [
   {
     who: "Noor, on a basic phone",
@@ -112,8 +133,8 @@ export const OFFLINE_ROWS = [
   },
   {
     who: "Her household helper",
-    does: "Reviews and approves the answers in the weekly smartphone session on WhatsApp, when in town. The weekly sync re-reads public reviews and adds what visitors asked and found unclear.",
-    net: "Weekly",
+    does: "Reviews and approves the answers by SMS: the Wolof transcript and numbers arrive as a text, she replies 1, 2 or 3. The weekly sync adds what visitors asked and found unclear.",
+    net: "No internet",
   },
   {
     who: "The community champion",
@@ -122,7 +143,7 @@ export const OFFLINE_ROWS = [
   },
   {
     who: "Visitors",
-    does: "Ask on WhatsApp and get text plus an AI voice note. A text-only SMS mode for visitors without data is built and switched off by default.",
+    does: "Ask on WhatsApp by voice or text and get text plus an AI voice note. A text-only SMS mode for visitors without data is built and switched off by default.",
     net: "WhatsApp needs data",
   },
 ];

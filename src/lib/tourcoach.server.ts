@@ -14,11 +14,11 @@ import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { weeklyDigestWhatsApp } from "./digest.templates";
 import { buildListingPack, formatListingPack, listingCopyText, type ApprovedAnswers } from "./listing";
 import { ALERT_MENU, ALERT_TTL_HOURS, BILINGUAL_FLAG, COMMUNITY_MENU, alertPosted, alertSms, formatAlertList, formatBilingualItem, formatPulse, noNotices, parseAlertCommand, translationLabel, visitorNotice, type ActiveAlert } from "./community";
-import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, smsSegments, toSmsText, unknownSms, weeklyDigestSmsWo, type OperatorSmsCommand } from "./sms-text";
+import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, smsSegments, toSmsText, unknownSms, weeklyDigestSmsWo, withOptOut, type OperatorSmsCommand } from "./sms-text";
 import type { StoredRun } from "./coach";
 import { formatWeeklyReport, weeklyInsight, weeklyInsightSms } from "./weekly-insight";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
-import { formatPendingQueue } from "./review-queue";
+import { formatPendingQueue, formatReviewSms } from "./review-queue";
 import { W, bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";
 
 type Lang = "en" | "de" | "nl";
@@ -192,15 +192,15 @@ export async function sttBlob(blob: Blob, type: string, languageCode: string | n
     method: "POST", headers: { "xi-api-key": env("ELEVENLABS_API_KEY") }, body: form, signal,
   });
   if (!res.ok) { console.error(`ElevenLabs STT failed [${res.status}]: ${(await res.text()).slice(0, 300)}`); return null; }
-  const j = (await res.json()) as { text?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
+  const j = (await res.json()) as { text?: string; language_code?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
   const text = (j.text ?? "").trim();
   const lps = (j.words ?? []).filter((w) => w.type !== "spacing" && typeof w.logprob === "number").map((w) => Math.exp(w.logprob!));
   const confidence = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : j.language_probability ?? null;
-  return { status: res.status, text, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
+  return { status: res.status, text, language: j.language_code ?? null, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
 }
 
 /** Download + transcribe in one go (used by the champion assistant and visitor reviews, inside the request). */
-export async function transcribe(mediaUrl: string, languageCode: string | null = "wol", signal: AbortSignal | null = null): Promise<{ text: string; confidence: number | null } | null> {
+export async function transcribe(mediaUrl: string, languageCode: string | null = "wol", signal: AbortSignal | null = null): Promise<{ text: string; confidence: number | null; language?: string | null } | null> {
   try {
     const dl = await downloadMedia(mediaUrl, signal);
     console.log(`[transcribe] media downloaded ${dl.status} ${dl.ok ? dl.bytes : 0} ${dl.ok ? dl.type : "-"}`);
@@ -208,7 +208,7 @@ export async function transcribe(mediaUrl: string, languageCode: string | null =
     const t0 = Date.now();
     const t = await sttBlob(dl.blob, dl.type, languageCode, signal);
     console.log(`[transcribe] stt ${t?.status ?? "failed"} ${Date.now() - t0}`);
-    return t && t.text ? { text: t.text, confidence: t.confidence } : null;
+    return t && t.text ? { text: t.text, confidence: t.confidence, language: t.language } : null;
   } catch (e) {
     console.error("[transcribe] error step=transcribe", e);
     return null;
@@ -427,12 +427,13 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   // DEMO SHORTCUT: champion login by PIN over WhatsApp. Not a real authentication method.
   const pinMatch = /^REVIEW\s+(\S+)$/i.exec(text);
   const communityMatch = /^COMMUNITY\s+(\S+)$/i.exec(text);
-  if (channel === "sms" && pinMatch) return "Review answers on WhatsApp, not by SMS.";
-  // By SMS a community champion can only post and see notices (SMS keeps working when mobile data does not).
-  if (channel === "sms" && c.role === "champion" && !communityMatch && upper !== "EXIT") {
-    return c.state === "community" && /^(ALERT|ALERTS|PULSE|MENU)\b/.test(upper)
-      ? champion(c, upper, null, input.from, save, text)
-      : "Use WhatsApp for this. By SMS: ALERT, ALERTS, PULSE, EXIT.";
+  // By SMS the household helper and the community champion can do everything that is text: review (1 / 2 / 3), listing,
+  // coaching, the weekly report, notices. Recording is by phone call. (Demo PIN over SMS is a shortcut, not real sign-in.)
+  if (channel === "sms" && c.role === "champion" && !pinMatch && !communityMatch && upper !== "EXIT") {
+    if (upper === "START") return "To record your answers, call the Teranga number.";
+    return /^(REVIEW|[123]|LISTING|COACH( EN)?|SYNC|LEDGER|ALERT|ALERTS|PULSE|MENU|COMMUNITY)$|^ALERT\b/.test(upper)
+      ? champion(c, upper, null, input.from, save, text, channel)
+      : "Not an SMS command. By SMS: REVIEW, 1 2 3, LISTING, COACH, SYNC, ALERT, EXIT. Send BILINGUAL on WhatsApp.";
   }
   // DEMO SHORTCUT: the community champion logs in with the same demo PIN. Not a real authentication method.
   if (communityMatch) {
@@ -445,6 +446,7 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   if (pinMatch) {
     if (safeEqual(pinMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
+      if (channel === "sms") return "Helper: REVIEW = check answers (then 1 approve, 2 record again, 3 bilingual). LISTING, COACH, SYNC. To record, call the Teranga number. EXIT to leave.";
       return `${W.menuTitle}\n${bi(W.menu, W.menuEn)}`;
     }
     return bi(W.wrongPin, "Wrong PIN.");
@@ -463,6 +465,15 @@ const CLEAR_Q: Record<Lang, string> = {
   de: "War das verständlich? Antworten Sie YES oder NO",
   nl: "Was dit duidelijk? Antwoord YES of NO",
 };
+
+/** ElevenLabs language codes (eng, deu, nld or two-letter) to our three visitor languages. */
+function spokenLang(code: string | null | undefined): Lang | null {
+  const c = (code ?? "").toLowerCase();
+  if (c === "eng" || c === "en") return "en";
+  if (c === "deu" || c === "ger" || c === "de") return "de";
+  if (c === "nld" || c === "dut" || c === "nl") return "nl";
+  return null;
+}
 
 export async function visitor(c: Conv, text: string, upper: string, save: Save, mediaUrl: string | null = null, channel: "whatsapp" | "sms" = "whatsapp"): Promise<string | Reply> {
   const db = supabaseAdmin;
@@ -492,7 +503,18 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     return `Thank you!\n${reviewLine()}`;
   }
 
-  const q = text.slice(0, 500);
+  let q = text.slice(0, 500);
+  let heard = "";
+  // A visitor can ask with a voice note in English, German or Dutch: speech recognition (language detected), then the same
+  // matching as for text. The answer comes back in the language they spoke.
+  if (!q && mediaUrl && channel !== "sms") {
+    const t = await transcribe(mediaUrl, null, AbortSignal.timeout(9000));
+    if (!t) return "Sorry, I could not hear that voice note. Please type your question.";
+    q = t.text.slice(0, 500);
+    const spoken = spokenLang(t.language);
+    if (spoken && spoken !== c.lang) { c.lang = spoken; await save({ lang: spoken }); }
+    heard = `🎙️ “${q}”\n\n`;
+  }
   if (!q) return "Please type your question.";
   const { data: rows } = await db
     .from("answers")
@@ -514,7 +536,7 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     if (vq) await db.from("unanswered").insert({ visitor_question_id: vq.id });
     await save({ last_visitor_question_id: vq?.id ?? null });
     const sureNotice = visitorNotice(await activeAlerts(), c.lang);
-    return `${NOT_SURE[c.lang]}${sureNotice ? `\n\n${sureNotice}` : ""}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
+    return `${heard}${NOT_SURE[c.lang]}${sureNotice ? `\n\n${sureNotice}` : ""}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
   }
   await save({ last_visitor_question_id: vq?.id ?? null });
 
@@ -535,7 +557,7 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
   const notice = visitorNotice(await activeAlerts(), c.lang);
   return {
     text: [
-      answerText + (answer.is_sample ? " (Sample answer)" : ""),
+      heard + answerText + (answer.is_sample ? " (Sample answer)" : ""),
       "— " + translationLabel(c.lang, !!answer.flags?.includes(BILINGUAL_FLAG)) + (audioUrl ? " · voice note follows (AI-generated voice)" : ""),
       ...(notice ? ["", notice] : []),
       "",
@@ -700,7 +722,7 @@ export async function draftListing(): Promise<Reply> {
 }
 
 /* ---------------- Champion ---------------- */
-async function champion(c: Conv, upper: string, mediaUrl: string | null, from: string, save: Save, text: string) {
+async function champion(c: Conv, upper: string, mediaUrl: string | null, from: string, save: Save, text: string, channel: "whatsapp" | "sms" = "whatsapp") {
   const db = supabaseAdmin;
   const { data: questions } = await db.from("questions").select("id, position, topic").order("position");
   const qs = questions ?? [];
@@ -771,7 +793,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   if (upper === "REVIEW") {
     // Finish what is pending first (no transcript messages here: REVIEW shows the transcript itself).
     try { await finishAnswers(10000); } catch (e) { console.error("[pipeline] error step=finishAnswers", e); }
-    return showNextPending(save);
+    return showNextPending(save, channel);
   }
   if (upper === "SYNC") {
     const r = await weeklySync(false);
@@ -802,7 +824,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
     if (!(await applyReview(c.current_review_answer_id, status))) return STILL_PROCESSING;
     const label = { approved: sl(W.approved, "Approved"), rerecord: sl(W.rerecord, "Marked for re-record"), needs_bilingual: sl(W.bilingual, "Sent to a bilingual reviewer") }[status];
-    return `${label}\n\n${await showNextPending(save)}`;
+    const next = await showNextPending(save, channel);
+    return channel === "sms" ? { text: label, secondText: next } : `${label}\n\n${next}`;
     }
   }
 
@@ -879,8 +902,8 @@ async function replyOperatorSms(to: string, body: string) {
 }
 
 /** The SMS text for one of Noor's commands. Shared by the real SMS webhook and the public simulator (which sends nothing). */
-async function operatorSmsBody(parsed: OperatorSmsCommand): Promise<string> {
-  const lang = parsed?.lang ?? "wo";
+async function operatorSmsBody(parsed: OperatorSmsCommand, fallbackLang: "wo" | "en" = "wo"): Promise<string> {
+  const lang = parsed?.lang ?? fallbackLang;
   try {
     if (!parsed) return unknownSms(lang);
     if (parsed.cmd === "help") return helpSms(lang);
@@ -888,10 +911,10 @@ async function operatorSmsBody(parsed: OperatorSmsCommand): Promise<string> {
     if (parsed.cmd === "week") return weeklyInsightSms((await weeklySync(false)).insight, lang);
     const coach = await import("./coach.server");
     const r = await coach.getCoaching(aiText, 10000, undefined, undefined, true, lang);
-    return r.run ? coachSms(r.run, lang) : toSmsText(r.messages[0]);
+    return r.run ? coachSms(r.run, lang) : withOptOut(r.messages[0]);
   } catch (e) {
     console.error("[sms] command failed", e);
-    return lang === "wo" ? "Teranga: jafe-jafe amna. Yonnee ko ci kanam tuuti." : "Teranga: something went wrong. Please try again in a minute.";
+    return withOptOut(lang === "wo" ? "Teranga: jafe-jafe amna. Yonnee ko ci kanam tuuti." : "Teranga: something went wrong. Please try again in a minute.");
   }
 }
 
@@ -910,13 +933,15 @@ export async function handleSms(input: { from: string; body: string }): Promise<
 async function handleOtherSms(input: { from: string; body: string }) {
   const db = supabaseAdmin;
   const visitorMode = process.env["SMS_VISITOR_MODE"] === "on";
-  const wantsLogin = /^COMMUNITY\s+\S+$/i.test(input.body.trim());
+  const wantsLogin = /^(COMMUNITY|REVIEW)\s+\S+$/i.test(input.body.trim());
   const phone_hash = hashPhone(input.from);
   let { data: conv } = await db.from("conversations").select("*").eq("phone_hash", phone_hash).maybeSingle();
-  if (!conv && (visitorMode || wantsLogin)) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
+  const pin = /^(?:COMMUNITY|REVIEW)\s+(\S+)$/i.exec(input.body.trim())?.[1];
+  const pinOk = !!pin && safeEqual(pin, env("DEMO_CHAMPION_PIN"));
+  if (!conv && (visitorMode || pinOk)) conv = (await db.from("conversations").insert({ phone_hash }).select("*").single()).data;
   if (!conv) return; // a stranger texting a random word: no row, no reply, no cost
   const c = conv as unknown as Conv;
-  const inCommunity = c.role === "champion" && c.state === "community";
+  const inCommunity = c.role === "champion"; // a helper or community champion who logged in by SMS or WhatsApp
   if (!visitorMode && !wantsLogin && !inCommunity) return;
   const save: Save = (patch) => db.from("conversations").update(patch as never).eq("phone_hash", phone_hash);
   const r = await route(c, { from: input.from, body: input.body, mediaUrl: null }, save, "sms");
@@ -940,7 +965,7 @@ export async function simulateSms(as: "noor" | "visitor", text: string, lang: "e
   if (isCarrierKeyword(body)) reply = "(Twilio handles STOP and START itself; no reply is sent.)";
   else if (as === "noor") {
     const parsed = parseOperatorSms(body);
-    reply = await operatorSmsBody(parsed ? { ...parsed, lang: lang === "en" ? "en" : parsed.lang } : null);
+    reply = await operatorSmsBody(parsed ? { ...parsed, lang: lang === "en" ? "en" : parsed.lang } : null, lang === "en" ? "en" : "wo");
   } else reply = await visitorSmsAnswer(body, lang === "wo" ? "en" : lang);
   return { reply, parts: smsSegments(reply) };
 }
@@ -981,7 +1006,7 @@ export async function weeklySync(fresh: boolean, budgetMs = 45000) {
       run = await coach.dbStore.latest();
       prev = await coach.previousRun();
     }
-  } catch (e) { console.error("[sync] review refresh failed", e); }
+  } catch (e) { console.error("[sync] review refresh failed", e); run = run ?? prev; prev = null; }
   const d = await digestData();
   const byTopic = Object.fromEntries(d.topics.map((t) => [t.topic, t.count]));
   const insight = weeklyInsight({ total: d.total, byTopic, unanswered: byTopic["unanswered"] ?? 0, notClear: d.notClear }, run, prev);
@@ -1022,7 +1047,7 @@ async function championAgent(c: Conv, text: string, mediaUrl: string | null, sav
   }
 }
 
-async function showNextPending(save: Save) {
+async function showNextPending(save: Save, channel: "whatsapp" | "sms" = "whatsapp") {
   const { data } = await supabaseAdmin
     .from("answers")
     .select("id, transcript_src, flags, is_sample, created_at, recordings(questions(position, topic))")
@@ -1048,6 +1073,13 @@ async function showNextPending(save: Save) {
     return text;
   }
   await save({ state: "reviewing", current_review_answer_id: answerId });
+  if (channel === "sms") {
+    const item = list.find((i) => i.id === answerId)!;
+    return formatReviewSms({
+      index: 1, total: list.length, topic: item.recordings?.questions?.topic ?? null, transcript: item.transcript_src,
+      numbers: numbersHeard(item.transcript_src), flags: item.flags,
+    });
+  }
   return text;
 }
 
@@ -1070,9 +1102,10 @@ async function postAlert(kind: ActiveAlert["kind"], place: string | null, byHash
       .is("cleared_at", null).gt("expires_at", now.toISOString()).select("id");
     return (data ?? []).length;
   }
-  await db.from("community_alerts" as never).insert({
+  const { error } = await db.from("community_alerts" as never).insert({
     kind, place, expires_at: new Date(now.getTime() + ALERT_TTL_HOURS * 3600000).toISOString(), posted_by: byHash,
   } as never);
+  if (error) throw new Error(`alert not saved: ${(error as { message?: string }).message ?? "unknown"}`);
   return 0;
 }
 
@@ -1144,7 +1177,9 @@ async function communityChampion(c: Conv, upper: string, text: string, save: Sav
   if (alert) {
     if ("menu" in alert) return ALERT_MENU;
     if ("invalid" in alert) return bi("Xamuma ndigal bi. Bind ALERT ngir gis limu yi.", "I did not understand. Send ALERT to see the numbers.");
-    const cleared = await postAlert(alert.kind, alert.place, c.phone_hash);
+    let cleared: number;
+    try { cleared = await postAlert(alert.kind, alert.place, c.phone_hash); }
+    catch (e) { console.error("[community] alert failed", e); return bi("Ndigal bi dem ul. Jéemaat ci kanam.", "The notice was NOT posted and nobody was messaged. Please try again."); }
     const sms = await sendOperatorSms(alertSms(alert.kind, alert.place));
     const { count } = await supabaseAdmin.from("partner_operators").select("id", { count: "exact", head: true });
     return alertPosted(alert.kind, alert.place, sms, count ?? 0, cleared);
@@ -1209,7 +1244,7 @@ async function digestData() {
 /** Noor gets the digest by SMS in Wolof (counts only, so it works without internet); her helper's WhatsApp fallback has the full text. */
 export async function sendWeeklyDigest() {
   const d = await digestData();
-  const body = weeklyDigestSmsWo(d.total, d.topics, d.unanswered.length);
+  const body = weeklyDigestSmsWo(d.total, d.topics, d.topics.find((t) => t.topic === "unanswered")?.count ?? 0);
   const referrals = Object.values(await monthCounts()).reduce((a, b) => a + b, 0);
   const waBody = weeklyDigestWhatsApp(d.total, d.topics, d.unanswered, referrals);
   const to = env("DEMO_SMS_NUMBER");

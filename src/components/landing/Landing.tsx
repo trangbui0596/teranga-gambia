@@ -4,6 +4,7 @@ import {
   AI_DOES,
   AI_INTRO,
   COMMUNITY,
+  CHANNELS,
   COMMUNITY_INTRO,
   COMMUNITY_TITLE,
   EXTRAS,
@@ -242,6 +243,18 @@ function OfflinePanel() {
   return (
     <div>
       <p className="text-lg font-semibold">{OFFLINE_INTRO}</p>
+      <div className="mt-3 overflow-hidden rounded-xl border bg-card">
+        {CHANNELS.map((c) => (
+          <div
+            key={c.channel}
+            className="grid gap-1 border-b p-3 last:border-b-0 sm:grid-cols-[8rem_14rem_1fr] sm:gap-4"
+          >
+            <p className="font-display text-lg font-black text-primary">{c.channel}</p>
+            <p className="font-bold">{c.who}</p>
+            <p className="leading-snug">{c.use}</p>
+          </div>
+        ))}
+      </div>
       <ul className="mt-3 grid gap-3 lg:grid-cols-2">
         {OFFLINE_ROWS.map((r) => (
           <li key={r.who} className="rounded-xl border bg-card p-4">

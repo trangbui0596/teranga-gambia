@@ -11,3 +11,6 @@ create table if not exists public.community_alerts (
 );
 alter table public.community_alerts enable row level security;
 create index if not exists community_alerts_active_idx on public.community_alerts (expires_at) where cleared_at is null;
+
+revoke all on public.community_alerts from anon, authenticated;
+grant all on public.community_alerts to service_role;

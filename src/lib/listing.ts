@@ -251,27 +251,16 @@ export const CLAIM_STEPS = bi(
 export function formatListingPack(p: ListingPack): string {
   const blocks: string[] = [
     `*Sa listing ci Google* _(Your Google listing, draft)_\n*Tontu yi nangu nañu: ${p.approved} ci ${p.cardsTotal}* _(Answers approved: ${p.approved} of ${p.cardsTotal})_\n*Listing: ${p.ready} ci ${p.total} paré* _(Listing: ${p.ready} of ${p.total} ready)_`,
-    p.fields
-      .map(
-        (f) =>
-          `${ICON[f.state]} ${f.labelWo === f.labelEn ? f.labelWo : `${f.labelWo} _(${f.labelEn})_`}: ${STATE_WO[f.state]} _(${STATE_EN[f.state]})_`,
-      )
-      .join("\n"),
+    `✅ paré _(ready)_ · 📝 seetal ko _(check it)_ · ❌ ñaan nañu ko _(needs input)_\n` +
+      p.fields.map((f) => `${ICON[f.state]} ${f.labelWo === f.labelEn ? f.labelWo : `${f.labelWo} _(${f.labelEn})_`}`).join("\n"),
   ];
   const cards = nextCards(p);
   if (cards.length) {
-    const names = cards
-      .map((c) => topicEn(Object.keys(TOPIC_CARD).find((k) => TOPIC_CARD[k] === c)))
-      .join(", ");
-    blocks.push(
-      `🎙️ ${sl(`Waxal kaartu ${cards.join(", ")} ci telefon`, `Record card ${cards.join(", ")} by phone call`)}\n_${names}_`,
-    );
+    const names = cards.map((c) => topicEn(Object.keys(TOPIC_CARD).find((k) => TOPIC_CARD[k] === c))).join(", ");
+    blocks.push(`🎙️ ${sl(`Waxal kaartu ${cards.join(", ")} ci telefon`, `Record card ${cards.join(", ")} by phone call`)}\n_${names}_`);
   }
   const helper = helperFields(p);
-  if (helper.length)
-    blocks.push(
-      `✍️ ${sl("Yaw rekk nga ko mën a def", "Only you can fill")}: ${helper.map((f) => f.labelWo).join(", ")}`,
-    );
+  if (helper.length) blocks.push(`✍️ ${sl("Yaw rekk nga ko mën a def", "Only you can fill")}: ${helper.map((f) => f.labelWo).join(", ")}`);
   blocks.push(CLAIM_STEPS);
   if (p.usesSample) blocks.push("_(Built partly from Sample answers)_");
   blocks.push(UNVERIFIED_FOOTER);

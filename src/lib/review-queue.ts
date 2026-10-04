@@ -1,6 +1,7 @@
 // Pure formatting for the champion's REVIEW queue. Seeded sample answers
 // (is_sample = true) are never shown or counted; real answers are oldest first.
 import { W, bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";
+import { toSmsText, SMS_MAX } from "./sms-text";
 
 export const NO_PENDING_MSG = bi(W.noPending, "No pending answers from Noor's recordings.");
 
@@ -49,4 +50,22 @@ export function formatPendingQueue(items: PendingItem[], busy: number, _wolofLab
     UNVERIFIED_FOOTER,
   ].join("\n") + still;
   return { text, answerId: item.id as string | null };
+}
+
+/** The same review card as plain SMS for the household helper: the Wolof transcript is shortened (never the choices) so the
+ *  numbers and 1 / 2 / 3 always fit in three parts. */
+export function formatReviewSms(p: { index: number; total: number; topic?: string | null; transcript: string | null; numbers: string; flags: string[] }): string {
+  const confirm = /please confirm/i.test(p.numbers) ? ` (${W.confirm})` : "";
+  const warn = notableFlags(p.flags);
+  const tail = [
+    `Limu: ${p.numbers}${confirm}`,
+    ...(warn.length ? [`Warning: ${warn.join(", ")}`] : []),
+    "1 Nangu, 2 Waxaat ko, 3 Nit ku xam ñaar yi làkk",
+    "Wolof bu masin tekki, wóoragul.",
+  ].join("\n");
+  const head = `${p.index}/${p.total} ${topicWo(p.topic)}`;
+  const budget = SMS_MAX - toSmsText(`${head}\n""\n${tail}`, 9999).length - 3;
+  const raw = p.transcript ?? "[no transcript]";
+  const t = raw.length > budget ? `${raw.slice(0, Math.max(20, budget - 3)).trimEnd()}...` : raw;
+  return toSmsText(`${head}\n"${t}"\n${tail}`);
 }
