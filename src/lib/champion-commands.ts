@@ -10,7 +10,8 @@ export function recordingCommand(upper: string, hasReviewItem: boolean): Recordi
   return null;
 }
 
-export const ROUND_HINT = "Send STOP when you are done, or REVIEW to review.";
+// NOT "STOP": Twilio's WhatsApp sandbox (and production opt-out handling) intercepts STOP and disconnects the user.
+export const ROUND_HINT = "Send DONE when you are done, or REVIEW to review.";
 
 export const roundStoppedText = (saved: number) =>
   `Round stopped. ${saved} answer${saved === 1 ? "" : "s"} saved. Send REVIEW to review them.`;
@@ -18,7 +19,7 @@ export const roundStoppedText = (saved: number) =>
 export const recordingHelpText = (n: number, total: number) =>
   [
     `Recording: question ${n} of ${total}. Send a voice note to answer it.`,
-    "STOP = end the round (answers are kept)",
+    "DONE = end the round (answers are kept)",
     "REVIEW = review answers",
     "1 / 2 / 3 = approve / re-record / bilingual reviewer (during review)",
     "HELP = this list",

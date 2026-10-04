@@ -20,7 +20,7 @@ describe("recording-round commands", () => {
   });
   it("stop message says how many were saved and to send REVIEW", () => {
     expect(roundStoppedText(3)).toBe("Round stopped. 3 answers saved. Send REVIEW to review them.");
-    expect(ROUND_HINT).toBe("Send STOP when you are done, or REVIEW to review.");
+    expect(ROUND_HINT).toBe("Send DONE when you are done, or REVIEW to review.");
   });
 });
 

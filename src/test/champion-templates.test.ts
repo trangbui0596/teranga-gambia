@@ -40,8 +40,16 @@ describe("champion messages: Wolof first, English second", () => {
   });
 
   it("command words stay exactly as the champion types them", () => {
-    for (const cmd of ["START", "REVIEW", "STOP", "EXIT", "HELP"]) {
+    for (const cmd of ["START", "REVIEW", "DONE", "EXIT", "HELP"]) {
       expect(W.menu + W.help(1, 10) + W.roundHint).toContain(cmd);
     }
+  });
+});
+
+describe("STOP is reserved by Twilio", () => {
+  it("no champion-facing WhatsApp hint advertises STOP", async () => {
+    const { ROUND_HINT, recordingHelpText } = await import("@/lib/champion-commands");
+    const all = [ROUND_HINT, recordingHelpText(1, 10), W.roundHint, W.help(1, 10), W.menu].join("\n");
+    expect(all).not.toMatch(/\bSTOP\b/);
   });
 });

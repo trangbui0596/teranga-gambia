@@ -2,7 +2,7 @@
 // stays for the demo audience and for reviewers. NO runtime AI: only placeholders are filled in.
 //
 // UNVERIFIED Wolof: written by Claude (not a native speaker), checked by nobody. It needs native review before real use.
-// Keep digits as digits. Keep command words (START, REVIEW, STOP, EXIT, HELP) exactly as typed by the champion.
+// Keep digits as digits. Keep command words (START, REVIEW, DONE, EXIT, HELP) exactly as typed by the champion.
 
 /** Wolof words for the 10 question-card topics (DB topic names). */
 export const TOPIC_WO: Record<string, string> = {
@@ -29,7 +29,7 @@ export const W = {
   menu: "Champion mode (demo shortcut).\nSTART = tambali laaj yi (10 laaj)\nREVIEW = seet tontu yi ñu wara seet\nEXIT = dellu ci visitor mode",
   wrongPin: "PIN bi jubul (demo shortcut).",
   visitorMode: "Visitor mode. Laajal lu mën ci tukki bi. EN, DE walla NL ngir soppi làkk.",
-  roundHint: "Yónnee STOP boo jeexee, walla REVIEW ngir seet.",
+  roundHint: "Yónnee DONE boo jeexee, walla REVIEW ngir seet.",
   pleaseSend: (n: number) => `Yónnee kàddu (voice note) ngir laaj ${n}.`,
   gotQuestion: (n: number) => `Jot naa laaj ${n}`,
   roundComplete: "Jeex na",
@@ -37,7 +37,7 @@ export const W = {
   stopped: (saved: number) => `Jeex na. ${saved} tontu denc nañu ko. Yónnee REVIEW ngir seet.`,
   help: (n: number, total: number) =>
     [`Léegi: laaj ${n} ci ${total}. Yónnee kàddu (voice note) ngir tontu ko.`,
-      "STOP = jeexal (tontu yi dañuy des)", "REVIEW = seet tontu yi",
+      "DONE = jeexal (tontu yi dañuy des)", "REVIEW = seet tontu yi",
       "1 / 2 / 3 = nangu / waxaat ko / nit ku xam ñaar yi làkk (bu ñuy seet)", "HELP = lii"].join("\n"),
   approved: "Baax na: nangu nañu ko.",
   rerecord: "Waxaat ko ci kàddu.",
