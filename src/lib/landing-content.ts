@@ -191,6 +191,11 @@ export const STORYBOOK: StoryPage[] = [
     day: "Friday",
     icon: "🔄",
     title: "The weekly sync",
+    photo: {
+      src: "/photos/page6.jpg",
+      alt: "A household champion under a tree with a smartphone, chat, star and map icons floating above it",
+      credit: "AI-generated illustration",
+    },
     text: "Her household champion syncs new questions, feedback and public reviews from tourists across the whole sector, not only Noor’s. The AI sends Noor a short Wolof SMS on what to improve.",
     net: { online: true, text: "Household champion needs internet. Noor gets it by SMS" },
     chip: "One light batch a week: counts and a short summary, no heavy model",
@@ -200,6 +205,11 @@ export const STORYBOOK: StoryPage[] = [
     day: "Saturday",
     icon: "⭐",
     title: "A voice review",
+    photo: {
+      src: "/photos/page7.jpg",
+      alt: "A tourist on a painted river boat speaking a review into her phone, five stars glowing above her",
+      credit: "AI-generated illustration",
+    },
     text: "After the tour, the visitor speaks a review. Teranga cleans up the text. The visitor pastes and posts it themselves.",
     net: { online: true, text: "Tourist needs internet" },
     chip: "WhatsApp",
@@ -209,6 +219,11 @@ export const STORYBOOK: StoryPage[] = [
     day: "Sunday",
     icon: "🤝",
     title: "Neighbours look out for each other",
+    photo: {
+      src: "/photos/page8.jpg",
+      alt: "Three neighbours on a flooded riverside road reading a warning on a basic phone",
+      credit: "AI-generated illustration",
+    },
     text: "The river road floods. The community champion sends one notice by SMS, and visitors see it under every answer. Extra guests are referred to a neighbour, in turn.",
     net: { online: false, text: "Members read the notice by SMS, no internet" },
     chip: "Community champion",
@@ -217,6 +232,11 @@ export const STORYBOOK: StoryPage[] = [
     kind: "end",
     icon: "✨",
     title: "That is the loop",
+    photo: {
+      src: "/photos/page9.jpg",
+      alt: "A family in a painted boat on the river at sunset",
+      credit: "AI-generated illustration",
+    },
     text: "One call, answers in three languages, a listing, reviews and a community that looks out for each other. See the details, or try it.",
   },
 ];
