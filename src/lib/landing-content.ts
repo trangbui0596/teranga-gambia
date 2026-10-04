@@ -50,7 +50,7 @@ export const PEOPLE = [
     icon: "📱",
     name: "Household champion",
     role: "Family member with a smartphone",
-    line: "Syncs the tourists’ WhatsApp questions. The AI re-reads reviews each week.",
+    line: "Syncs tourist questions, feedback and Google reviews each week.",
   },
   {
     icon: "🤝",
@@ -177,7 +177,7 @@ export const CHAIN_SUPPORT = [
   {
     icon: "📱",
     name: "Household champion",
-    line: "Smartphone in the family. Syncs tourist questions each week.",
+    line: "Smartphone in the family. Each week syncs tourist questions, feedback and Google reviews.",
   },
   {
     icon: "🤝",
