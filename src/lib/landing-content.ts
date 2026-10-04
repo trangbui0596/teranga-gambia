@@ -1,3 +1,4 @@
+import { HOLDOUT_RESULTS } from "./match-eval-results";
 // Copy for the home page. No statistics are typed here: every number comes from src/lib/evidence.ts,
 // where each one carries its World Bank indicator and link. Keep it that way.
 
@@ -231,7 +232,7 @@ export const REAL_LIMITS = [
   "The Wolof test audio is synthetic (text-to-speech). No native Wolof speaker has tested it yet.",
   "All Wolof wording is machine-written and has not been checked by a native speaker.",
   "Translations are machine translations and say so.",
-  "The 20-question matching test is agent-written test data. It is not real-visitor accuracy.",
+  `Matching was tested on real visitor questions from Gambian operators’ public FAQ pages, not on made-up ones. On 103 questions not used for tuning: ${HOLDOUT_RESULTS.score.correct} of ${HOLDOUT_RESULTS.score.inScope} questions about Noor’s ten topics were answered correctly, none got a wrong-topic answer, and ${HOLDOUT_RESULTS.score.outDeclined} of ${HOLDOUT_RESULTS.score.outOfScope} questions she has no answer for were correctly declined (${HOLDOUT_RESULTS.score.outAnswered} were answered wrongly). Before the fix, 17 of 37 such questions were answered wrongly. The labels are our own judgment and the questions are English only.`,
   "SMS delivery is pending US carrier registration, so in the demo the same texts arrive on WhatsApp.",
   "The partner list is simulated, and the Google listing is a draft that a person must publish.",
   "The demo call asks 2 of the 10 questions to keep it short.",
