@@ -32,7 +32,7 @@ export const COACH_TEMPLATES = {
   notReady: { en: "Coaching is not ready yet. A fresh run takes about 30 seconds. Send COACH again later.", wo: "Coaching bi paré gul. Xoolaat bu bees bi day jël lu tollu ci 30 seconds. Yoneel COACH ci kanam tuuti." },
   noRecent: { en: "No recent coaching. Send COACH first.", wo: "Amul coaching bu bees. Yoneel COACH ba mu jëkk." },
   nothingMore: { en: "Nothing more: everything was in the first message.", wo: "Amul leneen: lépp nekk na ci message bu jëkk bi." },
-  loadError: { en: "Coaching could not load right now. Send COACH again in a minute.", wo: "Coaching bi mënuñu ko ubbi léegi. Yoneel COACHaat ci 1 simili." },
+  loadError: { en: "Coaching could not load right now. Send COACH again in a minute.", wo: "Coaching bi mënuñu ko ubbi léegi. Yoneel COACHaat ci benn simili." },
   machineLabel: { en: "Machine-translated Wolof, unverified", wo: "Wolof bu masin tekki, wóoragul" },
   unknownDates: { en: "unknown dates", wo: "bés yu ñu xamul" },
   action: { en: "Action {n}.", wo: "Jëf {n}." },
