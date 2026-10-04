@@ -191,34 +191,30 @@ export const STORY_STEPS = [
 export const STORY_MORE =
   "Then it keeps improving: each week a household champion syncs new tourist questions and the AI turns public Google reviews into coaching. Neighbours share notices and referrals.";
 
-export const REFERRALS_TITLE = "Fair referrals between neighbours";
+export const REFERRALS_TITLE = "Fair referrals";
 export const REFERRALS_SUB =
-  "A visitor who wants something Noor does not offer is sent to a partner in her community. Partners take turns, so no one gets all the tourists.";
+  "Wants something Noor doesn’t offer? A neighbour gets the visitor. Partners take turns.";
 export const REFERRAL_STEPS = [
   {
     icon: "🧳",
     title: "Visitor opts in",
-    body: "Picks nature, culture or food, and says YES.",
+    body: "Picks nature, culture or food.",
     chip: "WhatsApp",
   },
   {
     icon: "🔄",
     title: "One partner, in turn",
-    body: "The partner with the fewest referrals so far this month.",
+    body: "Fewest referrals this month.",
     chip: "Fair rotation",
   },
   {
     icon: "🤝",
-    title: "A person connects them",
-    body: "Visitor says CONNECT. Noor or the community champion passes on the contact.",
-    chip: "Human in the loop",
+    title: "A person connects",
+    body: "Noor or the community champion passes on the contact.",
+    chip: "Human step",
   },
 ];
-export const REFERRAL_FACTS = [
-  "No money changes hands",
-  "The visitor’s number is never shared",
-  "Partners shown are fictional",
-];
+export const REFERRAL_FACTS = ["No money", "Number never shared", "Fictional partners"];
 
 export const REAL_LIVE = [
   "A real phone line and WhatsApp number (Twilio sandbox) run the full loop: call, transcript, review, approval, visitor answers, voice notes.",

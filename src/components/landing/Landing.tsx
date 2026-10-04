@@ -828,8 +828,8 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
         <Story />
-        <Referrals />
         <Explore initialTab={initialTab} />
+        <Referrals />
       </main>
       <footer className="mx-auto max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">
         <p>
