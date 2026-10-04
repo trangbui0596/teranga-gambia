@@ -148,12 +148,6 @@ export const COMMUNITY = [
     body: "One notice: SMS to members, and under every tourist answer in their language. Fixed wording. Never an official warning.",
   },
   {
-    icon: "🌐",
-    title: "Translation checks",
-    tag: "Built",
-    body: "A bilingual reviewer approves the English. Tourists see “English checked”.",
-  },
-  {
     icon: "🤝",
     title: "Fair referrals",
     tag: "Simulated partners",
