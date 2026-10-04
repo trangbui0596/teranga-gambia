@@ -274,18 +274,19 @@ function Storybook() {
               aria-hidden={n !== i}
               className="grid w-full shrink-0 gap-4 p-4 sm:grid-cols-[1fr_1.2fr] sm:items-center sm:p-6"
             >
-              <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary/20 sm:min-h-64">
+              <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary/20">
                 {p.photo ? (
-                  <figure className="m-0 h-full w-full">
+                  <>
                     <img
                       src={p.photo.src}
                       alt={p.photo.alt}
-                      className="h-full w-full object-cover"
+                      loading={n === 0 ? "eager" : "lazy"}
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
-                    <figcaption className="px-2 py-1 text-xs text-muted-foreground">
+                    <span className="absolute bottom-2 left-2 rounded-full bg-black/55 px-2 py-0.5 text-xs text-white">
                       {p.photo.credit}
-                    </figcaption>
-                  </figure>
+                    </span>
+                  </>
                 ) : (
                   <span className="text-7xl sm:text-8xl" aria-hidden="true">
                     {p.icon}
