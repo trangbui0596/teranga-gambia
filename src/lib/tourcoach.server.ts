@@ -5,7 +5,7 @@ import { guardCleanup, CLEANUP_INSTRUCTIONS, FEEDBACK_PROMPT, FEEDBACK_OPTIONS, 
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { matchQuestion, NOT_SURE } from "./match";
-import { looksArabicScript } from "./script-guard";
+import { looksNonLatinScript } from "./script-guard";
 import { gateApproval, STILL_PROCESSING } from "./approval";
 import { runInBackground } from "./background.server";
 import { numbersHeard } from "./numbers";
@@ -184,6 +184,19 @@ export async function downloadMedia(mediaUrl: string, signal: AbortSignal | null
 
 /** ElevenLabs scribe_v2. languageCode null = auto-detect (visitor reviews). */
 export async function sttBlob(blob: Blob, type: string, languageCode: string | null, signal: AbortSignal | null = null) {
+  const first = await sttOnce(blob, type, languageCode, signal);
+  // Wolof sometimes comes back in Arabic or Cyrillic letters. Ask once more without a language hint (that returns Latin letters);
+  // if it is still non-Latin, treat the clip as not understood so the recording is retried.
+  if (first && languageCode === "wol" && looksNonLatinScript(first.text)) {
+    console.warn("[stt] Wolof transcript came back in non-Latin letters; retrying without a language hint");
+    const second = await sttOnce(blob, type, null, signal).catch(() => null);
+    if (second && second.text && !looksNonLatinScript(second.text)) return { ...second, language: "wol" as string | null };
+    return { ...first, text: "" };
+  }
+  return first;
+}
+
+async function sttOnce(blob: Blob, type: string, languageCode: string | null, signal: AbortSignal | null = null) {
   const ext = type.includes("amr") ? "amr" : type.includes("mpeg") || type.includes("mp3") ? "mp3" : type.includes("mp4") ? "m4a" : "ogg";
   const form = new FormData();
   form.append("file", blob, `voice.${ext}`);
@@ -195,8 +208,7 @@ export async function sttBlob(blob: Blob, type: string, languageCode: string | n
   });
   if (!res.ok) { console.error(`ElevenLabs STT failed [${res.status}]: ${(await res.text()).slice(0, 300)}`); return null; }
   const j = (await res.json()) as { text?: string; language_code?: string; language_probability?: number; words?: Array<{ logprob?: number; type?: string }> };
-  let text = (j.text ?? "").trim();
-  if (languageCode === "wol" && looksArabicScript(text)) { console.warn("[stt] Wolof transcript came back in Arabic script; treating as not understood"); text = ""; }
+  const text = (j.text ?? "").trim();
   const lps = (j.words ?? []).filter((w) => w.type !== "spacing" && typeof w.logprob === "number").map((w) => Math.exp(w.logprob!));
   const confidence = lps.length ? lps.reduce((a, b) => a + b, 0) / lps.length : j.language_probability ?? null;
   return { status: res.status, text, language: j.language_code ?? null, confidence: confidence === null ? null : Math.round(confidence * 100) / 100 };
@@ -1062,6 +1074,7 @@ async function championAgent(c: Conv, text: string, mediaUrl: string | null, sav
   if (mediaUrl) {
     const t = await transcribe(mediaUrl, "wol", AbortSignal.timeout(9000));
     if (!t) return "Sorry, I could not hear the voice note. Please type or try again.";
+    if (!t.text.trim()) return "I could not understand that voice note. To record an answer, send START, then send the voice note for each question. EXIT leaves champion mode.";
     message = t.text;
     heard = `Heard (Wolof, ${WOLOF_LABEL}): "${t.text}"\n\n`;
   }
