@@ -1,19 +1,41 @@
 # Teranga
 
-A Gambian tourism operator answers visitors in English, German and Dutch with her own pre-approved words.
+**One phone call in Wolof becomes answers every tourist can read.**
+
 "Teranga" is Wolof for hospitality. This is a hackathon prototype for the World Bank x Hack-Nation
-"Small AI for Development" Tourism track. It is not a product.
+"Small AI for Development" Tourism track. It is a prototype, not a product.
+
+**Live page:** https://teranga-gambia.lovable.app
 
 **Noor** is a fictional tourism operator in The Gambia. She speaks Wolof and has a basic phone.
 
+## The problem
+
+Tourism earned The Gambia US$157 million in 2019 (43.6% of exports), and about half of Gambians are still offline
+([World Bank WDI](https://data.worldbank.org/country/gambia-the)). Tourists write in English, German and Dutch.
+Operators like Noor speak Wolof on basic phones, so enquiries they cannot read are missed or answered late.
+We did not measure how many enquiries are lost, and claim no number for it. Every statistic on the page is linked
+to its World Bank indicator.
+
+## Three people
+
+| Who | What they do | Needs the internet? |
+| --- | --- | --- |
+| **Noor** (tourism operator) | Records her answers once by phone call, approves them by text, and receives coaching, her Google listing draft and weekly digest by SMS | No |
+| **The tourist** | Asks on WhatsApp in text or voice, in English, German or Dutch, and gets Noor's approved answer as text and an AI voice note. Can leave a Google review by voice | Yes |
+| **The community champion** (and a **household champion** with a smartphone who syncs once a week) | Sends flood and closure notices, checks translations, passes on referrals between neighbouring operators | Household champion about once a week; Noor never |
+
 ## How it works
 
-1. **Record.** Noor phones the Teranga number and answers common visitor questions out loud, in Wolof (10 question cards; the demo call asks 2 by default). No internet needed.
-2. **Review.** A household champion gets the Wolof transcript, the numbers it heard and any flags on WhatsApp, and approves each answer.
-3. **Answer.** Visitors ask on WhatsApp in English, German or Dutch. They get the approved answer as text plus an AI-generated voice note, labeled machine-translated. If the match is weak the bot says "Not sure, Noor will answer" and never guesses.
-4. **Coach.** Plain advice for Noor in Wolof, built from real public Google Maps reviews (small sample, no raw review text stored).
+1. **Record.** Noor phones the Teranga number and answers ready-made questions aloud in Wolof (10 question cards; the demo call asks 2 by default).
+2. **Approve.** She gets the Wolof transcript, the numbers it heard and any flags by text, and approves each answer with one digit. Nothing reaches a tourist without her approval.
+3. **Answer.** Tourists ask on WhatsApp. Answers come from Noor's approved words, matched by fixed keyword rules (no AI writes an answer at question time). If the match is weak the bot says "Not sure, Noor will answer".
+4. **List.** Teranga drafts a Google Business listing from her approved answers; anything it does not know says "needs input". Nothing is sent to Google.
+5. **Review.** A tourist speaks a review, Teranga cleans it up without changing facts, and the tourist pastes and posts it themselves.
+6. **Learn.** Each week the household champion syncs new tourist questions and feedback; public reviews are summarised into up to three plain actions, texted to Noor in Wolof. One light weekly batch, no always-on model.
+7. **Look out for each other.** A community champion posts fixed-wording notices (flood, closed road, storm) that reach members by SMS and appear under every tourist answer. Fair referrals rotate extra guests between neighbouring operators (simulated partners).
 
-There is no web UI beyond the landing page at `/` (problem and sourced statistics first, then tabs: How it works, AI beyond SMS, Community, What's real, Sources). Everything else is WhatsApp, SMS and voice.
+The page at `/` shows the problem first, then who is in the chain, a swipeable storybook ("A week with Noor"), and short chapters (Try SMS, Works offline, What's real, Sources). Everything else is voice, SMS and WhatsApp.
 
 ## What the AI does that plain SMS cannot
 
@@ -48,7 +70,7 @@ Twilio-signed (signature checked with `TWILIO_AUTH_TOKEN`):
 
 | Route | Purpose |
 | --- | --- |
-| `/api/public/whatsapp-webhook` | WhatsApp messages from helper and visitors |
+| `/api/public/whatsapp-webhook` | WhatsApp messages from Noor, champions and visitors |
 | `/api/public/sms-webhook` | Inbound SMS: Noor's number can text COACH, LISTING, WEEK or HELP (EN for English) |
 | `/api/public/sms-sim` | Public simulator for the home page: returns the SMS text Teranga would send (reads demo data, sends and writes nothing) |
 | `/api/public/voice-incoming` | Incoming call from Noor, asks the questions |
@@ -65,7 +87,7 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 | `/api/public/purge` | Delete unshared visitor reviews older than 24 hours |
 | `/api/public/coach-run` | Run or return cached review coaching |
 | `/api/public/eval-match` | Run the 20-question matching test (agent-written test data) |
-| `/api/public/eval-agent` | Dry-run 15 scripted helper messages |
+| `/api/public/eval-agent` | Dry-run 15 scripted champion messages |
 
 ## Secrets (names only, set in the project secrets, never in code)
 
@@ -83,7 +105,7 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 ## Offline SMS, Google listing and the community layer
 
 - **Noor needs no internet.** She records by phone call. Coaching, Google listing progress, approval receipts, community notices and the weekly digest reach her as plain SMS (GSM-7 letters, at most three parts, opt-out line always kept). She can text `COACH`, `LISTING`, `WEEK` or `HELP` (`EN` for English). Wolof SMS text is machine-written and unverified.
-- **Google listing:** `LISTING` (helper, on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the household champion can add, and claim steps. Nothing is sent to Google.
+- **Google listing:** `LISTING` (Noor by SMS, or a champion on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the household champion can add, and claim steps. Nothing is sent to Google.
 - **Community Circle:** a community champion (`COMMUNITY <PIN>`, demo PIN) posts notices with `ALERT` (flood, closed road, storm, boats paused, tours closed, all clear), sees them with `ALERTS`, checks translations with `BILINGUAL` and sees an overview with `PULSE`. Notices are fixed templates in English, German, Dutch and Wolof, last 24 hours, are sent to members by SMS and appear under every visitor answer, always labeled as a community notice, not an official warning. Visitors can send `STATUS` to see them. Members other than Noor are simulated in the demo.
 
 - **Weekly sync (`SYNC`, `/api/public/weekly-sync`):** re-reads public Google reviews, compares them with the previous run (themes whose share moved by 5 points or more), adds what visitors asked and marked "not clear" this week, and turns it into up to three plain actions (counts only, no AI). It does not yet scan news sources: none was reachable from our environment to test, so that is a next step.
@@ -93,7 +115,7 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 
 Every number on the landing page lives in `src/lib/evidence.ts` with its World Bank indicator code, year and link; nothing is typed by hand in the page. A test (`src/test/landing-evidence.test.tsx`) fails if a percentage, dollar amount or thousands figure appears that is not listed there, or if a number has no link to its data page. To re-check the values against the live World Bank API run `node scripts/verify-evidence.mjs` (Node 22.18 or newer).
 
-After filming: set `VIDEO_URL` in `src/lib/landing-content.ts` to show a "Watch the demo" button, and add screenshots to `public/screens/` plus entries in `SCREENS` (same file) to show a "Screens" tab.
+Storybook pictures live in `public/photos/` (AI-generated illustrations, credited on the page). To show a "Watch the demo" button, set `VIDEO_URL` in `src/lib/landing-content.ts`; to show a "Screens" tab, add images to `public/screens/` and entries to `SCREENS`.
 
 ## Run the tests
 
@@ -106,10 +128,11 @@ npx tsc --noEmit -p .
 ## What is real and what is not
 
 - The Wolof test audio is synthetic (text-to-speech), not a native speaker.
-- Speech recognition on real Wolof speech is untested.
+- Speech recognition on real Wolof speech is untested and unreliable.
 - All Wolof text in the app is machine-written and unverified by a native speaker.
 - Translations are machine translations and say so.
-- The 20-question matching test is agent-written test data, not real-visitor accuracy.
+- Matching was tested on real visitor questions from Gambian operators' public FAQ pages (82 for tuning, 103 untuned held-out). Results are in `src/lib/match-eval-results.ts` and on the page. The labels are our own judgment and the questions are English only.
+- Speech recognition sometimes writes Wolof in the wrong alphabet; the app retries once and flags the answer instead of showing it. Prices are checked after translation, and a mismatch is flagged for Noor.
 - SMS delivery is pending US carrier registration, so summaries arrive on WhatsApp through Twilio's sandbox.
 - The partner recommendation, the partner list and the Google listing preview are simulated.
 - Google review data is a small real public sample.
@@ -126,4 +149,18 @@ Privacy: no review gating (the same review link goes to every visitor); visitor 
 - Replace the simulated partner list with real operators who have opted in. Add a pricing range only with real data.
 - A self-serve command to delete recordings.
 
-Built with TanStack Start, React, TypeScript and Tailwind CSS. Connected to Lovable; pushes to `main` sync back into the editor.
+## Tech stack
+
+- **Lovable**: app, hosting and Postgres database (Lovable Cloud); Lovable AI for translation, summaries and review clean-up.
+- **Twilio**: voice line, WhatsApp sandbox and SMS.
+- **ElevenLabs**: Scribe speech-to-text (Wolof recordings, tourist voice notes) and text-to-speech (English, German, Dutch).
+- **Google Maps Platform (Places)**: public reviews for weekly coaching.
+- **World Bank WDI API**: every statistic, re-checked by `scripts/verify-evidence.mjs`.
+- TanStack Start, React, TypeScript, Tailwind CSS; 472 unit and smoke tests.
+
+## Docs
+
+Demo runbook, video script, filming guide, data notes and the matcher evaluation are in the companion docs repository:
+https://github.com/trangbui0596/hacknation-worldbank-small-ai-for-tourism
+
+Connected to Lovable; pushes to `main` sync back into the editor.
