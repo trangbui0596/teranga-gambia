@@ -1155,6 +1155,19 @@ describe("simulateSms", () => {
     expect((await sim("noor", "banana", "en")).reply).toContain("I did not understand");
   });
 
+  it("REVIEW shows an example approval card without changing anything, and says it is a simulation", async () => {
+    const r = await sim("noor", "REVIEW", "wo");
+    expect(r.reply).toContain("Limu:");
+    expect(r.reply).toContain("(about 1500)");
+    expect(r.reply).toContain("Simulation");
+    expect(r.reply).toContain("Nothing changes here");
+  });
+
+  it("HELP lists REVIEW so Noor knows she can approve her own answers", async () => {
+    expect((await sim("noor", "HELP", "en")).reply).toContain("REVIEW");
+    expect((await sim("noor", "HELP", "wo")).reply).toContain("REVIEW");
+  });
+
   it("STOP/START get the explanation, not a reply", async () => {
     expect((await sim("noor", "STOP")).reply).toContain("no reply is sent");
     expect((await sim("visitor", "start")).reply).toContain("no reply is sent");

@@ -1002,10 +1002,35 @@ async function handleOtherSms(input: { from: string; body: string }, trusted = f
 }
 
 /** Public simulator for the home page: what the SMS would say. Reads data, writes nothing, sends nothing. */
+/** Read-only preview of what Noor's REVIEW text looks like: her next pending answer, or a labelled example when nothing is pending.
+ *  The simulator keeps no state, so replying 1, 2 or 3 is explained, not performed. */
+async function reviewCardPreview(): Promise<string> {
+  const { data } = await supabaseAdmin
+    .from("answers")
+    .select("id, transcript_src, flags, is_sample, created_at, recordings(questions(position, topic))")
+    .eq("review_status", "pending").eq("is_sample", false)
+    .in("stage" as never, ["checked"] as never)
+    .order("created_at");
+  const list = ((data ?? []) as unknown as Array<{ transcript_src: string | null; flags: string[]; recordings: { questions: { topic: string } | null } | null }>)
+    .filter((i) => i.transcript_src);
+  const item = list[0];
+  const example = !item;
+  const transcript = item?.transcript_src ?? "Njëg bi mooy junni ak juróom téeméer dalasi.";
+  const card = formatReviewSms({
+    index: 1, total: list.length || 1, topic: item?.recordings?.questions?.topic ?? "price", transcript,
+    numbers: numbersHeard(transcript), flags: item?.flags ?? [],
+  });
+  const note = example
+    ? "(Simulation: nothing is waiting, so this is an example card. Replying 1, 2 or 3 would approve, record again, or ask a bilingual reviewer. Nothing changes here.)"
+    : "(Simulation: replying 1, 2 or 3 would approve, record again, or ask a bilingual reviewer. Nothing changes here.)";
+  return `${card}\n\n${note}`;
+}
+
 export async function simulateSms(as: "noor" | "visitor", text: string, lang: "en" | "de" | "nl" | "wo"): Promise<{ reply: string; parts: number }> {
   const body = text.trim().slice(0, 160);
   let reply: string;
   if (isCarrierKeyword(body)) reply = "(Twilio handles STOP and START itself; no reply is sent.)";
+  else if (as === "noor" && body.toUpperCase() === "REVIEW") reply = await reviewCardPreview();
   else if (as === "noor") {
     const parsed = parseOperatorSms(body);
     reply = await operatorSmsBody(parsed ? { ...parsed, lang: lang === "en" ? "en" : parsed.lang } : null, lang === "en" ? "en" : "wo");

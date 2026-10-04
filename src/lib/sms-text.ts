@@ -235,8 +235,8 @@ export function parseOperatorSms(body: string): OperatorSmsCommand {
 export function helpSms(lang: CoachLanguage = "wo"): string {
   return withOptOut(
     lang === "wo"
-      ? "Teranga: COACH = coaching. LISTING = sa listing ci Google. WEEK = xibaar ayubes bi. Yokk EN ngir Angale. Woote Teranga ngir waxal sa tontu yi."
-      : "Teranga: COACH = coaching. LISTING = your Google listing. WEEK = this week's digest. Call Teranga to record your answers.",
+      ? "Teranga: REVIEW = seetal ak nangu sa tontu yi. COACH = coaching. LISTING = sa listing ci Google. WEEK = xibaar ayubes bi. Yokk EN ngir Angale. Woote Teranga ngir waxal sa tontu yi."
+      : "Teranga: REVIEW = check and approve your answers. COACH = coaching. LISTING = your Google listing. WEEK = this week's digest. Call Teranga to record your answers.",
   );
 }
 

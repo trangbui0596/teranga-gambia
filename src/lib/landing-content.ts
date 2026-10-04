@@ -65,18 +65,18 @@ export const CHANNELS = [
   {
     channel: "SMS",
     icon: "💬",
-    who: "Noor and both champions",
-    use: "Review, coaching, listing, notices. No internet.",
+    who: "Noor and the community champion",
+    use: "Approve answers, coaching, listing, weekly digest, notices. No internet.",
   },
   {
     channel: "WhatsApp",
     icon: "🟢",
-    who: "Tourists",
-    use: "Voice or text questions, answered in their language.",
+    who: "Tourists and the household champion",
+    use: "Tourists ask by voice or text. The champion syncs once a week.",
   },
 ];
 export const OFFLINE_INTRO =
-  "Noor, her household champion and the community champion never need the internet for the core loop.";
+  "Noor never needs the internet. Her household champion needs it about once a week, and tourists need it to ask.";
 export const OFFLINE_NOTE =
   "US carrier registration for SMS is still in review, so the live demo runs the same commands on WhatsApp, which mirrors them. The simulator on this page shows the SMS texts.";
 export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sample inputs:";
@@ -197,7 +197,7 @@ export const STORYBOOK: StoryPage[] = [
 ];
 
 export const REAL_LIVE = [
-  "A real phone line and WhatsApp number (Twilio sandbox) run the full loop: call, transcript, review, approval, visitor answers, voice notes.",
+  "A real phone line and WhatsApp number (Twilio sandbox) run the full loop: call, transcript, Noor’s approval, visitor answers in text and voice, voice reviews, notices and referrals.",
   "Speech recognition (ElevenLabs Scribe) runs on every recording.",
   "Coaching comes from real public Google Maps reviews. Nothing raw is stored.",
   "Every statistic on this page comes straight from the World Bank, with a link to the data.",
@@ -210,8 +210,9 @@ export const REAL_LIMITS = [
   `Matching was tested on real visitor questions from Gambian operators’ public FAQ pages, not on made-up ones. On 103 questions not used for tuning: ${HOLDOUT_RESULTS.score.correct} of ${HOLDOUT_RESULTS.score.inScope} questions about Noor’s ten topics were answered correctly, none got a wrong-topic answer, and ${HOLDOUT_RESULTS.score.outDeclined} of ${HOLDOUT_RESULTS.score.outOfScope} questions she has no answer for were correctly declined (${HOLDOUT_RESULTS.score.outAnswered} were answered wrongly). Before the fix, 17 of 37 such questions were answered wrongly. The labels are our own judgment and the questions are English only.`,
   "SMS delivery is pending US carrier registration, so in the demo the same texts arrive on WhatsApp.",
   "The partner list is simulated, and the Google listing is a draft that a person must publish.",
+  "Speech recognition is unreliable on real Wolof speech: it sometimes writes Wolof in the wrong alphabet, so the app retries and flags those answers instead of showing them. Prices are checked after translation, and a mismatch is flagged for Noor.",
   "The demo call asks 2 of the 10 questions to keep it short.",
-  "SMS commands, community notices, translation checks and the Google listing pack are built and unit-tested. Real users have not tried them yet.",
+  "SMS commands, community notices, translation checks and the Google listing pack are built and unit-tested, and the builder has run them live on WhatsApp. No real operator or tourist has used them yet.",
 ];
 
 export const SOURCES_TOOLS: Array<{ name: string; what: string; href: string }> = [
@@ -222,7 +223,7 @@ export const SOURCES_TOOLS: Array<{ name: string; what: string; href: string }> 
   },
   {
     name: "Twilio",
-    what: "WhatsApp sandbox and the voice line",
+    what: "WhatsApp sandbox, SMS and the voice line",
     href: "https://www.twilio.com/docs/whatsapp/sandbox",
   },
   {
@@ -232,7 +233,7 @@ export const SOURCES_TOOLS: Array<{ name: string; what: string; href: string }> 
   },
   {
     name: "Lovable",
-    what: "the app, database and AI for translation and summaries",
+    what: "the app, database and AI for translation, summaries and review clean-up",
     href: "https://lovable.dev",
   },
 ];
@@ -246,6 +247,6 @@ export const PRIVACY = [
 export const SMS_SIM_NOTE =
   "Simulation: this shows the text Teranga would send. It uses the same code and the demo data, and nothing is sent to any phone. Real SMS delivery in the US waits for carrier registration.";
 export const SMS_SIM_CHIPS = {
-  noor: ["COACH", "LISTING", "WEEK", "HELP"],
+  noor: ["REVIEW", "COACH", "LISTING", "WEEK", "HELP"],
   visitor: ["How much does it cost?", "Where do we meet?", "Do I need a visa?", "STATUS"],
 };
