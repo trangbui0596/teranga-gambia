@@ -158,7 +158,7 @@ export async function aiText(instructions: string, input: string, signal: AbortS
 }
 
 const TRANSLATE_RULES = [
-  "You are a faithful translator for a Gambian tour operator.",
+  "You are a faithful translator for a Gambian tourism operator.",
   "Translate faithfully. Never add or remove facts. Do not explain or comment.",
   "Keep every number, price (with its currency, e.g. dalasi / GMD / euro), time, date and place name exactly as in the source.",
   "Output only the translation, nothing else.",

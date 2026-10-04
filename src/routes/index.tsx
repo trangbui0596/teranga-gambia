@@ -8,13 +8,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Tourism earned The Gambia US$157 million in 2019, yet half the country is offline. Teranga lets a Gambian tour operator answer visitors in English, German and Dutch with her own pre-approved words.",
+          "Tourism earned The Gambia US$157 million in 2019, yet half the country is offline. Teranga lets a Gambian tourism operator answer visitors in English, German and Dutch with her own pre-approved words.",
       },
       { property: "og:title", content: "Teranga" },
       {
         property: "og:description",
         content:
-          "A Gambian tour operator answers visitors in English, German and Dutch with her own pre-approved words.",
+          "A Gambian tourism operator answers visitors in English, German and Dutch with her own pre-approved words.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

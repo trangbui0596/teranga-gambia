@@ -1,10 +1,10 @@
 # Teranga
 
-A Gambian tour operator answers visitors in English, German and Dutch with her own pre-approved words.
+A Gambian tourism operator answers visitors in English, German and Dutch with her own pre-approved words.
 "Teranga" is Wolof for hospitality. This is a hackathon prototype for the World Bank x Hack-Nation
 "Small AI for Development" Tourism track. It is not a product.
 
-**Noor** is a fictional tour operator in The Gambia. She speaks Wolof and has a basic phone.
+**Noor** is a fictional tourism operator in The Gambia. She speaks Wolof and has a basic phone.
 
 ## How it works
 
