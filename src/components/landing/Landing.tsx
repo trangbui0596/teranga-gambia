@@ -3,6 +3,13 @@ import { EVIDENCE, INDICATOR_NAMES, RETRIEVED, evidence, wdiUrl } from "@/lib/ev
 import {
   CHANNELS,
   COMMUNITY,
+  STORY_TITLE,
+  STORY_STEPS,
+  STORY_MORE,
+  REFERRALS_TITLE,
+  REFERRALS_SUB,
+  REFERRAL_STEPS,
+  REFERRAL_FACTS,
   COMMUNITY_INTRO,
   COMMUNITY_TITLE,
   EXTRAS,
@@ -168,6 +175,85 @@ function Hero() {
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+function Story() {
+  return (
+    <section id="story" aria-labelledby="story-title" className="mt-8">
+      <h2 id="story-title" className="font-display text-2xl font-black sm:text-3xl">
+        {STORY_TITLE}
+      </h2>
+      <ol className="mt-3 grid gap-3 sm:grid-cols-3" aria-label="Three steps">
+        {STORY_STEPS.map((r, i) => (
+          <li
+            key={r.title}
+            className="rounded-xl border-2 border-primary/60 bg-card p-4 text-center"
+          >
+            <p className="text-5xl" aria-hidden="true">
+              {r.icon}
+            </p>
+            <h3 className="font-display text-xl font-black leading-tight">
+              {i + 1}. {r.title}
+            </h3>
+            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+              {r.chip}
+            </p>
+            <p className="mt-2 leading-snug">{r.body}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-sm text-muted-foreground">
+        {STORY_MORE}{" "}
+        <a href="#explore" className="font-semibold underline">
+          More detail ↓
+        </a>
+      </p>
+    </section>
+  );
+}
+
+function Referrals() {
+  return (
+    <section
+      id="referrals"
+      aria-labelledby="referrals-title"
+      className="mt-8 rounded-2xl border-2 border-primary/60 bg-card p-4 sm:p-6"
+    >
+      <p className="text-xs font-bold uppercase tracking-wide text-primary">
+        Community feature · simulated partners
+      </p>
+      <h2 id="referrals-title" className="font-display text-2xl font-black sm:text-3xl">
+        {REFERRALS_TITLE}
+      </h2>
+      <p className="mt-1 max-w-3xl">{REFERRALS_SUB}</p>
+      <ol className="mt-4 grid gap-3 sm:grid-cols-3" aria-label="How a referral works">
+        {REFERRAL_STEPS.map((r, i) => (
+          <li key={r.title} className="rounded-xl border bg-background p-3 text-center">
+            <p className="text-4xl" aria-hidden="true">
+              {r.icon}
+            </p>
+            <h3 className="font-display text-lg font-black leading-tight">
+              {i + 1}. {r.title}
+            </h3>
+            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+              {r.chip}
+            </p>
+            <p className="mt-2 text-sm leading-snug">{r.body}</p>
+          </li>
+        ))}
+      </ol>
+      <ul className="mt-4 flex flex-wrap gap-2" aria-label="Safeguards">
+        {REFERRAL_FACTS.map((f) => (
+          <li
+            key={f}
+            className="rounded-full bg-secondary px-3 py-1 text-sm font-bold text-secondary-foreground"
+          >
+            ✓ {f}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -723,6 +809,9 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
           <a href="#explore" className={pill}>
             Explore ↓
           </a>
+          <a href="#referrals" className={pill}>
+            Fair referrals
+          </a>
           {VIDEO_URL ? (
             <Ext
               href={VIDEO_URL}
@@ -738,6 +827,8 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
+        <Story />
+        <Referrals />
         <Explore initialTab={initialTab} />
       </main>
       <footer className="mx-auto max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">

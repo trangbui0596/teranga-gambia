@@ -167,6 +167,59 @@ export const COMMUNITY = [
   },
 ];
 
+export const STORY_TITLE = "How Teranga works";
+export const STORY_STEPS = [
+  {
+    icon: "📞",
+    title: "Noor answers by phone",
+    body: "One call. She speaks her answers in Wolof. No internet, no typing.",
+    chip: "Phone call",
+  },
+  {
+    icon: "✅",
+    title: "She approves each answer",
+    body: "She sees what the AI heard, in Wolof, and presses one digit. Nothing goes out without her.",
+    chip: "SMS",
+  },
+  {
+    icon: "🧳",
+    title: "Tourists ask in their language",
+    body: "On WhatsApp, by voice or text. They get Noor’s answer in English, German or Dutch, as text and voice.",
+    chip: "WhatsApp",
+  },
+];
+export const STORY_MORE =
+  "Then it keeps improving: each week a household champion syncs new tourist questions and the AI turns public Google reviews into coaching. Neighbours share notices and referrals.";
+
+export const REFERRALS_TITLE = "Fair referrals between neighbours";
+export const REFERRALS_SUB =
+  "A visitor who wants something Noor does not offer is sent to a partner in her community. Partners take turns, so no one gets all the tourists.";
+export const REFERRAL_STEPS = [
+  {
+    icon: "🧳",
+    title: "Visitor opts in",
+    body: "Picks nature, culture or food, and says YES.",
+    chip: "WhatsApp",
+  },
+  {
+    icon: "🔄",
+    title: "One partner, in turn",
+    body: "The partner with the fewest referrals so far this month.",
+    chip: "Fair rotation",
+  },
+  {
+    icon: "🤝",
+    title: "A person connects them",
+    body: "Visitor says CONNECT. Noor or the community champion passes on the contact.",
+    chip: "Human in the loop",
+  },
+];
+export const REFERRAL_FACTS = [
+  "No money changes hands",
+  "The visitor’s number is never shared",
+  "Partners shown are fictional",
+];
+
 export const REAL_LIVE = [
   "A real phone line and WhatsApp number (Twilio sandbox) run the full loop: call, transcript, review, approval, visitor answers, voice notes.",
   "Speech recognition (ElevenLabs Scribe) runs on every recording.",
