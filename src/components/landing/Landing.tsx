@@ -537,7 +537,9 @@ function SmsPanel() {
             onChange={(e) => setText(e.target.value)}
             maxLength={160}
             aria-label="Your text message"
-            placeholder={as === "noor" ? "REVIEW, COACH, LISTING, WEEK, HELP" : "Ask about the tour"}
+            placeholder={
+              as === "noor" ? "REVIEW, COACH, LISTING, WEEK, HELP" : "Ask about the tour"
+            }
             className="min-h-11 flex-1 rounded-full border-2 border-border bg-background px-4"
           />
           <button
