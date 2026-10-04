@@ -6,9 +6,6 @@ import {
   CHAIN_TITLE,
   CHAIN,
   CHAIN_SUPPORT,
-  STORY_TITLE,
-  STORY_STEPS,
-  STORY_MORE,
   REFERRALS_TITLE,
   REFERRALS_SUB,
   REFERRAL_STEPS,
@@ -232,41 +229,6 @@ function Chain() {
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-function Story() {
-  return (
-    <section id="story" aria-labelledby="story-title" className="mt-8">
-      <h2 id="story-title" className="font-display text-2xl font-black sm:text-3xl">
-        {STORY_TITLE}
-      </h2>
-      <ol className="mt-3 grid gap-3 sm:grid-cols-3" aria-label="Three steps">
-        {STORY_STEPS.map((r, i) => (
-          <li
-            key={r.title}
-            className="rounded-xl border-2 border-primary/60 bg-card p-4 text-center"
-          >
-            <p className="text-5xl" aria-hidden="true">
-              {r.icon}
-            </p>
-            <h3 className="font-display text-xl font-black leading-tight">
-              {i + 1}. {r.title}
-            </h3>
-            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-              {r.chip}
-            </p>
-            <p className="mt-2 leading-snug">{r.body}</p>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-3 text-sm text-muted-foreground">
-        {STORY_MORE}{" "}
-        <a href="#explore" className="font-semibold underline">
-          More detail ↓
-        </a>
-      </p>
     </section>
   );
 }
@@ -870,7 +832,6 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
         <Chain />
-        <Story />
         <Explore initialTab={initialTab} />
       </main>
       <footer className="mx-auto max-w-5xl border-t px-4 py-6 text-sm text-muted-foreground">

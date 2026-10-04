@@ -186,30 +186,6 @@ export const CHAIN_SUPPORT = [
   },
 ];
 
-export const STORY_TITLE = "How Teranga works";
-export const STORY_STEPS = [
-  {
-    icon: "📞",
-    title: "Noor answers by phone",
-    body: "One call. She speaks her answers in Wolof. No internet, no typing.",
-    chip: "Phone call",
-  },
-  {
-    icon: "✅",
-    title: "She approves each answer",
-    body: "She sees what the AI heard, in Wolof, and presses one digit. Nothing goes out without her.",
-    chip: "SMS",
-  },
-  {
-    icon: "🧳",
-    title: "Tourists ask in their language",
-    body: "On WhatsApp, by voice or text. They get Noor’s answer in English, German or Dutch, as text and voice.",
-    chip: "WhatsApp",
-  },
-];
-export const STORY_MORE =
-  "Then it keeps improving: each week a household champion syncs new tourist questions and the AI turns public Google reviews into coaching. Neighbours share notices and referrals.";
-
 export const REFERRALS_TITLE = "Fair referrals";
 export const REFERRALS_SUB =
   "Wants something Noor doesn’t offer? A neighbour gets the visitor. Partners take turns.";
