@@ -1,6 +1,7 @@
 // Pure approval gate: an answer may be approved only when fully processed (translated EN/DE/NL).
 export type ApprovalRow = { stage: string | null; english: string | null; german: string | null; dutch: string | null };
-export const STILL_PROCESSING = "Still processing, try again in a minute.";
+import { W, bi } from "./champion.templates";
+export const STILL_PROCESSING = bi(W.stillProcessing, "Still processing, try again in a minute.");
 export function isReadyToApprove(r: ApprovalRow | null): boolean {
   return !!r && (r.stage === "translated" || r.stage === "checked") && !!r.english && !!r.german && !!r.dutch;
 }

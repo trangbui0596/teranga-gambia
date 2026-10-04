@@ -13,6 +13,7 @@ import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, t
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
+import { W, bi, sl, topicWo } from "./champion.templates";
 
 type Lang = "en" | "de" | "nl";
 const FIELD = { en: "english", de: "german", nl: "dutch" } as const;
@@ -320,7 +321,7 @@ function pipelineDeps(): PipelineDeps {
     roundtrip: (src, en, signal) => roundtrip(src, en, signal),
     hash: (p) => hashPhone(p),
     notify: (phone, text) => sendWhatsApp(phone, text),
-    notifyText: (row, tx) => [`Question ${row.position ?? "?"} heard. Wolof transcript (${WOLOF_LABEL}):`, tx, `Numbers heard: ${numbersHeard(tx)}`].join("\n"),
+    notifyText: (row, tx) => [`${sl(W.heard(row.position ?? "?"), `Question ${row.position ?? "?"} heard`)}. ${sl(W.wolofTranscript, "Wolof transcript")} (${WOLOF_LABEL}):`, tx, `${sl(W.numbersHeard, "Numbers heard")}: ${numbersHeard(tx)}`].join("\n"),
   };
 }
 
@@ -422,14 +423,14 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   if (pinMatch) {
     if (safeEqual(pinMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
-      return "Champion mode (demo shortcut).\nSTART = record the 10 questions\nREVIEW = review pending answers\nEXIT = back to visitor mode";
+      return bi(W.menu, "Champion mode (demo shortcut).\nSTART = record the 10 questions\nREVIEW = review pending answers\nEXIT = back to visitor mode");
     }
-    return "Wrong PIN (demo shortcut).";
+    return bi(W.wrongPin, "Wrong PIN (demo shortcut).");
   }
   // In a recording round EXIT ends the round (handled in champion()), it does not leave champion mode.
   if (upper === "EXIT" && !(c.role === "champion" && c.state === "recording")) {
     await save({ role: "visitor", state: "idle", current_question_position: null, current_review_answer_id: null });
-    return "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.";
+    return bi(W.visitorMode, "Visitor mode. Ask any question about the tour. Reply EN, DE or NL to change language.");
   }
   return c.role === "champion" ? champion(c, upper, input.mediaUrl, input.from, save, text) : visitor(c, text, upper, save, input.mediaUrl);
 }
@@ -658,7 +659,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   const db = supabaseAdmin;
   const { data: questions } = await db.from("questions").select("id, position, topic").order("position");
   const qs = questions ?? [];
-  const ask = (n: number) => `Question ${n} of ${TOTAL_QUESTIONS}: ${qs[n - 1]?.topic ?? "?"}\nReply with a voice note.`;
+  const ask = (n: number) => `${sl(`Laaj ${n} ci ${TOTAL_QUESTIONS}`, `Question ${n} of ${TOTAL_QUESTIONS}`)}: ${topicWo(qs[n - 1]?.topic)} / ${qs[n - 1]?.topic ?? "?"}\n${sl("Tontul ak kàddu (voice note).", "Reply with a voice note.")}`;
+  const roundHint = bi(W.roundHint, ROUND_HINT);
 
   // Confirmation turn for an agent-proposed review decision: only an explicit YES executes it.
   if (c.pending_action) {
@@ -668,7 +670,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
       const { data: still } = await db.from("answers").select("review_status").eq("id", pa.answer_id).maybeSingle();
       if (still?.review_status !== "pending") return "That answer is no longer pending. Nothing changed.";
       if (!(await applyReview(pa.answer_id, pa.status))) return STILL_PROCESSING;
-      return { approved: "Done: approved.", rerecord: "Done: marked for re-record.", needs_bilingual: "Done: sent to bilingual reviewer." }[pa.status];
+      return { approved: bi(W.approved, "Done: approved."), rerecord: bi(W.rerecord, "Done: marked for re-record."), needs_bilingual: bi(W.bilingual, "Done: sent to bilingual reviewer.") }[pa.status];
     }
     // Anything else cancels the proposal and is handled as a new message below.
   }
@@ -683,14 +685,14 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   if (cmd === "stop") {
     const saved = Math.max(0, (c.current_question_position ?? 1) - 1);
     await save({ state: "idle", current_question_position: null });
-    return roundStoppedText(saved);
+    return bi(W.stopped(saved), roundStoppedText(saved));
   }
-  if (cmd === "help") return recordingHelpText(c.current_question_position ?? 1, TOTAL_QUESTIONS);
+  if (cmd === "help") return bi(W.help(c.current_question_position ?? 1, TOTAL_QUESTIONS), recordingHelpText(c.current_question_position ?? 1, TOTAL_QUESTIONS));
   if (cmd === "review") await save({ state: "idle", current_question_position: null }); // falls through to REVIEW below
 
   if (c.state === "recording" && c.current_question_position && !cmd) {
     const n = c.current_question_position;
-    if (!mediaUrl) return `Please send a voice note for question ${n}.\n${ROUND_HINT}\n${ask(n)}`;
+    if (!mediaUrl) return `${bi(W.pleaseSend(n), `Please send a voice note for question ${n}.`)}\n${roundHint}\n${ask(n)}`;
     const q = qs[n - 1];
     if (!q) return "Question not found.";
     let answerId: string | null = null;
@@ -707,10 +709,10 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const next = n + 1;
     if (next > TOTAL_QUESTIONS) {
       await save({ state: "idle", current_question_position: null });
-      return { text: `Got question ${n}. Round complete. Reply REVIEW to review.`, finishFirst: answerId };
+      return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}. ${sl(W.roundComplete, "Round complete")}. ${sl(W.replyReview, "Reply REVIEW to review")}.`, finishFirst: answerId };
     }
     await save({ current_question_position: next });
-    return { text: `Got question ${n}. ${ROUND_HINT}\n\n${ask(next)}`, finishFirst: answerId };
+    return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}.\n${roundHint}\n\n${ask(next)}`, finishFirst: answerId };
   }
 
   if (upper === "REVIEW") {
@@ -738,7 +740,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     if (m) {
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
     if (!(await applyReview(c.current_review_answer_id, status))) return STILL_PROCESSING;
-    const label = { approved: "Approved", rerecord: "Marked for re-record", needs_bilingual: "Sent to bilingual reviewer" }[status];
+    const label = { approved: sl(W.approved.replace(/\.$/, ""), "Approved"), rerecord: sl(W.rerecord.replace(/\.$/, ""), "Marked for re-record"), needs_bilingual: sl(W.bilingual.replace(/\.$/, ""), "Sent to bilingual reviewer") }[status];
     return `${label}.\n\n${await showNextPending(save)}`;
     }
   }
