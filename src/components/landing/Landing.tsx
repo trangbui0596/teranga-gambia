@@ -15,6 +15,7 @@ import {
   EXTRAS,
   FLOW,
   HOW_BANNER,
+  FLOW_NET_NOTE,
   NOT_MEASURED,
   OFFLINE_EXAMPLE_NOTE,
   OFFLINE_INTRO,
@@ -309,6 +310,10 @@ function Card({
 function HowPanel() {
   return (
     <div>
+      <p className="mb-2 text-sm font-semibold">
+        {FLOW_NET_NOTE} <span aria-hidden="true">🟢</span> no internet ·{" "}
+        <span aria-hidden="true">🌐</span> internet needed
+      </p>
       <ol className="grid gap-2 lg:grid-cols-5" aria-label="The flow">
         {FLOW.map((f, i) => (
           <li
@@ -327,6 +332,12 @@ function HowPanel() {
             <p className="mt-2 text-sm leading-snug">
               <span className="font-bold text-primary">AI </span>
               {f.ai}
+            </p>
+            <p
+              className={`mt-2 rounded-lg px-2 py-1 text-xs font-bold leading-snug ${f.net.online ? "bg-secondary text-secondary-foreground" : "bg-primary/15 text-primary"}`}
+            >
+              <span aria-hidden="true">{f.net.online ? "🌐 " : "🟢 "}</span>
+              {f.net.text}
             </p>
             {i < FLOW.length - 1 ? (
               <span

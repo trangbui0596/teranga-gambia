@@ -72,27 +72,42 @@ export const FLOW = [
     title: "Noor records and approves",
     chip: "Call + SMS",
     ai: "Hears Wolof, translates",
+    net: { online: false, text: "No internet" },
   },
-  { icon: "🗺️", title: "Her Google listing", chip: "Google Maps", ai: "Built from her own words" },
+  {
+    icon: "🗺️",
+    title: "Her Google listing",
+    chip: "SMS + Google Maps",
+    ai: "Built from her own words",
+    net: {
+      online: false,
+      text: "Noor: no internet. Claiming it on Google needs internet (household champion)",
+    },
+  },
   {
     icon: "🧳",
     title: "Tourist asks",
     chip: "WhatsApp",
     ai: "Hears the voice, answers in their language",
+    net: { online: true, text: "Tourist needs internet" },
   },
   {
     icon: "🔄",
     title: "Weekly sync",
     chip: "Household champion’s smartphone",
-    ai: "New questions in, review insights out",
+    ai: "New questions, feedback and reviews in; insights out",
+    net: { online: true, text: "Household champion needs internet. Noor gets the result by SMS" },
   },
   {
     icon: "⭐",
     title: "Voice-note review",
     chip: "WhatsApp",
     ai: "Voice to clean text for Google",
+    net: { online: true, text: "Tourist needs internet" },
   },
 ];
+export const FLOW_NET_NOTE =
+  "Noor never needs the internet. Tourists and the household champion do.";
 
 export const HOW_BANNER =
   "AI does what plain SMS can’t: hears Wolof, translates, listens to tourists, speaks back.";
