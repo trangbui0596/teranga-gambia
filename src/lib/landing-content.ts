@@ -11,7 +11,7 @@ export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 export type TabId = "how" | "sms" | "community" | "offline" | "real" | "sources" | "screens";
 
 export const TABS: Array<{ id: TabId; label: string }> = [
-  { id: "how", label: "How it works" },
+  { id: "how", label: "Full flow" },
   { id: "sms", label: "Try SMS" },
   { id: "community", label: "Community" },
   { id: "offline", label: "Works offline" },
@@ -164,6 +164,25 @@ export const COMMUNITY = [
     title: "Shared coaching",
     tag: "Real public data",
     body: "Learn from the whole sector’s reviews, not just your own.",
+  },
+];
+
+export const CHAIN_TITLE = "Who is in the chain";
+export const CHAIN = [
+  { icon: "🧳", name: "Tourist", line: "Asks in their own language" },
+  { icon: "✨", name: "Teranga AI", line: "Hears, translates, speaks back" },
+  { icon: "📞", name: "Noor", line: "Answers in Wolof and approves" },
+];
+export const CHAIN_SUPPORT = [
+  {
+    icon: "📱",
+    name: "Household champion",
+    line: "Smartphone in the family. Syncs tourist questions each week.",
+  },
+  {
+    icon: "🤝",
+    name: "Community champion",
+    line: "One person for a circle. Notices, translation checks, referrals.",
   },
 ];
 

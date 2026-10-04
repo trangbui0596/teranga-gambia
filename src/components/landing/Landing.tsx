@@ -1,8 +1,11 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode, Fragment } from "react";
 import { EVIDENCE, INDICATOR_NAMES, RETRIEVED, evidence, wdiUrl } from "@/lib/evidence";
 import {
   CHANNELS,
   COMMUNITY,
+  CHAIN_TITLE,
+  CHAIN,
+  CHAIN_SUPPORT,
   STORY_TITLE,
   STORY_STEPS,
   STORY_MORE,
@@ -179,6 +182,60 @@ function Hero() {
   );
 }
 
+function Chain() {
+  return (
+    <section id="chain" aria-labelledby="chain-title" className="mt-8">
+      <h2 id="chain-title" className="font-display text-2xl font-black sm:text-3xl">
+        {CHAIN_TITLE}
+      </h2>
+      <ol
+        className="mt-3 grid items-stretch gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr]"
+        aria-label="Tourist, Teranga and Noor"
+      >
+        {CHAIN.map((c, i) => (
+          <Fragment key={c.name}>
+            <li
+              className={`rounded-xl border-2 p-3 text-center ${c.name === "Teranga AI" ? "border-primary bg-primary text-primary-foreground" : "border-primary/60 bg-card"}`}
+            >
+              <p className="text-4xl" aria-hidden="true">
+                {c.icon}
+              </p>
+              <h3 className="font-display text-xl font-black leading-tight">{c.name}</h3>
+              <p className="mt-1 text-sm leading-snug">{c.line}</p>
+            </li>
+            {i < CHAIN.length - 1 ? (
+              <li
+                key={`${c.name}-arrow`}
+                aria-hidden="true"
+                className="flex items-center justify-center text-2xl text-primary"
+              >
+                <span className="sm:hidden">↕</span>
+                <span className="hidden sm:inline">↔</span>
+              </li>
+            ) : null}
+          </Fragment>
+        ))}
+      </ol>
+      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        Supporting Noor
+      </p>
+      <ul className="mt-1 grid gap-2 sm:grid-cols-2" aria-label="Champions">
+        {CHAIN_SUPPORT.map((c) => (
+          <li key={c.name} className="flex items-center gap-3 rounded-xl border bg-card p-3">
+            <span className="text-3xl" aria-hidden="true">
+              {c.icon}
+            </span>
+            <span>
+              <span className="block font-bold leading-tight">{c.name}</span>
+              <span className="block text-sm leading-snug">{c.line}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Story() {
   return (
     <section id="story" aria-labelledby="story-title" className="mt-8">
@@ -290,20 +347,7 @@ function Card({
 function HowPanel() {
   return (
     <div>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Who does what">
-        {PEOPLE.map((p) => (
-          <li key={p.name} className="rounded-xl border bg-card p-3 text-center">
-            <p className="text-4xl" aria-hidden="true">
-              {p.icon}
-            </p>
-            <h3 className="font-bold leading-snug">{p.name}</h3>
-            <p className="text-xs font-bold text-primary">{p.role}</p>
-            <p className="mt-1 text-sm leading-snug">{p.line}</p>
-          </li>
-        ))}
-      </ul>
-
-      <ol className="mt-5 grid gap-2 lg:grid-cols-5" aria-label="The flow">
+      <ol className="grid gap-2 lg:grid-cols-5" aria-label="The flow">
         {FLOW.map((f, i) => (
           <li
             key={f.title}
@@ -827,6 +871,7 @@ export function Landing({ initialTab = "how" }: { initialTab?: TabId }) {
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
+        <Chain />
         <Story />
         <Explore initialTab={initialTab} />
         <Referrals />
