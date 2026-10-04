@@ -1,4 +1,4 @@
-// Google Business Profile listing pack built ONLY from answers the household champion approved (pure, no I/O).
+// Google Business Profile listing pack built ONLY from answers Noor approved (pure, no I/O).
 // Nothing is sent to Google: a person creates or claims the profile at business.google.com and pastes this in.
 // Fields that the ten recorded answers cannot supply (name, phone, hours, photos) stay "needs input"; nothing is invented.
 // UNVERIFIED Wolof: written by Claude, not checked by a native speaker (see champion.templates.ts).

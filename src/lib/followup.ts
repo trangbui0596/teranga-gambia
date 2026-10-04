@@ -1,5 +1,5 @@
 // Follow-up to tourists. When the system is not sure, the visitor can reply NOTIFY and is messaged once Noor's answer exists
-// (after the household champion approves it in the weekly sync). Fixed texts in English, German and Dutch. Pure, no I/O.
+// (after Noor approves it in the weekly sync). Fixed texts in English, German and Dutch. Pure, no I/O.
 export type FollowLang = "en" | "de" | "nl";
 
 export const NOTIFY_HINT: Record<FollowLang, string> = {

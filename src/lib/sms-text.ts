@@ -193,7 +193,7 @@ export function listingSms(p: ListingPack, lang: CoachLanguage = "wo"): string {
   return withOptOut(lines.join("\n"));
 }
 
-/** Receipt when the household champion approves one of Noor's answers. */
+/** Receipt when Noor approves one of her answers. */
 export function approvalSms(topic: string, p: ListingPack, lang: CoachLanguage = "wo"): string {
   const wo = lang === "wo";
   const cardNo = TOPIC_CARD[topic];

@@ -904,7 +904,7 @@ async function smsCopyNote(body: string): Promise<string> {
   return `\n\n📲 ${line}`;
 }
 
-/** Receipt to Noor when the household champion approves one of her answers (set SMS_RECEIPTS=off to turn off). */
+/** Receipt to Noor when Noor approves one of her answers (set SMS_RECEIPTS=off to turn off). */
 async function notifyApproval(answerId: string) {
   if (process.env["SMS_RECEIPTS"] === "off") return;
   try {

@@ -48,7 +48,7 @@ const NOTICE_DEMO = visitorNotice(
 );
 const SMS_EXAMPLES = [
   {
-    label: "After the household champion approves an answer",
+    label: "After Noor approves an answer",
     text: approvalSms("price", SAMPLE_PACK, "wo"),
   },
   { label: "When the community champion posts a notice", text: alertSms("road", "Tendaba road") },
