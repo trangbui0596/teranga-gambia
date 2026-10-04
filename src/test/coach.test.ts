@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildActions, countThemes, formatCoach, isFresh, toStoredRun, verifiedPrices, MAX_MSG, type StoredRun } from "@/lib/coach";
+import { buildActions, countThemes, formatCoach, isFresh, toStoredRun, verifiedPrices, MAX_MSG, MAX_MSG_WO, THEMES, type StoredRun } from "@/lib/coach";
 import { getCoaching } from "@/lib/coach.server";
+import { BACK_TRANSLATION_DRIFT_KEYS, COACH_TEMPLATES, THEME_TEMPLATES, TOPIC_TEMPLATES } from "@/lib/coach.templates";
 
 // Test data only (hand-written labels, not real reviews).
 const lab = (themes: Array<[string, string]>) => ({ themes: themes.map(([theme, sentiment]) => ({ theme, sentiment })), prices: [] });
@@ -32,21 +33,81 @@ describe("coach theme counting", () => {
 describe("thin data rule", () => {
   it("under 10 reviews: warning and no actions", () => {
     expect(buildActions([{ theme: "price_value", sentiment: "negative", count: 3 }], 9)).toEqual([]);
-    const [msg] = formatCoach(base({ reviews_count: 9, actions: [] }));
+    const [msg] = formatCoach(base({ reviews_count: 9, actions: [] }), "en");
     expect(msg).toContain("Not enough real review data to coach reliably (9 reviews from 3 places)");
     expect(msg).not.toContain("Actions:");
   });
   it("10+ reviews: actions tied to counts and topics; message has source, label, limits", () => {
     const a = buildActions([{ theme: "price_value", sentiment: "negative", count: 3 }], 12);
     expect(a[0]).toBe('Price/value: 3 of 12 reviews complain. Record or improve your "price" answer.');
-    const [msg] = formatCoach(base({ actions: a }));
+    const [msg] = formatCoach(base({ actions: a }), "en");
     expect(msg).toContain("Source: Google Maps public reviews");
     expect(msg).toContain("may be wrong");
     expect(msg).toContain("not complete");
     expect(msg.length).toBeLessThanOrEqual(MAX_MSG);
   });
   it("no reviews: says so", () => {
-    expect(formatCoach(base({ reviews_count: 0, themes: [] }))[0]).toContain("returned no reviews");
+    expect(formatCoach(base({ reviews_count: 0, themes: [] }), "en")[0]).toContain("returned no reviews");
+  });
+});
+
+describe("fixed bilingual coaching templates", () => {
+  const placeholders = (value: string) => [...value.matchAll(/\{\w+\}/g)].map((m) => m[0]).sort();
+  const digits = (value: string) => value.match(/\d+/g) ?? [];
+
+  it("has Wolof and English with matching placeholders and digits for every template", () => {
+    for (const template of Object.values(COACH_TEMPLATES)) {
+      expect(template.wo).toBeTruthy();
+      expect(template.en).toBeTruthy();
+      expect(placeholders(template.wo)).toEqual(placeholders(template.en));
+      expect(digits(template.wo)).toEqual(digits(template.en));
+    }
+    for (const theme of THEMES) {
+      for (const sentiment of ["positive", "negative"] as const) {
+        expect(THEME_TEMPLATES[theme].wo[sentiment]).toBeTruthy();
+        expect(THEME_TEMPLATES[theme].en[sentiment]).toBeTruthy();
+      }
+    }
+    for (const topic of Object.values(TOPIC_TEMPLATES)) {
+      expect(topic.wo).toBeTruthy();
+      expect(topic.en).toBeTruthy();
+    }
+    expect(BACK_TRANSLATION_DRIFT_KEYS).toEqual(["header", "source", "recordImprove", "ensureCovers", "notReady", "loadError"]);
+  });
+
+  it("renders identical data numbers under both language caps and labels Wolof", () => {
+    const run = base({
+      places_count: 15, reviews_count: 70, date_from: "2019-04-06", date_to: "2026-08-12",
+      price_count: 4, price_min: 1500, price_max: 2500, price_currency: "GMD",
+      themes: THEMES.map((theme, i) => ({ theme, sentiment: i % 2 ? "negative" as const : "positive" as const, count: 60 - i })),
+      actions: ["legacy persisted action", "legacy persisted action", "legacy persisted action", "legacy persisted action", "legacy persisted action"],
+    });
+    const wo = formatCoach(run, "wo");
+    const en = formatCoach(run, "en");
+    for (const message of wo.filter((x): x is string => x !== null)) {
+      expect(message.length).toBeLessThanOrEqual(MAX_MSG_WO);
+      expect(message).toContain("Machine-translated Wolof, unverified");
+    }
+    for (const message of en.filter((x): x is string => x !== null)) expect(message.length).toBeLessThanOrEqual(MAX_MSG);
+    const dataNumbers = [15, 70, 2019, 4, 6, 2026, 8, 12, 1500, 2500, ...run.themes.map((t) => t.count)];
+    const joinedWo = wo.filter(Boolean).join("\n");
+    const joinedEn = en.filter(Boolean).join("\n");
+    for (const number of dataNumbers) {
+      expect(joinedWo).toContain(String(number));
+      expect(joinedEn).toContain(String(number));
+    }
+    expect(joinedWo).not.toContain("legacy persisted action");
+    expect(joinedEn).not.toContain("legacy persisted action");
+  });
+
+  it("renders without calling AI", async () => {
+    let calls = 0;
+    const ai = async () => { calls++; return ""; };
+    const cached = { ...base(), fetched_at: new Date().toISOString() };
+    const store = { latest: async () => cached, save: async () => undefined };
+    const result = await getCoaching(ai, 1000, store, undefined, true, "wo");
+    expect(result.messages[0]).toContain("Wolof bu masin tekki, wóoragul");
+    expect(calls).toBe(0);
   });
 });
 
