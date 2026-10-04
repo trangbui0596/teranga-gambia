@@ -4,7 +4,7 @@ import { HOLDOUT_RESULTS } from "./match-eval-results";
 
 export const REPO_URL = "https://github.com/trangbui0596/teranga-gambia";
 /** Set to the demo video link once it is uploaded; the "Watch the demo" button appears automatically. */
-export const VIDEO_URL = "";
+export const VIDEO_URL = "/demo.mp4";
 /** Add screenshots after filming (files in public/screens/); the "Screens" tab appears automatically. */
 export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 
