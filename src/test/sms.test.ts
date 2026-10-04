@@ -4,7 +4,7 @@ import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "@/lib/sms"
 
 describe("Teranga A2P message formats", () => {
   it("formats the exact call summary", () => {
-    expect(callSummarySms(7)).toBe("Teranga: Got 7 of 10 answers from your call. Your family helper will check them. Reply STOP to opt out.");
+    expect(callSummarySms(7, 10)).toBe("Teranga: Got 7 of 10 answers from your call. Your family helper will check them. Reply STOP to opt out.");
   });
 
   it("formats the digest with three topics and questions at most", () => {
