@@ -30,7 +30,7 @@ export function questionTwimlBody(step: number, positions: number[], opts: { gre
   const r = opts.retry ? 1 : 0;
   const action = `/api/public/voice-recorded?n=${step}&amp;r=${r}`;
   // Demo only: English words for the audience. Real Noor would hear a recorded Wolof prompt (<Play>) instead.
-  const spoken = `Question ${SPOKEN_ORDINAL[step - 1]}. ${SPOKEN_TOPIC[position] ?? ""}.`;
+  const spoken = `Question ${SPOKEN_ORDINAL[step - 1]}. ${(position ? SPOKEN_TOPIC[position] : "") ?? ""}.`;
   return [
     opts.greet ? `<Say>Hello Noor. Answer each question after the beep, then press hash.</Say><Pause length="1"/>` : "",
     opts.retry ? `<Say>Please answer again.</Say>` : "",

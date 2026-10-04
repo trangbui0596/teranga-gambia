@@ -34,7 +34,7 @@ export const Route = createFileRoute("/api/public/voice-recorded")({
 
         if (empty && r === 0) return lib.twimlQuestion(n, { retry: true }); // ask once more, then move on
         if (!empty) {
-          try { await lib.storeCallRecording(callSid, positions[n - 1], url!); } catch (e) { console.error("voice-recorded store failed", e); }
+          try { await lib.storeCallRecording(callSid, positions[n - 1]!, url!); } catch (e) { console.error("voice-recorded store failed", e); }
         }
         if (n >= positions.length) {
           try { await lib.sendCallSummary(callSid); } catch (e) { console.error("call summary failed", e); }
