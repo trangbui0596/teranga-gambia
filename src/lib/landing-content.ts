@@ -75,13 +75,13 @@ export const CHANNELS = [
     use: "Tourists ask by voice or text. The champion syncs once a week.",
   },
 ];
-export const DEMO_CHANNEL_TITLE = "Demo note: WhatsApp stands in for SMS, for testing";
+export const DEMO_CHANNEL_TITLE = "Demo note: WhatsApp is a temporary stand-in for SMS";
 export const DEMO_CHANNEL_NOTE =
-  "Noor and the champions are built for SMS and voice, so they work with no internet. US carrier registration for SMS is still in review, so until it is approved this demo runs the same commands on WhatsApp. The Try SMS box below shows the exact SMS texts. Tourists use WhatsApp by design: they have data, and it carries voice.";
+  "Teranga is built for SMS and voice: that is what Noor and the champions use, so it works with no internet. The US carrier has not yet approved our SMS registration, so for now this demo runs the same commands on WhatsApp. Once the carrier approves, the same texts go out by SMS. The Try SMS box below shows the exact SMS texts. Tourists use WhatsApp by design: they have data, and it carries voice.";
 export const OFFLINE_INTRO =
   "Noor never needs the internet. Her household champion needs it about once a week, and tourists need it to ask.";
 export const OFFLINE_NOTE =
-  "US carrier registration for SMS is still in review, so the live demo runs the same commands on WhatsApp, which mirrors them. The simulator on this page shows the SMS texts.";
+  "The US carrier has not approved our SMS registration yet, so WhatsApp is a temporary stand-in: the live demo runs the same commands there. The simulator on this page shows the SMS texts.";
 export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sample inputs:";
 
 export const COMMUNITY_TITLE = "Neighbours who look out for each other";
@@ -273,6 +273,29 @@ export const STORYBOOK: StoryPage[] = [
   },
 ];
 
+/** Latest weekly coaching run (4 Oct 2026), copied from the live database (tables coach_runs and coach_themes). Counts only: no review text. */
+export const REVIEWS_READ = {
+  reviews: 70,
+  places: 15,
+  from: "2019",
+  to: "2026",
+  themeMentions: 155,
+  positive: 140,
+  negative: 15,
+  themes: [
+    { theme: "Guide quality", positive: 56, negative: 1 },
+    { theme: "Wildlife", positive: 30, negative: 2 },
+    { theme: "Booking and communication", positive: 15, negative: 1 },
+    { theme: "Price and value", positive: 11, negative: 2 },
+    { theme: "Food", positive: 10, negative: 1 },
+    { theme: "Safety", positive: 5, negative: 2 },
+    { theme: "Duration", positive: 5, negative: 2 },
+    { theme: "Punctuality", positive: 4, negative: 0 },
+    { theme: "Boat equipment", positive: 2, negative: 2 },
+    { theme: "Children", positive: 2, negative: 2 },
+  ],
+} as const;
+
 export const COACHING_PROMISE = "Coaching comes from real public Google Maps reviews. Nothing raw is stored.";
 
 /** What has been analysed so far, with the numbers measured from the live database and the fixtures in this repo (sources in the README).
@@ -347,7 +370,7 @@ export const PRIVACY = [
 ];
 
 export const SMS_SIM_NOTE =
-  "Simulation: this shows the text Teranga would send. It uses the same code and the demo data, and nothing is sent to any phone. Real SMS delivery in the US waits for carrier registration.";
+  "Simulation: this shows the text Teranga would send. It uses the same code and the demo data, and nothing is sent to any phone. Real SMS delivery in the US waits for carrier approval, so WhatsApp is only a temporary stand-in in the demo.";
 export const SMS_SIM_CHIPS = {
   noor: ["REVIEW", "COACH", "LISTING", "WEEK", "HELP"],
   visitor: ["How much does it cost?", "Where do we meet?", "Do I need a visa?", "STATUS"],

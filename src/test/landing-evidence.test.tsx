@@ -132,7 +132,29 @@ describe("demo channel note", () => {
     const h = html("real");
     expect(h).toContain("Demo note");
     expect(h).toContain(DEMO_CHANNEL_TITLE);
-    expect(DEMO_CHANNEL_NOTE).toContain("carrier registration for SMS is still in review");
+    expect(DEMO_CHANNEL_NOTE).toContain("has not yet approved our SMS registration");
     expect(DEMO_CHANNEL_NOTE).toContain("Tourists use WhatsApp by design");
+  });
+});
+
+import { REVIEWS_READ } from "@/lib/landing-content";
+describe("real reviews read by the AI, on the front page", () => {
+  it("shows the amount of data and the promise without opening any tab", () => {
+    const h = html("sms");
+    expect(h).toContain("70 real public Google Maps reviews of 15 Gambian tourism operators");
+    expect(h).toContain("Nothing raw is stored");
+    expect(h).toContain("theme mentions found");
+  });
+  it("the totals match the per-theme counts", () => {
+    const pos = REVIEWS_READ.themes.reduce((a, t) => a + t.positive, 0);
+    const neg = REVIEWS_READ.themes.reduce((a, t) => a + t.negative, 0);
+    // The ten rows are every theme in the run (coach_themes), so the rows add up to the totals exactly.
+    expect(pos).toBe(REVIEWS_READ.positive);
+    expect(neg).toBe(REVIEWS_READ.negative);
+    expect(pos + neg).toBe(REVIEWS_READ.themeMentions);
+  });
+  it("the demo note says WhatsApp is temporary until the carrier approves SMS", () => {
+    expect(DEMO_CHANNEL_TITLE).toContain("temporary stand-in for SMS");
+    expect(DEMO_CHANNEL_NOTE).toContain("has not yet approved our SMS registration");
   });
 });

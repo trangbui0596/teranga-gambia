@@ -125,7 +125,7 @@ Noor answers 10 fixed question cards. Each week the AI also reads the questions 
 
 Coaching comes from real public Google Maps reviews. Nothing raw is stored. Measured from the live database and the files in this repository:
 
-- **70 real public Google Maps reviews** from **15 Gambian tour operators** (written 2019 to 2026; latest weekly run, 4 Oct 2026) were read by the AI for themes and prices. Only counts are kept.
+- **70 real public Google Maps reviews** from **15 Gambian tourism operators** (written 2019 to 2026; latest weekly run, 4 Oct 2026) were read by the AI for themes and prices: 155 theme mentions found (140 positive, 15 complaints; guide quality 56 positive, wildlife 30, booking and communication 15). Only counts are kept. The front page shows this section without opening any tab.
 - **185 real visitor questions** from the public FAQ pages of 24 Gambian operators: 82 tuned the matching rules, 103 were kept back and tested once, untuned.
 - **54 Wolof sentences** (open FLEURS/FLORES set) checked the AI's Wolof to English translation.
 - No model was trained on any of it. The numbers are small and say so.
@@ -153,7 +153,7 @@ npx tsc --noEmit -p .
 - Wolof to English translation was scored on 54 sentences from the open FLEURS/FLORES set: chrF++ 47.6, BLEU 22.1 (indicative; news-style text, not Noor's short answers). Method, pairs and caveats: [docs/eval/WOLOF_TRANSLATION_CHECK.md](https://github.com/trangbui0596/hacknation-worldbank-small-ai-for-tourism/blob/claude/amazing-wozniak-hwlb9i/docs/eval/WOLOF_TRANSLATION_CHECK.md). The check runs through the protected route `/api/public/eval-translate`.
 - Matching was tested on real visitor questions from Gambian operators' public FAQ pages (82 for tuning, 103 untuned held-out). Results are in `src/lib/match-eval-results.ts` and on the page. The labels are our own judgment and the questions are English only.
 - Speech recognition sometimes writes Wolof in the wrong alphabet; the app retries once and flags the answer instead of showing it. Prices are checked after translation, and a mismatch is flagged for Noor.
-- SMS delivery is pending US carrier registration, so summaries arrive on WhatsApp through Twilio's sandbox.
+- SMS delivery is pending US carrier approval, so WhatsApp is a temporary stand-in for SMS in the demo (a visible note under the hero says so). Tourists use WhatsApp by design.
 - The partner recommendation, the partner list and the Google listing preview are simulated.
 - Google review data is a small real public sample.
 - The World Bank figures on the landing page show context (tourism is a large share of exports, about half the population is offline, mobile subscriptions outnumber people). They do not show lost enquiries or that Teranga fixes anything.
@@ -186,7 +186,7 @@ Details and what the data did not show: [docs/DATA_INSIGHTS.md](https://github.c
 - **ElevenLabs**: Scribe speech-to-text (Wolof recordings, tourist voice notes) and text-to-speech (English, German, Dutch).
 - **Google Maps Platform (Places)**: public reviews for weekly coaching.
 - **World Bank WDI API**: every statistic, re-checked by `scripts/verify-evidence.mjs`.
-- TanStack Start, React, TypeScript, Tailwind CSS; 509 unit and smoke tests.
+- TanStack Start, React, TypeScript, Tailwind CSS; 512 unit and smoke tests.
 
 ## Docs
 
