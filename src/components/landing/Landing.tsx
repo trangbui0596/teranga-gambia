@@ -134,41 +134,15 @@ function Hero() {
         links to its data page.
       </p>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <blockquote className="rounded-xl border-2 border-primary bg-card p-4">
-          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
-            Teranga closes the gap
-          </p>
-          <p className="text-base font-semibold leading-snug sm:text-lg">{PROBLEM_STATEMENT}</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This is the gap we target, not a measured result. {NOT_MEASURED}
-          </p>
-        </blockquote>
-        <div
-          className="flex flex-col items-stretch justify-center gap-2 text-center"
-          aria-label="The gap Teranga closes"
-        >
-          <div className="rounded-xl border bg-card px-3 py-2">
-            <p className="text-xl" aria-hidden="true">
-              🧳
-            </p>
-            <p className="font-bold">Tourists</p>
-            <p className="text-sm text-muted-foreground">English · German · Dutch</p>
-          </div>
-          <div className="rounded-xl bg-primary px-3 py-1.5 font-bold text-primary-foreground">
-            <span aria-hidden="true">↕ </span>
-            <span className="font-display text-lg">Teranga</span>
-            <span aria-hidden="true"> ↕</span>
-          </div>
-          <div className="rounded-xl border bg-card px-3 py-2">
-            <p className="text-xl" aria-hidden="true">
-              📞
-            </p>
-            <p className="font-bold">Noor (fictional)</p>
-            <p className="text-sm text-muted-foreground">Wolof · basic phone</p>
-          </div>
-        </div>
-      </div>
+      <blockquote className="mx-auto mt-5 max-w-4xl rounded-xl border-2 border-primary bg-card p-4 text-center sm:p-6">
+        <p className="mb-2 text-sm font-bold uppercase tracking-widest text-primary">
+          Teranga closes the gap
+        </p>
+        <p className="text-base font-semibold leading-snug sm:text-xl">{PROBLEM_STATEMENT}</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          This is the gap we target, not a measured result. {NOT_MEASURED}
+        </p>
+      </blockquote>
     </section>
   );
 }
