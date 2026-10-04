@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicCoachRunRouteImport } from './routes/api/public/coach-run'
 import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval-agent'
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
+import { Route as ApiPublicEvalTranslateRouteImport } from './routes/api/public/eval-translate'
 import { Route as ApiPublicProcessPendingRouteImport } from './routes/api/public/process-pending'
 import { Route as ApiPublicPurgeRouteImport } from './routes/api/public/purge'
 import { Route as ApiPublicSmsSimRouteImport } from './routes/api/public/sms-sim'
@@ -42,6 +43,11 @@ const ApiPublicEvalAgentRoute = ApiPublicEvalAgentRouteImport.update({
 const ApiPublicEvalMatchRoute = ApiPublicEvalMatchRouteImport.update({
   id: '/api/public/eval-match',
   path: '/api/public/eval-match',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicEvalTranslateRoute = ApiPublicEvalTranslateRouteImport.update({
+  id: '/api/public/eval-translate',
+  path: '/api/public/eval-translate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicProcessPendingRoute = ApiPublicProcessPendingRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/api/public/coach-run': typeof ApiPublicCoachRunRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/eval-translate': typeof ApiPublicEvalTranslateRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/sms-sim': typeof ApiPublicSmsSimRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/api/public/coach-run': typeof ApiPublicCoachRunRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/eval-translate': typeof ApiPublicEvalTranslateRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/sms-sim': typeof ApiPublicSmsSimRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/api/public/coach-run': typeof ApiPublicCoachRunRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
+  '/api/public/eval-translate': typeof ApiPublicEvalTranslateRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
   '/api/public/purge': typeof ApiPublicPurgeRoute
   '/api/public/sms-sim': typeof ApiPublicSmsSimRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/api/public/coach-run'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/eval-translate'
     | '/api/public/process-pending'
     | '/api/public/purge'
     | '/api/public/sms-sim'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/api/public/coach-run'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/eval-translate'
     | '/api/public/process-pending'
     | '/api/public/purge'
     | '/api/public/sms-sim'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/api/public/coach-run'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
+    | '/api/public/eval-translate'
     | '/api/public/process-pending'
     | '/api/public/purge'
     | '/api/public/sms-sim'
@@ -201,6 +213,7 @@ export interface RootRouteChildren {
   ApiPublicCoachRunRoute: typeof ApiPublicCoachRunRoute
   ApiPublicEvalAgentRoute: typeof ApiPublicEvalAgentRoute
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
+  ApiPublicEvalTranslateRoute: typeof ApiPublicEvalTranslateRoute
   ApiPublicProcessPendingRoute: typeof ApiPublicProcessPendingRoute
   ApiPublicPurgeRoute: typeof ApiPublicPurgeRoute
   ApiPublicSmsSimRoute: typeof ApiPublicSmsSimRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/eval-match'
       fullPath: '/api/public/eval-match'
       preLoaderRoute: typeof ApiPublicEvalMatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/eval-translate': {
+      id: '/api/public/eval-translate'
+      path: '/api/public/eval-translate'
+      fullPath: '/api/public/eval-translate'
+      preLoaderRoute: typeof ApiPublicEvalTranslateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/process-pending': {
@@ -321,6 +341,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCoachRunRoute: ApiPublicCoachRunRoute,
   ApiPublicEvalAgentRoute: ApiPublicEvalAgentRoute,
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
+  ApiPublicEvalTranslateRoute: ApiPublicEvalTranslateRoute,
   ApiPublicProcessPendingRoute: ApiPublicProcessPendingRoute,
   ApiPublicPurgeRoute: ApiPublicPurgeRoute,
   ApiPublicSmsSimRoute: ApiPublicSmsSimRoute,
