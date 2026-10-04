@@ -7,9 +7,9 @@ const heard = () => "juni ak juróom téeméer dalasi (about 1500)";
 
 describe("champion messages: Wolof first, English second", () => {
   it("bi puts Wolof first and English below, sl joins on one line", () => {
-    expect(bi("wo", "en")).toBe("wo\n— en");
-    expect(bi("wo", "en1\nen2")).toBe("wo\n\nEN:\nen1\nen2");
-    expect(sl("wo", "en")).toBe("wo / en");
+    expect(bi("wo", "en")).toBe("wo\n_(en)_");
+    expect(bi("w1\nw2", "en1\nen2")).toBe("w1 _(en1)_\nw2 _(en2)_");
+    expect(sl("wo", "en")).toBe("wo _(en)_");
   });
 
   it("every question-card topic has a Wolof word", () => {
@@ -24,11 +24,16 @@ describe("champion messages: Wolof first, English second", () => {
     const { text } = formatPendingQueue(
       [{ id: "a", transcript_src: "Njëg bi mooy 1500 dalasi", flags: ["machine-translated"], is_sample: false, position: 1, topic: "price" }],
       0, "unverified", heard);
-    expect(text).toContain("Pending: 1.");
-    expect(text).toContain(W.pending);
-    expect(text).toContain("njekk / price");
+    expect(text).toContain("Answer 1 of 1");
+    expect(text).toContain("Tontu 1 ci 1");
+    expect(text).toContain("Njekk");
     expect(text).toContain("1500");
-    expect(text).toContain("1 approve, 2 re-record, 3 needs bilingual reviewer");
+    expect(text).toContain("_(approve)_");
+    expect(text).toContain("_(record again)_");
+    expect(text).toContain("_(ask a bilingual reviewer)_");
+    expect(text).toContain("Wolof bu masin tekki");
+    // routine flags are not shown, real warnings are
+    expect(text).not.toContain("machine-translated");
     expect(text.length).toBeLessThan(1500);
   });
 
@@ -51,5 +56,22 @@ describe("STOP is reserved by Twilio", () => {
     const { ROUND_HINT, recordingHelpText } = await import("@/lib/champion-commands");
     const all = [ROUND_HINT, recordingHelpText(1, 10), W.roundHint, W.help(1, 10), W.menu].join("\n");
     expect(all).not.toMatch(/\bSTOP\b/);
+  });
+});
+
+describe("review message: flags and confirmations", () => {
+  const base = { id: "a", transcript_src: "t", is_sample: false, position: 1, topic: "price" };
+  it("shows real warnings only", () => {
+    const { text } = formatPendingQueue([{ ...base, flags: ["machine-translated", "wolof unverified (no native reviewer yet)", "round-trip mismatch"] }], 0, "x", () => "none found");
+    expect(text).toContain("⚠️ round-trip mismatch");
+    expect(text).not.toContain("wolof unverified (no native");
+  });
+  it("asks to confirm unclear numbers", () => {
+    const { text } = formatPendingQueue([{ ...base, flags: [] }], 0, "x", () => "Price words heard but number unclear: please confirm");
+    expect(text).toContain("Wóorlul ko");
+  });
+  it("says how many are still processing", () => {
+    const { text } = formatPendingQueue([{ ...base, flags: [] }], 2, "x", () => "none found");
+    expect(text).toContain("still processing");
   });
 });

@@ -13,7 +13,7 @@ import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, t
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
-import { W, bi, sl, topicWo } from "./champion.templates";
+import { W, bi, sl, topicWo, topicEn, UNVERIFIED_FOOTER } from "./champion.templates";
 
 type Lang = "en" | "de" | "nl";
 const FIELD = { en: "english", de: "german", nl: "dutch" } as const;
@@ -321,7 +321,7 @@ function pipelineDeps(): PipelineDeps {
     roundtrip: (src, en, signal) => roundtrip(src, en, signal),
     hash: (p) => hashPhone(p),
     notify: (phone, text) => sendWhatsApp(phone, text),
-    notifyText: (row, tx) => [`${sl(W.heard(row.position ?? "?"), `Question ${row.position ?? "?"} heard`)}. ${sl(W.wolofTranscript, "Wolof transcript")} (${WOLOF_LABEL}):`, tx, `${sl(W.numbersHeard, "Numbers heard")}: ${numbersHeard(tx)}`].join("\n"),
+    notifyText: (row, tx) => [`${sl(W.heard(row.position ?? "?"), `Question ${row.position ?? "?"} heard`)}`, `“${tx}”`, "", `${sl(W.numbersLabel, "Numbers")}`, numbersHeard(tx), "", UNVERIFIED_FOOTER].join("\n"),
   };
 }
 
@@ -423,9 +423,9 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
   if (pinMatch) {
     if (safeEqual(pinMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
-      return bi(W.menu, "Champion mode (demo shortcut).\nSTART = record the 10 questions\nREVIEW = review pending answers\nEXIT = back to visitor mode");
+      return `${W.menuTitle}\n${bi(W.menu, W.menuEn)}`;
     }
-    return bi(W.wrongPin, "Wrong PIN (demo shortcut).");
+    return bi(W.wrongPin, "Wrong PIN.");
   }
   // In a recording round EXIT ends the round (handled in champion()), it does not leave champion mode.
   if (upper === "EXIT" && !(c.role === "champion" && c.state === "recording")) {
@@ -659,8 +659,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   const db = supabaseAdmin;
   const { data: questions } = await db.from("questions").select("id, position, topic").order("position");
   const qs = questions ?? [];
-  const ask = (n: number) => `${sl(`Laaj ${n} ci ${TOTAL_QUESTIONS}`, `Question ${n} of ${TOTAL_QUESTIONS}`)}: ${topicWo(qs[n - 1]?.topic)} / ${qs[n - 1]?.topic ?? "?"}\n${sl("Tontul ak kàddu (voice note).", "Reply with a voice note.")}`;
-  const roundHint = bi(W.roundHint, ROUND_HINT);
+  const ask = (n: number) => `*Laaj ${n} ci ${TOTAL_QUESTIONS}* · ${topicWo(qs[n - 1]?.topic)}\n_Question ${n} of ${TOTAL_QUESTIONS} · ${topicEn(qs[n - 1]?.topic)}_\n🎙️ ${sl("Tontul ak kàddu", "Reply with a voice note")}`;
+  const roundHint = `_${W.roundHint}_`;
 
   // Confirmation turn for an agent-proposed review decision: only an explicit YES executes it.
   if (c.pending_action) {
@@ -692,7 +692,7 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
 
   if (c.state === "recording" && c.current_question_position && !cmd) {
     const n = c.current_question_position;
-    if (!mediaUrl) return `${bi(W.pleaseSend(n), `Please send a voice note for question ${n}.`)}\n${roundHint}\n${ask(n)}`;
+    if (!mediaUrl) return `${bi(W.pleaseSend(n), `Please send a voice note for question ${n}.`)}\n\n${ask(n)}\n\n${roundHint}`;
     const q = qs[n - 1];
     if (!q) return "Question not found.";
     let answerId: string | null = null;
@@ -709,10 +709,10 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     const next = n + 1;
     if (next > TOTAL_QUESTIONS) {
       await save({ state: "idle", current_question_position: null });
-      return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}. ${sl(W.roundComplete, "Round complete")}. ${sl(W.replyReview, "Reply REVIEW to review")}.`, finishFirst: answerId };
+      return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}\n${sl(W.roundComplete, "Round complete. Send REVIEW to review.")}`, finishFirst: answerId };
     }
     await save({ current_question_position: next });
-    return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}.\n${roundHint}\n\n${ask(next)}`, finishFirst: answerId };
+    return { text: `${sl(W.gotQuestion(n), `Got question ${n}`)}\n\n${ask(next)}\n\n${roundHint}`, finishFirst: answerId };
   }
 
   if (upper === "REVIEW") {
@@ -740,8 +740,8 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
     if (m) {
     const status = { "1": "approved", "2": "rerecord", "3": "needs_bilingual" }[m[1]!] as "approved" | "rerecord" | "needs_bilingual";
     if (!(await applyReview(c.current_review_answer_id, status))) return STILL_PROCESSING;
-    const label = { approved: sl(W.approved.replace(/\.$/, ""), "Approved"), rerecord: sl(W.rerecord.replace(/\.$/, ""), "Marked for re-record"), needs_bilingual: sl(W.bilingual.replace(/\.$/, ""), "Sent to bilingual reviewer") }[status];
-    return `${label}.\n\n${await showNextPending(save)}`;
+    const label = { approved: sl(W.approved, "Approved"), rerecord: sl(W.rerecord, "Marked for re-record"), needs_bilingual: sl(W.bilingual, "Sent to a bilingual reviewer") }[status];
+    return `${label}\n\n${await showNextPending(save)}`;
     }
   }
 

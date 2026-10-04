@@ -10,7 +10,7 @@ describe("champion review queue", () => {
   it("never lists or counts seeded sample answers", () => {
     const { text, answerId } = formatPendingQueue([item("s1", true), item("s2", true), item("r1", false)], 0, "unverified", heard);
     expect(answerId).toBe("r1");
-    expect(text).toContain("Pending: 1.");
+    expect(text).toContain("Answer 1 of 1");
     expect(text).not.toContain("Sample");
     expect(text).not.toContain("s1");
   });
@@ -18,7 +18,7 @@ describe("champion review queue", () => {
   it("keeps real answers oldest first", () => {
     const { answerId, text } = formatPendingQueue([item("old", false), item("new", false)], 0, "unverified", heard);
     expect(answerId).toBe("old");
-    expect(text).toContain("Pending: 2.");
+    expect(text).toContain("Answer 1 of 2");
   });
 
   it("says no pending answers without mentioning samples", () => {
