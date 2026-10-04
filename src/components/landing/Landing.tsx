@@ -8,6 +8,7 @@ import {
   COMMUNITY_TITLE,
   EXTRAS,
   NOT_MEASURED,
+  PROBLEM_STATEMENT,
   OFFLINE_EXAMPLE_NOTE,
   OFFLINE_INTRO,
   OFFLINE_NOTE,
@@ -160,20 +161,9 @@ function Hero() {
           <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
             Teranga closes the gap
           </p>
-          <p className="text-lg font-semibold leading-snug">
-            Because of this tool, a Gambian tour operator will be able to answer visitors in
-            English, German and Dutch with her own pre-approved words instead of missing enquiries
-            she cannot read or reply to.
-          </p>
+          <p className="text-lg font-semibold leading-snug">{PROBLEM_STATEMENT}</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            The need: only <Stat id="online" /> of people in The Gambia used the Internet in{" "}
-            {evidence("online").year}, while tourism brought in <Stat id="exportShare" /> of exports
-            in {evidence("exportShare").year}. This is the gap we target, not a measured result.{" "}
-            {NOT_MEASURED}
-          </p>
-          <p className="mt-2 text-sm font-semibold">
-            Noor needs no internet: she records by phone call and keeps her coaching, Google listing
-            progress and community notices as plain SMS.
+            This is the gap we target, not a measured result. {NOT_MEASURED}
           </p>
         </blockquote>
 

@@ -22,6 +22,10 @@ export const TABS: Array<{ id: TabId; label: string }> = [
 export const PROBLEM_SUB =
   "Visitors write in English, German and Dutch. The people who run the tours speak Wolof and work from a basic phone. Every enquiry an operator can’t read or answer is a booking she can’t win.";
 
+/** World Bank format: Because of this tool, [user] will [action] by [when] that they would otherwise [not do / do late / do worse]; we know because [evidence]. */
+export const PROBLEM_STATEMENT =
+  "Because of this tool, a Gambian tour operator will answer visitors in English, German and Dutch with her own pre-approved words within a week of one phone call, backed by a household champion and a community champion and keeping her coaching, Google listing progress and community notices as plain SMS, work she would otherwise miss, answer late or answer badly because she cannot read or reply to online enquiries; we know because the World Bank figures above show how much tourism earns and how many Gambians are still offline.";
+
 export const NOT_MEASURED =
   "We did not measure how many enquiries are lost today, and we claim no number for it.";
 
