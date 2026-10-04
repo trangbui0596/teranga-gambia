@@ -49,6 +49,7 @@ Twilio-signed (signature checked with `TWILIO_AUTH_TOKEN`):
 | Route | Purpose |
 | --- | --- |
 | `/api/public/whatsapp-webhook` | WhatsApp messages from helper and visitors |
+| `/api/public/sms-webhook` | Inbound SMS: Noor's number can text COACH, LISTING, WEEK or HELP (EN for English) |
 | `/api/public/voice-incoming` | Incoming call from Noor, asks the questions |
 | `/api/public/voice-recorded` | Recording callback (set by the call's TwiML) |
 | `/api/public/voice-status` | Call ended; finishes processing, sends the summary |
@@ -67,14 +68,21 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 ## Secrets (names only, set in the project secrets, never in code)
 
 - Required: `TWILIO_AUTH_TOKEN`, `TWILIO_API_KEY`, `LOVABLE_API_KEY`, `ELEVENLABS_API_KEY`, `GOOGLE_MAPS_API_KEY`, `DEMO_CHAMPION_PIN`, `DEMO_SMS_NUMBER`, `DEMO_WHATSAPP_NUMBER`, `TWILIO_SMS_FROM`, `DIGEST_TRIGGER_SECRET`, `PHONE_HASH_SALT`.
-- Optional: `GOOGLE_REVIEW_URL`, `TWILIO_WEBHOOK_URL`, `CALL_QUESTION_POSITIONS` (default `1,5`, at most 10), `MAX_OUTBOUND_PER_DAY` (default 60).
+- Optional: `SMS_RECEIPTS` (`off` stops approval receipts to Noor), `SMS_VISITOR_MODE` (`on` lets visitors use text-only SMS), `GOOGLE_REVIEW_URL`, `TWILIO_WEBHOOK_URL`, `CALL_QUESTION_POSITIONS` (default `1,5`, at most 10), `MAX_OUTBOUND_PER_DAY` (default 60).
 - Database connection: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (provided by Lovable Cloud).
 
 ## Twilio setup
 
 - **WhatsApp sandbox:** Twilio Console, Messaging, Try it out, Send a WhatsApp message, Sandbox settings. Set "When a message comes in" to `https://<published-url>/api/public/whatsapp-webhook`, HTTP POST.
 - **Voice:** open your Twilio number's Voice Configuration. "A call comes in" goes to `https://<published-url>/api/public/voice-incoming`, and "Call status changes" goes to `https://<published-url>/api/public/voice-status`, both HTTP POST. Only the number in `DEMO_SMS_NUMBER` is accepted.
+- **SMS (optional, for Noor's texts):** your Twilio number's Messaging configuration, "A message comes in" -> `https://<published-url>/api/public/sms-webhook`, HTTP POST. US delivery needs carrier (A2P 10DLC) registration; until then replies fall back to WhatsApp.
 - If Twilio signs a different URL than the server sees, set `TWILIO_WEBHOOK_URL` to the exact URL (voice routes use only its origin).
+
+## Offline SMS, Google listing and the community layer
+
+- **Noor needs no internet.** She records by phone call. Coaching, Google listing progress, approval receipts, community notices and the weekly digest reach her as plain SMS (GSM-7 letters, at most three parts, opt-out line always kept). She can text `COACH`, `LISTING`, `WEEK` or `HELP` (`EN` for English). Wolof SMS text is machine-written and unverified.
+- **Google listing:** `LISTING` (helper, on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the helper can add, and claim steps. Nothing is sent to Google.
+- **Community Circle:** a community champion (`COMMUNITY <PIN>`, demo PIN) posts notices with `ALERT` (flood, closed road, storm, boats paused, tours closed, all clear), sees them with `ALERTS`, checks translations with `BILINGUAL` and sees an overview with `PULSE`. Notices are fixed templates in English, German, Dutch and Wolof, last 24 hours, are sent to members by SMS and appear under every visitor answer, always labeled as a community notice, not an official warning. Visitors can send `STATUS` to see them. Members other than Noor are simulated in the demo.
 
 ## Landing page statistics
 
