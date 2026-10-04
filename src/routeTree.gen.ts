@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicCoachRunRouteImport } from './routes/api/public/coach-run'
 import { Route as ApiPublicEvalAgentRouteImport } from './routes/api/public/eval-agent'
 import { Route as ApiPublicEvalMatchRouteImport } from './routes/api/public/eval-match'
 import { Route as ApiPublicProcessPendingRouteImport } from './routes/api/public/process-pending'
@@ -23,6 +24,11 @@ import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/publi
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCoachRunRoute = ApiPublicCoachRunRouteImport.update({
+  id: '/api/public/coach-run',
+  path: '/api/public/coach-run',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicEvalAgentRoute = ApiPublicEvalAgentRouteImport.update({
@@ -74,6 +80,7 @@ const ApiPublicWhatsappWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/coach-run': typeof ApiPublicCoachRunRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/coach-run': typeof ApiPublicCoachRunRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
@@ -99,6 +107,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/coach-run': typeof ApiPublicCoachRunRoute
   '/api/public/eval-agent': typeof ApiPublicEvalAgentRoute
   '/api/public/eval-match': typeof ApiPublicEvalMatchRoute
   '/api/public/process-pending': typeof ApiPublicProcessPendingRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/public/coach-run'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
     | '/api/public/process-pending'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/public/coach-run'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
     | '/api/public/process-pending'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api/public/coach-run'
     | '/api/public/eval-agent'
     | '/api/public/eval-match'
     | '/api/public/process-pending'
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicCoachRunRoute: typeof ApiPublicCoachRunRoute
   ApiPublicEvalAgentRoute: typeof ApiPublicEvalAgentRoute
   ApiPublicEvalMatchRoute: typeof ApiPublicEvalMatchRoute
   ApiPublicProcessPendingRoute: typeof ApiPublicProcessPendingRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/coach-run': {
+      id: '/api/public/coach-run'
+      path: '/api/public/coach-run'
+      fullPath: '/api/public/coach-run'
+      preLoaderRoute: typeof ApiPublicCoachRunRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/eval-agent': {
@@ -238,6 +258,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicCoachRunRoute: ApiPublicCoachRunRoute,
   ApiPublicEvalAgentRoute: ApiPublicEvalAgentRoute,
   ApiPublicEvalMatchRoute: ApiPublicEvalMatchRoute,
   ApiPublicProcessPendingRoute: ApiPublicProcessPendingRoute,
