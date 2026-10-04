@@ -87,3 +87,15 @@ describe("price clip as the recognizer actually spells it", () => {
     ]) expect(numbersHeard(t)).toContain("(about 1500)");
   });
 });
+
+import { certainValues, mentionsNumber } from "@/lib/numbers";
+describe("number helpers", () => {
+  it("finds certain values and ignores unclear ones", () => {
+    expect(certainValues("Niech by mój juniak Jurón témér dalasi.")).toEqual([1500]);
+    expect(certainValues("Price words dalasi")).toEqual([]);
+  });
+  it("recognises a number in digits or words", () => {
+    for (const e of ["1500 dalasi", "1,500 dalasi", "one thousand five hundred dalasi", "fifteen hundred dalasi", "One thousand and five hundred"]) expect(mentionsNumber(e, 1500)).toBe(true);
+    expect(mentionsNumber("Five hundred dalasi", 1500)).toBe(false);
+  });
+});

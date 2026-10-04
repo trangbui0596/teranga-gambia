@@ -231,10 +231,11 @@ export async function transcribe(mediaUrl: string, languageCode: string | null =
 }
 
 /** Lovable AI translation. Wolof -> English (pivot); English -> German/Dutch; English -> Wolof for round-trip. */
-export async function translate(text: string, to: Lang | "wo", signal: AbortSignal | null = null): Promise<string | null> {
+export async function translate(text: string, to: Lang | "wo", signal: AbortSignal | null = null, numberHint: number[] = []): Promise<string | null> {
   const from = to === "en" ? "wo" : "en";
+  const hint = numberHint.length ? `\nThe speaker states the number ${numberHint.join(" and ")} (written with Wolof number words, and the transcript may be spelled by sound). The translation must state exactly ${numberHint.length > 1 ? "these numbers" : "this number"}, as digits.` : "";
   try {
-    const out = await aiText(`${TRANSLATE_RULES}\nTranslate from ${LANG_NAME[from]} to ${LANG_NAME[to]}.`, text, signal);
+    const out = await aiText(`${TRANSLATE_RULES}\nTranslate from ${LANG_NAME[from]} to ${LANG_NAME[to]}.${hint}`, text, signal);
     return out || null;
   } catch (e) {
     console.error(`translate to ${to} failed`, e);
@@ -338,7 +339,7 @@ function pipelineDeps(): PipelineDeps {
     },
     download: (url, signal) => downloadMedia(url, signal),
     stt: (blob, type, signal) => sttBlob(blob, type, "wol", signal),
-    translate: (text, to, signal) => translate(text, to, signal),
+    translate: (text, to, signal, numberHint) => translate(text, to, signal, numberHint),
     roundtrip: (src, en, signal) => roundtrip(src, en, signal),
     hash: (p) => hashPhone(p),
     notify: (phone, text) => sendWhatsApp(phone, text),

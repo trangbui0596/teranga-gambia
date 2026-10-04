@@ -89,3 +89,31 @@ describe("resumable pipeline", () => {
     expect(f.r.flags).toEqual([MEDIA_EXPIRED]);
   });
 });
+
+describe("a price must survive translation", () => {
+  it("passes the stated number to the translator and keeps a correct English answer unflagged", async () => {
+    const f = fakeDb();
+    const hints: number[][] = [];
+    f.d.stt = async () => ({ status: 200, text: "Niech by mój juniak Jurón témér dalasi.", confidence: 0.9 });
+    f.d.translate = async (_t, to, _s, hint) => { if (to === "en") hints.push(hint ?? []); return to === "en" ? "The tour costs 1500 dalasi." : `T-${to}`; };
+    await finishAnswers(f.d, 60000, {});
+    expect(hints[0]).toEqual([1500]);
+    expect(f.r.flags.join(" ")).not.toContain("number mismatch");
+  });
+  it("retries once, then flags the answer when the English still lacks the number", async () => {
+    const f = fakeDb();
+    let enCalls = 0;
+    f.d.stt = async () => ({ status: 200, text: "Niech by mój juniak Jurón témér dalasi.", confidence: 0.9 });
+    f.d.translate = async (_t, to) => { if (to === "en") { enCalls++; return "Let my young man be. Five hundred dalasi."; } return `T-${to}`; };
+    await finishAnswers(f.d, 60000, {});
+    expect(enCalls).toBe(2);
+    expect(f.r.flags).toContain("number mismatch: please confirm");
+  });
+  it("accepts the number written in words", async () => {
+    const f = fakeDb();
+    f.d.stt = async () => ({ status: 200, text: "Niech by mój juniak Jurón témér dalasi.", confidence: 0.9 });
+    f.d.translate = async (_t, to) => (to === "en" ? "It costs fifteen hundred dalasi." : `T-${to}`);
+    await finishAnswers(f.d, 60000, {});
+    expect(f.r.flags.join(" ")).not.toContain("number mismatch");
+  });
+});

@@ -4,6 +4,8 @@
 // any later call (next webhook, REVIEW, /api/public/process-pending) continues where work stopped.
 // Never rely on work after the HTTP response on Workers: callers await this with a time budget.
 
+import { certainValues, mentionsNumber } from "./numbers";
+
 export type Stage = "received" | "transcribed" | "translated" | "checked" | "failed";
 export type Lang = "en" | "de" | "nl";
 
@@ -43,7 +45,7 @@ export interface PipelineDeps {
   claimNotify(id: string): Promise<boolean>;
   download(url: string, signal: AbortSignal): Promise<Download>;
   stt(blob: Blob, type: string, signal: AbortSignal): Promise<{ status: number; text: string; confidence: number | null } | null>;
-  translate(text: string, to: Lang | "wo", signal: AbortSignal): Promise<string | null>;
+  translate(text: string, to: Lang | "wo", signal: AbortSignal, numberHint?: number[]): Promise<string | null>;
   roundtrip(source: string, english: string, signal: AbortSignal): Promise<{ score: number; differences: string[] } | null>;
   hash(phone: string): string;
   notify(phone: string, text: string): Promise<boolean>;
@@ -123,7 +125,13 @@ export async function runAnswer(d: PipelineDeps, id: string, deadline: number, p
         const fl = extras(row.flags);
         let english: string | null = null, german: string | null = null, dutch: string | null = null;
         try {
-          english = await d.translate(src, "en", signal);
+          const stated = certainValues(src);
+          english = await d.translate(src, "en", signal, stated);
+          // A price must survive translation: if the English does not state the number the Wolof words say, ask once more, then flag it.
+          if (english && stated.length && !stated.every((v) => mentionsNumber(english!, v))) {
+            english = (await d.translate(src, "en", signal, stated)) ?? english;
+            if (!stated.every((v) => mentionsNumber(english!, v))) fl.push("number mismatch: please confirm");
+          }
           if (english) [german, dutch] = await Promise.all([d.translate(english, "de", signal), d.translate(english, "nl", signal)]);
         } catch (e) { d.log(`[pipeline ${id}] error step=translate ${(e as Error).message}`); }
         if (signal.aborted) return "partial"; // budget ran out mid-step: redo the step next time
