@@ -88,6 +88,7 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 | `/api/public/coach-run` | Run or return cached review coaching |
 | `/api/public/eval-match` | Run the 20-question matching test (agent-written test data) |
 | `/api/public/eval-agent` | Dry-run 15 scripted champion messages |
+| `/api/public/eval-translate` | Wolof to English check on open FLEURS/FLORES sentences (batches of 6; results stored for offline scoring) |
 
 ## Secrets (names only, set in the project secrets, never in code)
 
@@ -131,6 +132,7 @@ npx tsc --noEmit -p .
 - Speech recognition on real Wolof speech is untested and unreliable.
 - All Wolof text in the app is machine-written and unverified by a native speaker.
 - Translations are machine translations and say so.
+- Wolof to English translation was scored on 54 sentences from the open FLEURS/FLORES set: chrF++ 47.6, BLEU 22.1 (indicative; news-style text, not Noor's short answers). Method, pairs and caveats: [docs/eval/WOLOF_TRANSLATION_CHECK.md](https://github.com/trangbui0596/hacknation-worldbank-small-ai-for-tourism/blob/claude/amazing-wozniak-hwlb9i/docs/eval/WOLOF_TRANSLATION_CHECK.md). The check runs through the protected route `/api/public/eval-translate`.
 - Matching was tested on real visitor questions from Gambian operators' public FAQ pages (82 for tuning, 103 untuned held-out). Results are in `src/lib/match-eval-results.ts` and on the page. The labels are our own judgment and the questions are English only.
 - Speech recognition sometimes writes Wolof in the wrong alphabet; the app retries once and flags the answer instead of showing it. Prices are checked after translation, and a mismatch is flagged for Noor.
 - SMS delivery is pending US carrier registration, so summaries arrive on WhatsApp through Twilio's sandbox.
@@ -142,6 +144,7 @@ Privacy: no review gating (the same review link goes to every visitor); visitor 
 
 ## Next steps
 
+- Score speech recognition on real Wolof speech (FLEURS, Common Voice) and compare with NLLB-200 and Meta MMS; add an operator word list.
 - Test with a real native Wolof speaker and review all Wolof wording.
 - Add other languages.
 - Add a bilingual reviewer role.

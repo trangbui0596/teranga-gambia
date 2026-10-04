@@ -282,6 +282,7 @@ export const REAL_LIMITS = [
   "All Wolof wording is machine-written and has not been checked by a native speaker.",
   "Translations are machine translations and say so.",
   `Matching was tested on real visitor questions from Gambian operators’ public FAQ pages, not on made-up ones. On 103 questions not used for tuning: ${HOLDOUT_RESULTS.score.correct} of ${HOLDOUT_RESULTS.score.inScope} questions about Noor’s ten topics were answered correctly, none got a wrong-topic answer, and ${HOLDOUT_RESULTS.score.outDeclined} of ${HOLDOUT_RESULTS.score.outOfScope} questions she has no answer for were correctly declined (${HOLDOUT_RESULTS.score.outAnswered} were answered wrongly). Before the fix, 17 of 37 such questions were answered wrongly. The labels are our own judgment and the questions are English only.`,
+  "Translation was checked on 54 Wolof sentences from the open FLEURS/FLORES set: chrF++ 47.6 against the English references. It is a small sample of news-style text, not Noor’s short answers, so treat it as indicative. Next: score speech recognition on real Wolof speech.",
   "SMS delivery is pending US carrier registration, so in the demo the same texts arrive on WhatsApp.",
   "The partner list is simulated, and the Google listing is a draft that a person must publish.",
   "Speech recognition is unreliable on real Wolof speech: it sometimes writes Wolof in the wrong alphabet, so the app retries and flags those answers instead of showing them. Prices are checked after translation, and a mismatch is flagged for Noor.",
