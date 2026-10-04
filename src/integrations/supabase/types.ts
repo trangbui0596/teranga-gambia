@@ -111,6 +111,89 @@ export type Database = {
           },
         ]
       }
+      coach_runs: {
+        Row: {
+          actions: Json
+          api_calls: number
+          api_errors: string[]
+          date_from: string | null
+          date_to: string | null
+          fetched_at: string
+          id: string
+          place_ids: string[]
+          places_count: number
+          price_count: number
+          price_currency: string | null
+          price_max: number | null
+          price_min: number | null
+          reviews_count: number
+        }
+        Insert: {
+          actions?: Json
+          api_calls?: number
+          api_errors?: string[]
+          date_from?: string | null
+          date_to?: string | null
+          fetched_at?: string
+          id?: string
+          place_ids?: string[]
+          places_count?: number
+          price_count?: number
+          price_currency?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          reviews_count?: number
+        }
+        Update: {
+          actions?: Json
+          api_calls?: number
+          api_errors?: string[]
+          date_from?: string | null
+          date_to?: string | null
+          fetched_at?: string
+          id?: string
+          place_ids?: string[]
+          places_count?: number
+          price_count?: number
+          price_currency?: string | null
+          price_max?: number | null
+          price_min?: number | null
+          reviews_count?: number
+        }
+        Relationships: []
+      }
+      coach_themes: {
+        Row: {
+          count: number
+          id: string
+          run_id: string
+          sentiment: string
+          theme: string
+        }
+        Insert: {
+          count: number
+          id?: string
+          run_id: string
+          sentiment: string
+          theme: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          run_id?: string
+          sentiment?: string
+          theme?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_themes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "coach_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           agent_history: Json

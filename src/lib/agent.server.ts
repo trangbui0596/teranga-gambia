@@ -140,6 +140,16 @@ function buildTools(ctx: AgentCtx, calls: string[]) {
           .map((u) => u.visitor_questions).filter(Boolean).map((v) => ({ text: v!.text.slice(0, 120), sample: v!.is_sample }));
       },
     }),
+    get_coaching: tool({
+      description: "Coaching from public Google Maps reviews of Gambian tour operators (counts, themes, actions). Send the returned message as is.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        guard("get_coaching");
+        const { getCoaching } = await import("./coach.server");
+        const { aiText } = await import("./tourcoach.server");
+        return { message: (await getCoaching(aiText, 9000, undefined, undefined, true)).messages[0] };
+      },
+    }),
     get_help: tool({
       description: "What this assistant can do. Use for unknown, unsafe or out-of-scope requests.",
       inputSchema: z.object({}),

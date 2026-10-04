@@ -109,7 +109,7 @@ function isoWeek(d = new Date()) {
 export { numbersHeard };
 
 /* ---------------- Lovable AI (Responses API, streamed) ---------------- */
-async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
+export async function aiText(instructions: string, input: string, signal: AbortSignal | null = null): Promise<string> {
   const res = await fetch(AI_URL, {
     method: "POST", signal,
     headers: { "Content-Type": "application/json", "Lovable-API-Key": env("LOVABLE_API_KEY"), "X-Lovable-AIG-SDK": "fetch" },
@@ -719,6 +719,16 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
   }
   if (upper === "LEDGER") return ledgerSummary();
   if (upper === "LISTING") return draftListing();
+  if (upper === "COACH" || upper === "COACH MORE") {
+    const coach = await import("./coach.server");
+    try {
+      if (upper === "COACH MORE") return await coach.coachMore();
+      return (await coach.getCoaching(aiText, 10000, undefined, undefined, true)).messages[0];
+    } catch (e) {
+      console.error("[coach] error step=coach", e);
+      return "Coaching could not load right now. Send COACH again in a minute.";
+    }
+  }
 
   if ((c.state === "reviewing" || cmd === "digit") && c.current_review_answer_id) {
     const m = /^([123])\b/.exec(upper);
