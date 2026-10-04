@@ -13,6 +13,7 @@ import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, t
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
 import { weeklyDigestWhatsApp } from "./digest.templates";
 import { buildListingPack, formatListingPack, listingCopyText, type ApprovedAnswers } from "./listing";
+import { ALERT_MENU, ALERT_TTL_HOURS, BILINGUAL_FLAG, COMMUNITY_MENU, alertPosted, alertSms, formatAlertList, formatBilingualItem, formatPulse, noNotices, parseAlertCommand, translationLabel, visitorNotice, type ActiveAlert } from "./community";
 import { approvalSms, coachSms, helpSms, isCarrierKeyword, listingSms, parseOperatorSms, toSmsText, unknownSms, weeklyDigestSmsWo } from "./sms-text";
 import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
@@ -423,7 +424,16 @@ async function route(c: Conv, input: { from: string; body: string; mediaUrl: str
 
   // DEMO SHORTCUT: champion login by PIN over WhatsApp. Not a real authentication method.
   const pinMatch = /^REVIEW\s+(\S+)$/i.exec(text);
-  if (channel === "sms" && (pinMatch || c.role === "champion")) return "Review answers on WhatsApp, not by SMS.";
+  const communityMatch = /^COMMUNITY\s+(\S+)$/i.exec(text);
+  if (channel === "sms" && (pinMatch || communityMatch || c.role === "champion")) return "Review answers on WhatsApp, not by SMS.";
+  // DEMO SHORTCUT: the community champion logs in with the same demo PIN. Not a real authentication method.
+  if (communityMatch) {
+    if (safeEqual(communityMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
+      await save({ role: "champion", state: "community", current_question_position: null, current_review_answer_id: null });
+      return COMMUNITY_MENU;
+    }
+    return bi(W.wrongPin, "Wrong PIN.");
+  }
   if (pinMatch) {
     if (safeEqual(pinMatch[1]!, env("DEMO_CHAMPION_PIN"))) {
       await save({ role: "champion", state: "idle", current_question_position: null, current_review_answer_id: null });
@@ -467,6 +477,7 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     await save({ lang: upper.toLowerCase() as Lang });
     return { EN: "Language: English", DE: "Sprache: Deutsch", NL: "Taal: Nederlands" }[upper];
   }
+  if (upper === "STATUS") return visitorNotice(await activeAlerts(), c.lang) || noNotices(c.lang);
   if ((upper === "YES" || upper === "NO") && c.last_visitor_question_id) {
     await db.from("visitor_questions").update({ was_clear: upper === "YES" }).eq("id", c.last_visitor_question_id);
     await save({ last_visitor_question_id: null });
@@ -477,10 +488,10 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
   if (!q) return "Please type your question.";
   const { data: rows } = await db
     .from("answers")
-    .select("id, english, german, dutch, is_sample, recordings(questions(topic))")
+    .select("id, english, german, dutch, is_sample, flags, recordings(questions(topic))")
     .eq("review_status", "approved");
   const answers = (rows ?? []) as unknown as Array<{
-    id: string; english: string | null; german: string | null; dutch: string | null; is_sample: boolean;
+    id: string; english: string | null; german: string | null; dutch: string | null; is_sample: boolean; flags: string[] | null;
     recordings: { questions: { topic: string } | null } | null;
   }>;
   const { answer, confidence } = matchQuestion(q, answers);
@@ -494,7 +505,8 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     // Never guess: below threshold -> hand to Noor.
     if (vq) await db.from("unanswered").insert({ visitor_question_id: vq.id });
     await save({ last_visitor_question_id: vq?.id ?? null });
-    return `${NOT_SURE[c.lang]}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
+    const sureNotice = visitorNotice(await activeAlerts(), c.lang);
+    return `${NOT_SURE[c.lang]}${sureNotice ? `\n\n${sureNotice}` : ""}\n\n${CLEAR_Q[c.lang]}\n${reviewLine()}`;
   }
   await save({ last_visitor_question_id: vq?.id ?? null });
 
@@ -511,10 +523,13 @@ export async function visitor(c: Conv, text: string, upper: string, save: Save, 
     const { data: signed } = await db.storage.from(AUDIO_BUCKET).createSignedUrl(audio.audio_path, 600);
     audioUrl = signed?.signedUrl;
   }
+  // A community notice (flood, closed road...) goes under every answer while it is active.
+  const notice = visitorNotice(await activeAlerts(), c.lang);
   return {
     text: [
       answerText + (answer.is_sample ? " (Sample answer)" : ""),
-      "— Machine-translated" + (audioUrl ? " · voice note follows (AI-generated voice)" : ""),
+      "— " + translationLabel(c.lang, !!answer.flags?.includes(BILINGUAL_FLAG)) + (audioUrl ? " · voice note follows (AI-generated voice)" : ""),
+      ...(notice ? ["", notice] : []),
       "",
       CLEAR_Q[c.lang],
       reviewLine(),
@@ -695,6 +710,14 @@ async function champion(c: Conv, upper: string, mediaUrl: string | null, from: s
       return { approved: bi(W.approved, "Done: approved."), rerecord: bi(W.rerecord, "Done: marked for re-record."), needs_bilingual: bi(W.bilingual, "Done: sent to bilingual reviewer.") }[pa.status];
     }
     // Anything else cancels the proposal and is handled as a new message below.
+  }
+
+  // Community tools (alerts, translation checks, overview) exist only after COMMUNITY <PIN>.
+  if (c.state === "community" || c.state === "bilingual") {
+    const r = await communityChampion(c, upper, text, save);
+    if (r !== null) return r;
+  } else if (/^(ALERT|ALERTS|BILINGUAL|PULSE)\b/.test(upper)) {
+    return bi("Jëkk dugg ci mbootaay: COMMUNITY + PIN.", "Open the community tools first: COMMUNITY <PIN>.");
   }
 
   if (upper === "START") {
@@ -940,6 +963,110 @@ async function showNextPending(save: Save) {
   }
   await save({ state: "reviewing", current_review_answer_id: answerId });
   return text;
+}
+
+/* ---------------- Community Circle (community champion) ---------------- */
+
+/** Notices that are still running: not cleared and not past their 24 hours. */
+async function activeAlerts(): Promise<ActiveAlert[]> {
+  const { data } = await supabaseAdmin.from("community_alerts" as never)
+    .select("kind, place, created_at").is("cleared_at", null).gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false }).limit(5);
+  return (data ?? []) as unknown as ActiveAlert[];
+}
+
+/** Posts a notice, or (kind "clear") ends all running ones. Returns how many were cleared. */
+async function postAlert(kind: ActiveAlert["kind"], place: string | null, byHash: string): Promise<number> {
+  const db = supabaseAdmin;
+  const now = new Date();
+  if (kind === "clear") {
+    const { data } = await db.from("community_alerts" as never).update({ cleared_at: now.toISOString() } as never)
+      .is("cleared_at", null).gt("expires_at", now.toISOString()).select("id");
+    return (data ?? []).length;
+  }
+  await db.from("community_alerts" as never).insert({
+    kind, place, expires_at: new Date(now.getTime() + ALERT_TTL_HOURS * 3600000).toISOString(), posted_by: byHash,
+  } as never);
+  return 0;
+}
+
+async function addFlag(answerId: string, flag: string) {
+  const { data } = await supabaseAdmin.from("answers").select("flags").eq("id", answerId).maybeSingle();
+  const flags = ((data as { flags: string[] | null } | null)?.flags ?? []).filter((f) => f !== flag);
+  await supabaseAdmin.from("answers").update({ flags: [...flags, flag] }).eq("id", answerId);
+}
+
+/** Next answer a household helper sent to "a bilingual reviewer" (option 3). Sample answers are never shown. */
+async function showNextBilingual(save: Save): Promise<string> {
+  const { data } = await supabaseAdmin.from("answers")
+    .select("id, transcript_src, english, flags, recordings(questions(topic))")
+    .eq("review_status", "needs_bilingual").eq("is_sample", false).order("created_at");
+  const list = (data ?? []) as unknown as Array<{
+    id: string; transcript_src: string | null; english: string | null; flags: string[] | null;
+    recordings: { questions: { topic: string } | null } | null;
+  }>;
+  const item = list[0];
+  if (!item) {
+    await save({ state: "community", current_review_answer_id: null });
+    return bi("Amul tekki bu ñu war a seet léegi.", "No translations are waiting for a check.");
+  }
+  await save({ state: "bilingual", current_review_answer_id: item.id });
+  return formatBilingualItem({
+    topic: item.recordings?.questions?.topic ?? null, transcript: item.transcript_src, english: item.english,
+    numbers: numbersHeard(item.transcript_src), flags: item.flags ?? [],
+  }, list.length);
+}
+
+async function pulseText(): Promise<string> {
+  const db = supabaseAdmin;
+  const [alerts, bilingual, partners, contacts, approved] = await Promise.all([
+    activeAlerts(),
+    db.from("answers").select("id", { count: "exact", head: true }).eq("review_status", "needs_bilingual").eq("is_sample", false),
+    db.from("partner_operators").select("id", { count: "exact", head: true }),
+    connectRequestCount(),
+    approvedAnswers(),
+  ]);
+  return formatPulse({
+    realMembers: 1, simulatedMembers: partners.count ?? 0, activeNotices: alerts.filter((a) => a.kind !== "clear").length,
+    translationsWaiting: bilingual.count ?? 0, contactRequests: contacts,
+    approved: Object.values(approved).filter((x) => x && !x.sample).length, cards: 10,
+  });
+}
+
+/** Commands for the community champion. Returns null for anything else, so household commands still work. */
+async function communityChampion(c: Conv, upper: string, text: string, save: Save): Promise<string | Reply | null> {
+  // A translation is on screen: 1 = English is right, 2 = record again, 3 = leave it.
+  if (c.state === "bilingual" && c.current_review_answer_id && /^[123]\b/.test(upper)) {
+    const id = c.current_review_answer_id;
+    if (upper.startsWith("1")) {
+      if (!(await applyReview(id, "approved"))) return STILL_PROCESSING;
+      await addFlag(id, BILINGUAL_FLAG);
+      return `${bi("Baax na: nangu nañu ko, te nit ku xam ñaar yi làkk seet na ko.", "Done: approved, and marked as checked by a bilingual reviewer.")}\n\n${await showNextBilingual(save)}`;
+    }
+    if (upper.startsWith("2")) {
+      await applyReview(id, "rerecord");
+      return `${sl(W.rerecord, "Marked for re-record")}\n\n${await showNextBilingual(save)}`;
+    }
+    await save({ state: "community", current_review_answer_id: null });
+    return `${bi("Baax na, bàyyi nañu ko.", "Left for now.")}\n\n${COMMUNITY_MENU}`;
+  }
+  if (upper === "COMMUNITY" || upper === "MENU") {
+    await save({ state: "community", current_review_answer_id: null });
+    return COMMUNITY_MENU;
+  }
+  const alert = parseAlertCommand(text);
+  if (alert) {
+    if ("menu" in alert) return ALERT_MENU;
+    if ("invalid" in alert) return bi("Xamuma ndigal bi. Bind ALERT ngir gis limu yi.", "I did not understand. Send ALERT to see the numbers.");
+    const cleared = await postAlert(alert.kind, alert.place, c.phone_hash);
+    const sms = await sendOperatorSms(alertSms(alert.kind, alert.place));
+    const { count } = await supabaseAdmin.from("partner_operators").select("id", { count: "exact", head: true });
+    return alertPosted(alert.kind, alert.place, sms, count ?? 0, cleared);
+  }
+  if (upper === "ALERTS") return formatAlertList(await activeAlerts());
+  if (upper === "PULSE") return pulseText();
+  if (upper === "BILINGUAL") return showNextBilingual(save);
+  return null;
 }
 
 /* ---------------- Evaluation (keyword-match intent accuracy) ---------------- */

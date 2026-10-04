@@ -4,12 +4,20 @@ import {
   AI_DOES,
   AI_INTRO,
   COMMUNITY,
+  COMMUNITY_INTRO,
+  COMMUNITY_TITLE,
+  EXTRAS,
   NOT_MEASURED,
+  OFFLINE_EXAMPLE_NOTE,
+  OFFLINE_INTRO,
+  OFFLINE_NOTE,
+  OFFLINE_ROWS,
   PRIVACY,
   PROBLEM_SUB,
   REAL_LIMITS,
   REAL_LIVE,
   REPO_URL,
+  ROLES,
   SAFEGUARDS,
   SCREENS,
   SOURCES_TOOLS,
@@ -19,6 +27,20 @@ import {
   VIDEO_URL,
   type TabId,
 } from "@/lib/landing-content";
+import { alertSms } from "@/lib/community";
+import { buildListingPack } from "@/lib/listing";
+import { approvalSms, listingSms } from "@/lib/sms-text";
+
+// Example texts for the "Works offline" tab. Built by the same code that sends the real SMS, from sample inputs.
+const SAMPLE_PACK = buildListingPack({
+  price: { text: "Sample answer.", sample: true },
+  children: { text: "Sample answer.", sample: true },
+});
+const SMS_EXAMPLES = [
+  { label: "After the helper approves an answer", text: approvalSms("price", SAMPLE_PACK, "wo") },
+  { label: "When the community champion posts a notice", text: alertSms("road", "Tendaba road") },
+  { label: "Her Google listing progress (she texts LISTING)", text: listingSms(SAMPLE_PACK, "wo") },
+];
 
 const retrievedLabel = new Date(`${RETRIEVED}T00:00:00Z`).toLocaleDateString("en-GB", {
   day: "numeric",
@@ -149,6 +171,10 @@ function Hero() {
             in {evidence("exportShare").year}. This is the gap we target, not a measured result.{" "}
             {NOT_MEASURED}
           </p>
+          <p className="mt-2 text-sm font-semibold">
+            Noor needs no internet: she records by phone call and keeps her coaching, Google listing
+            progress and community notices as plain SMS.
+          </p>
         </blockquote>
 
         <div
@@ -207,7 +233,49 @@ function HowPanel() {
           </li>
         ))}
       </ol>
+      <h3 className="mt-6 text-lg font-bold">Then, for visibility</h3>
+      <ul className="mt-2 grid gap-3 lg:grid-cols-2">
+        {EXTRAS.map((c) => (
+          <Card key={c.title} title={c.title} tag={c.tag}>
+            {c.body}
+          </Card>
+        ))}
+      </ul>
       <p className="mt-4 text-sm text-muted-foreground">{TRY_IT}</p>
+    </div>
+  );
+}
+
+function OfflinePanel() {
+  return (
+    <div>
+      <p className="text-lg font-semibold">{OFFLINE_INTRO}</p>
+      <ul className="mt-3 grid gap-3 lg:grid-cols-2">
+        {OFFLINE_ROWS.map((r) => (
+          <li key={r.who} className="rounded-xl border bg-card p-4">
+            <h3 className="text-lg font-bold leading-snug">{r.who}</h3>
+            <p className="mt-1 inline-block rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+              Internet: {r.net}
+            </p>
+            <p className="mt-2 leading-snug">{r.does}</p>
+          </li>
+        ))}
+      </ul>
+      <h3 className="mt-6 text-lg font-bold">What Noor keeps on her phone</h3>
+      <p className="text-sm text-muted-foreground">{OFFLINE_EXAMPLE_NOTE}</p>
+      <ul className="mt-2 grid gap-3 lg:grid-cols-3">
+        {SMS_EXAMPLES.map((m) => (
+          <li key={m.label}>
+            <p className="mb-1 text-sm font-bold">{m.label}</p>
+            <pre className="whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-secondary p-3 font-mono text-sm leading-snug text-secondary-foreground">
+              {m.text}
+            </pre>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 rounded-xl border-2 border-foreground bg-highlight p-3 text-sm text-foreground">
+        {OFFLINE_NOTE}
+      </p>
     </div>
   );
 }
@@ -237,14 +305,34 @@ function AiPanel() {
 }
 
 function CommunityPanel() {
+  const low = evidence("lowLand");
   return (
-    <ul className="grid gap-3 lg:grid-cols-3">
-      {COMMUNITY.map((c) => (
-        <Card key={c.title} title={c.title} tag={c.tag}>
-          {c.body}
-        </Card>
-      ))}
-    </ul>
+    <div>
+      <h3 className="text-xl font-black leading-snug sm:text-2xl">{COMMUNITY_TITLE}</h3>
+      <p className="mt-2 max-w-3xl leading-snug">{COMMUNITY_INTRO}</p>
+      <p className="mt-2 max-w-3xl leading-snug">
+        Almost a fifth of The Gambia’s land (<Stat id="lowLand" />, {low.year}) is less than 5
+        metres above sea level. When water rises, every operator on that road or river is affected
+        at once.{" "}
+        <span className="text-sm text-muted-foreground">
+          Source: <Ext href={low.href}>World Bank {low.indicator}</Ext>.
+        </span>
+      </p>
+      <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+        {ROLES.map((r) => (
+          <Card key={r.title} title={r.title} tag={r.tag}>
+            {r.body}
+          </Card>
+        ))}
+      </ul>
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+        {COMMUNITY.map((c) => (
+          <Card key={c.title} title={c.title} tag={c.tag}>
+            {c.body}
+          </Card>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -347,8 +435,9 @@ function ScreensPanel() {
 
 const PANELS: Record<TabId, () => ReactNode> = {
   how: HowPanel,
-  ai: AiPanel,
+  offline: OfflinePanel,
   community: CommunityPanel,
+  ai: AiPanel,
   real: RealPanel,
   sources: SourcesPanel,
   screens: ScreensPanel,

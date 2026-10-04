@@ -69,6 +69,14 @@ export const EVIDENCE: Evidence[] = [
     note: "ILO modeled estimate",
   },
   {
+    id: "lowLand",
+    indicator: "AG.LND.EL5M.ZS",
+    year: 2015,
+    raw: 18.9212202198373,
+    kind: "percent",
+    label: "of land is less than 5 metres above sea level",
+  },
+  {
     id: "receipts2020",
     indicator: "ST.INT.RCPT.CD",
     year: 2020,
@@ -93,6 +101,7 @@ export const INDICATOR_NAMES: Record<string, string> = {
   "IT.NET.USER.ZS": "Individuals using the Internet (% of population)",
   "IT.CEL.SETS.P2": "Mobile cellular subscriptions (per 100 people)",
   "SL.EMP.SELF.ZS": "Self-employed, total (% of total employment) (modeled ILO estimate)",
+  "AG.LND.EL5M.ZS": "Land area where elevation is below 5 meters (% of total land area)",
 };
 
 export const wdiUrl = (indicator: string) =>

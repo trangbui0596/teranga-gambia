@@ -32,12 +32,16 @@ describe("home page statistics are sourced, never invented", () => {
     }
   });
 
-  it("the hero links every statistic to its data page", () => {
-    const d = doc("how");
+  it("every statistic appears on the page with a link to its data page", () => {
     for (const e of EVIDENCE) {
-      const links = [...d.querySelectorAll(`a[href="${wdiUrl(e.indicator)}"]`)];
-      expect(links.length, `${e.id} has a link`).toBeGreaterThan(0);
-      expect(textOf(d)).toContain(formatValue(e));
+      const found = TABS.some((tab) => {
+        const d = doc(tab.id);
+        return (
+          d.querySelector(`a[href="${wdiUrl(e.indicator)}"]`) !== null &&
+          textOf(d).includes(formatValue(e))
+        );
+      });
+      expect(found, `${e.id} is shown with a link`).toBe(true);
     }
   });
 
@@ -57,17 +61,19 @@ describe("home page statistics are sourced, never invented", () => {
   });
 
   it("every place a sourced number is shown sits in a link or next to its source link", () => {
-    const d = doc("how");
     const values = EVIDENCE.map(formatValue);
-    const walker = d.createTreeWalker(d.body, NodeFilter.SHOW_TEXT);
-    let node: Node | null;
-    while ((node = walker.nextNode())) {
-      if (!values.some((v) => node!.textContent?.includes(v))) continue;
-      const el = node.parentElement!;
-      const ok =
-        el.closest("a") ||
-        el.closest("li")?.querySelector('a[href^="https://data.worldbank.org/indicator/"]');
-      expect(ok, `"${node.textContent}" has no source link`).toBeTruthy();
+    for (const tab of TABS) {
+      const d = doc(tab.id);
+      const walker = d.createTreeWalker(d.body, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        if (!values.some((v) => node!.textContent?.includes(v))) continue;
+        const el = node.parentElement!;
+        const ok =
+          el.closest("a") ||
+          el.closest("li")?.querySelector('a[href^="https://data.worldbank.org/indicator/"]');
+        expect(ok, `"${node.textContent}" on tab ${tab.id} has no source link`).toBeTruthy();
+      }
     }
   });
 

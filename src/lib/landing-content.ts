@@ -7,13 +7,14 @@ export const VIDEO_URL = "";
 /** Add screenshots after filming (files in public/screens/); the "Screens" tab appears automatically. */
 export const SCREENS: Array<{ src: string; alt: string; caption: string }> = [];
 
-export type TabId = "how" | "ai" | "community" | "real" | "sources" | "screens";
+export type TabId = "how" | "offline" | "community" | "ai" | "real" | "sources" | "screens";
 
 export const TABS: Array<{ id: TabId; label: string }> = [
   { id: "how", label: "How it works" },
-  { id: "ai", label: "AI beyond SMS" },
+  { id: "offline", label: "Works offline" },
   { id: "community", label: "Community" },
-  { id: "real", label: "What’s real" },
+  { id: "ai", label: "AI beyond SMS" },
+  { id: "real", label: "What\u2019s real" },
   { id: "sources", label: "Sources" },
   ...(SCREENS.length ? [{ id: "screens" as TabId, label: "Screens" }] : []),
 ];
@@ -35,7 +36,7 @@ export const STEPS = [
   },
   {
     title: "Visitors ask in their own language",
-    body: "In English, German or Dutch on WhatsApp. They get Noor’s approved answer as text and an AI voice note, labeled machine-translated. When it isn’t sure, it says “Not sure, Noor will answer.” It never guesses.",
+    body: "In English, German or Dutch on WhatsApp. They get Noor’s approved answer as text and an AI voice note, labeled machine-translated. When it isn’t sure, it says “Not sure, Noor will answer.”",
   },
   {
     title: "Noor gets coaching in Wolof",
@@ -78,26 +79,87 @@ export const AI_DOES = [
 export const SAFEGUARDS = {
   title: "Built to never make things up",
   items: [
-    "Visitor questions are matched to approved answers by fixed keyword rules. Nothing is generated, so it can’t invent an answer.",
+    "Visitor questions are matched to approved answers by fixed keyword rules. Nothing is generated, so it can’t invent an answer. Its real risk is picking the wrong approved one, so we measured that on real questions (see What’s real).",
     "The helper’s chat agent can only propose changes. They run after an explicit YES.",
   ],
 };
 
-export const COMMUNITY = [
+export const EXTRAS = [
   {
-    title: "Cross-community recommendations",
-    tag: "Simulated demo",
-    body: "A visitor can opt in to a suggestion for another tour that fits them: nature, culture or food. Suggestions rotate fairly between partner operators, no money changes hands, and the visitor’s number is never shared. If the visitor asks for contact, a person passes it on. The partners in the demo are fictional sample operators.",
+    title: "A Google listing built from her own answers",
+    tag: "Draft: a person publishes it",
+    body: "Once the helper approves answers, Teranga builds a Google Business Profile pack from Noor\u2019s own words: a description inside Google\u2019s 750-character limit, services, meeting point and booking. It shows what is missing, which question card to record next, and what only the helper can add. Noor gets the progress by SMS. Nothing is sent to Google: a person claims the profile and pastes it.",
   },
   {
-    title: "One-tap Google review, in the visitor’s own words",
-    tag: "Live up to the link",
+    title: "One-tap Google review, in the visitor\u2019s own words",
+    tag: "Built up to the link",
     body: "A visitor can say their review out loud. Teranga writes it down as clean text and sends the same Google review link every visitor gets. They tap the link, paste, and choose their own stars. There is no review gating, and Teranga never posts for them.",
   },
+];
+
+export const OFFLINE_INTRO =
+  "Noor never needs the internet. Her whole loop runs on a phone call and plain text messages.";
+export const OFFLINE_ROWS = [
   {
-    title: "Google Business listing draft",
-    tag: "Simulated",
-    body: "A draft listing built only from answers the helper approved. Missing fields say “needs input”. A person must submit and verify it; nothing is sent to Google.",
+    who: "Noor, on a basic phone",
+    does: "Records her answers by phone call. Keeps her coaching, Google listing progress, approval receipts, community notices and weekly digest as plain SMS in Wolof. Can text COACH, LISTING, WEEK or HELP to get them again.",
+    net: "No internet",
+  },
+  {
+    who: "Her household helper",
+    does: "Reviews and approves the answers on a smartphone, about once a week when in town.",
+    net: "Weekly",
+  },
+  {
+    who: "The community champion",
+    does: "Posts a notice or checks a translation on WhatsApp. Members receive the notice by SMS.",
+    net: "To post. Members need none",
+  },
+  {
+    who: "Visitors",
+    does: "Ask on WhatsApp and get text plus an AI voice note. A text-only SMS mode for visitors without data is built and switched off by default.",
+    net: "WhatsApp needs data",
+  },
+];
+export const OFFLINE_NOTE =
+  "US carrier registration for SMS is still in review, so in the demo the same texts arrive on WhatsApp. They are written for feature phones: plain letters, at most three parts, and always an opt-out line.";
+export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sample inputs:";
+
+export const COMMUNITY_TITLE = "A champion in every household. A champion in every community.";
+export const COMMUNITY_INTRO =
+  "Operators share the same roads, rivers and rainy season, so some jobs are too big for one household. Teranga gives each operator a household champion for her own answers, and gives the whole circle a community champion: one trusted person who looks after what no single household can.";
+export const ROLES = [
+  {
+    title: "Household champion",
+    tag: "Built",
+    body: "A family member of one operator. Reviews that operator\u2019s answers on WhatsApp, in Wolof, about once a week.",
+  },
+  {
+    title: "Community champion",
+    tag: "Built, demo PIN",
+    body: "One trusted person for a circle of operators: an association, a village, a guides\u2019 group. Posts community notices, checks translations and passes on referral requests.",
+  },
+];
+export const COMMUNITY = [
+  {
+    title: "Community notices",
+    tag: "Built",
+    body: "When a road floods or boats stop, the community champion sends one notice. Members get an SMS in Wolof. Visitors see it under every answer in English, German or Dutch. The wording is fixed, so nothing is machine-translated in an emergency, and every notice says it is a community notice, not an official warning.",
+  },
+  {
+    title: "Translation checks",
+    tag: "Built",
+    body: "When a household helper is not sure a translation is right, the answer goes to a bilingual reviewer in the community. Approved answers carry the label \u201CEnglish checked by a bilingual reviewer\u201D. German and Dutch stay machine translations of that English.",
+  },
+  {
+    title: "Fair referrals",
+    tag: "Simulated partners",
+    body: "A visitor can ask for a suggestion for another tour. It rotates fairly between partner operators, no money changes hands, and the community champion passes on contact requests. The partners in the demo are fictional.",
+  },
+  {
+    title: "Shared coaching",
+    tag: "Real public data",
+    body: "Coaching reads many public Google reviews of Gambian operators, so every member learns from the whole sector and not only from their own few reviews.",
   },
 ];
 
@@ -113,9 +175,10 @@ export const REAL_LIMITS = [
   "All Wolof wording is machine-written and has not been checked by a native speaker.",
   "Translations are machine translations and say so.",
   "The 20-question matching test is agent-written test data. It is not real-visitor accuracy.",
-  "SMS delivery is pending US carrier registration, so summaries arrive on WhatsApp.",
-  "The partner list and the Google listing draft are simulated.",
+  "SMS delivery is pending US carrier registration, so in the demo the same texts arrive on WhatsApp.",
+  "The partner list is simulated, and the Google listing is a draft that a person must publish.",
   "The demo call asks 2 of the 10 questions to keep it short.",
+  "SMS commands, community notices, translation checks and the Google listing pack are built and unit-tested. Real users have not tried them yet.",
 ];
 
 export const SOURCES_TOOLS: Array<{ name: string; what: string; href: string }> = [
