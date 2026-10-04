@@ -135,6 +135,9 @@ function Hero() {
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
         <blockquote className="rounded-xl border-2 border-primary bg-card p-4">
+          <p className="mb-1 text-sm font-bold uppercase tracking-widest text-primary">
+            Teranga closes the gap
+          </p>
           <p className="text-lg font-semibold leading-snug">
             Because of this tool, a Gambian tour operator will be able to answer visitors in
             English, German and Dutch with her own pre-approved words instead of missing enquiries
