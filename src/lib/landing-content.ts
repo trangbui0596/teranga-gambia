@@ -94,7 +94,7 @@ export const CHAIN_SUPPORT = [
   {
     icon: "📱",
     name: "Household champion",
-    line: "Smartphone in the family. Each week syncs tourist questions, feedback and Google reviews.",
+    line: "Smartphone in the family. Each week syncs tourist questions, feedback and public reviews.",
   },
   {
     icon: "🤝",
@@ -166,9 +166,9 @@ export const STORYBOOK: StoryPage[] = [
     day: "Friday",
     icon: "🔄",
     title: "The weekly sync",
-    text: "Her household champion syncs new questions, feedback and Google reviews. The AI sends Noor a short Wolof SMS on what to improve.",
+    text: "Her household champion syncs new questions, feedback and public reviews from tourists across the whole sector, not only Noor’s. The AI sends Noor a short Wolof SMS on what to improve.",
     net: { online: true, text: "Household champion needs internet. Noor gets it by SMS" },
-    chip: "Household champion’s smartphone",
+    chip: "One light batch a week: counts and a short summary, no heavy model",
   },
   {
     kind: "step",
