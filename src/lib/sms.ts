@@ -7,8 +7,9 @@ const plain = (value: string) => value
   .replace(/\s+/g, " ")
   .trim();
 
-export function callSummarySms(count: number): string {
-  return `Teranga: Got ${count} of 10 answers from your call. Your family helper will check them. Reply STOP to opt out.`;
+/** count = answers saved, asked = questions asked in this call. */
+export function callSummarySms(count: number, asked: number): string {
+  return `Teranga: Got ${count} of ${asked} answers from your call. Your family helper will check them. Reply STOP to opt out.`;
 }
 
 export function weeklyDigestSms(

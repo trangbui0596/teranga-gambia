@@ -24,7 +24,9 @@ export const Route = createFileRoute("/api/public/voice-recorded")({
         if (!lib.isOperatorCaller(params["From"])) return lib.twimlPrivate();
         const q = Query.safeParse(Object.fromEntries(new URL(request.url).searchParams));
         if (!q.success) return lib.twimlGoodbye();
-        const { n, r } = q.data;
+        const positions = lib.callPositions();
+        const { n, r } = q.data; // n = call step (1..M), not the card position
+        if (n > positions.length) return lib.twimlGoodbye();
         const callSid = (params["CallSid"] ?? "").slice(0, 64);
         const url = params["RecordingUrl"];
         const duration = Number(params["RecordingDuration"] ?? "0");
@@ -32,9 +34,9 @@ export const Route = createFileRoute("/api/public/voice-recorded")({
 
         if (empty && r === 0) return lib.twimlQuestion(n, { retry: true }); // ask once more, then move on
         if (!empty) {
-          try { await lib.storeCallRecording(callSid, n, url!); } catch (e) { console.error("voice-recorded store failed", e); }
+          try { await lib.storeCallRecording(callSid, positions[n - 1]!, url!); } catch (e) { console.error("voice-recorded store failed", e); }
         }
-        if (n >= 10) {
+        if (n >= positions.length) {
           try { await lib.sendCallSummary(callSid); } catch (e) { console.error("call summary failed", e); }
           return lib.twimlGoodbye();
         }

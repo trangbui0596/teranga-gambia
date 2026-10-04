@@ -11,6 +11,7 @@ import { numbersHeard } from "./numbers";
 import { recordingCommand, ROUND_HINT, roundStoppedText, recordingHelpText } from "./champion-commands";
 import { finishAnswers as runFinish, ensureAudio, finishAudio, type AudioDeps, type PipelineDeps, type PipelineRow, type Download, UNFINISHED } from "./pipeline";
 import { callSummarySms, weeklyDigestSms, sendSmsWithFallback } from "./sms";
+import { parseCallPositions, questionTwimlBody, wrapTwiml, GOODBYE_TWIML_BODY } from "./call-flow";
 import { formatPendingQueue } from "./review-queue";
 
 type Lang = "en" | "de" | "nl";
@@ -886,26 +887,19 @@ export function isOperatorCaller(from: string | undefined) {
   return !!from && safeEqual(hashPhone(from), hashPhone(env("DEMO_SMS_NUMBER")));
 }
 
-const xml = (body: string) =>
-  new Response(`<?xml version="1.0" encoding="UTF-8"?><Response>${body}</Response>`, { headers: { "Content-Type": "text/xml" } });
+const xml = (body: string) => new Response(wrapTwiml(body), { headers: { "Content-Type": "text/xml" } });
+
+/** Card positions asked per call (optional secret CALL_QUESTION_POSITIONS, default "1,5"). */
+export const callPositions = () => parseCallPositions(process.env["CALL_QUESTION_POSITIONS"]);
 
 export const twimlPrivate = () => xml(`<Say>Sorry, this line is private.</Say><Hangup/>`);
 
-/** TwiML for question n (1..10). Says only the number; Noor uses a printed card in the same order. */
+/** TwiML for call step n (1..M); the card position comes from callPositions(). */
 export function twimlQuestion(n: number, opts: { greet?: boolean; retry?: boolean } = {}) {
-  const r = opts.retry ? 1 : 0;
-  const action = `/api/public/voice-recorded?n=${n}&amp;r=${r}`;
-  return xml([
-    opts.greet ? `<Say>Hello Noor. Please answer each question after the beep. Press hash when done.</Say>` : "",
-    opts.retry ? `<Say>Please answer again.</Say>` : "",
-    `<Say>Question ${n}</Say>`,
-    `<Record playBeep="true" maxLength="90" timeout="4" finishOnKey="#" action="${action}" method="POST"/>`,
-    // Reached only when nothing was recorded: Twilio skips the action and continues here.
-    `<Redirect method="POST">${action}&amp;empty=1</Redirect>`,
-  ].join(""));
+  return xml(questionTwimlBody(n, callPositions(), opts));
 }
 
-export const twimlGoodbye = () => xml(`<Say>Thank you, goodbye</Say><Hangup/>`);
+export const twimlGoodbye = () => xml(GOODBYE_TWIML_BODY);
 
 /** One summary per call, with a single WhatsApp fallback if SMS fails. */
 export async function sendCallSummary(callSid: string) {
@@ -913,17 +907,17 @@ export async function sendCallSummary(callSid: string) {
   const { data } = await supabaseAdmin.rpc("voice_call_claim_summary" as never, { _sid: callSid } as never);
   if (data === null || data === undefined) return false; // already sent for this call
   const n = Number(data) || 0;
-  const body = callSummarySms(n);
+  const body = callSummarySms(n, callPositions().length);
   const result = await sendSmsWithFallback(body,
     () => twilioSend(to, env("TWILIO_SMS_FROM"), body),
     () => sendWhatsApp(to, body));
   return result.sent;
 }
 
-/** Stores a call recording for question n and runs the same pipeline as WhatsApp voice notes. Returns answers so far. */
-export async function storeCallRecording(callSid: string, n: number, recordingUrl: string) {
+/** Stores a call recording against card `position` and runs the same pipeline as WhatsApp voice notes. Returns answers so far. */
+export async function storeCallRecording(callSid: string, position: number, recordingUrl: string) {
   const db = supabaseAdmin;
-  const { data: q } = await db.from("questions").select("id").eq("position", n).maybeSingle();
+  const { data: q } = await db.from("questions").select("id").eq("position", position).maybeSingle();
   if (!q) return null;
   const audio = recordingUrl + ".mp3";
   const { data: rec } = await db.from("recordings")
