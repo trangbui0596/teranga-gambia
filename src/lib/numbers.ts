@@ -11,10 +11,10 @@ const WORDS: Record<string, Kind> = {
   naar: { t: "unit", v: 2 }, niaar: { t: "unit", v: 2 }, nar: { t: "unit", v: 2 }, naari: { t: "unit", v: 2 },
   nett: { t: "unit", v: 3 }, niet: { t: "unit", v: 3 }, net: { t: "unit", v: 3 }, netti: { t: "unit", v: 3 },
   nent: { t: "unit", v: 4 }, nient: { t: "unit", v: 4 }, nenti: { t: "unit", v: 4 },
-  juroom: { t: "five" }, jurom: { t: "five" }, juroomi: { t: "five" },
+  juroom: { t: "five" }, jurom: { t: "five" }, juroomi: { t: "five" }, juron: { t: "five" }, jura: { t: "five" }, jurum: { t: "five" },
   fukk: { t: "ten" }, fuk: { t: "ten" },
   fanweer: { t: "tens", v: 30 }, fanwer: { t: "tens", v: 30 },
-  teemeer: { t: "hundred" }, temer: { t: "hundred" }, temeer: { t: "hundred" }, teemer: { t: "hundred" },
+  teemeer: { t: "hundred" }, temer: { t: "hundred" }, temeer: { t: "hundred" }, teemer: { t: "hundred" }, teme: { t: "hundred" },
   junni: { t: "thousand" }, juni: { t: "thousand" }, yuni: { t: "thousand" }, yunni: { t: "thousand" }, juuni: { t: "thousand" },
   ak: { t: "join" }, ag: { t: "join" },
 };

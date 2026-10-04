@@ -76,3 +76,14 @@ describe("numbers heard: live ASR spellings and safety", () => {
     expect(numbersHeard("Tanji Bridge")).toBe("none found");
   });
 });
+
+describe("price clip as the recognizer actually spells it", () => {
+  it("reads every spelling heard for the synthetic price clip as 1500", () => {
+    for (const t of [
+      "Niech by mój juniak Jurón témér dalasi.",
+      "Niech by mój juniak Jurą témér dalasi.",
+      "Niech by mój juniak Jurą temę dałasi.",
+      "Niech by mój juniak jurom témér dalasi.",
+    ]) expect(numbersHeard(t)).toContain("(about 1500)");
+  });
+});
