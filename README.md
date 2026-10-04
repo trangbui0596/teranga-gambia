@@ -50,6 +50,7 @@ Twilio-signed (signature checked with `TWILIO_AUTH_TOKEN`):
 | --- | --- |
 | `/api/public/whatsapp-webhook` | WhatsApp messages from helper and visitors |
 | `/api/public/sms-webhook` | Inbound SMS: Noor's number can text COACH, LISTING, WEEK or HELP (EN for English) |
+| `/api/public/sms-sim` | Public simulator for the home page: returns the SMS text Teranga would send (reads demo data, sends and writes nothing) |
 | `/api/public/voice-incoming` | Incoming call from Noor, asks the questions |
 | `/api/public/voice-recorded` | Recording callback (set by the call's TwiML) |
 | `/api/public/voice-status` | Call ended; finishes processing, sends the summary |
@@ -59,6 +60,7 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 | Route | Purpose |
 | --- | --- |
 | `/api/public/weekly-digest` | Weekly digest message |
+| `/api/public/weekly-sync` | Weekly sync: fresh public-review scan + what visitors asked and found unclear; report to the helper on WhatsApp, short SMS to Noor |
 | `/api/public/process-pending` | Finish unfinished voice answers |
 | `/api/public/purge` | Delete unshared visitor reviews older than 24 hours |
 | `/api/public/coach-run` | Run or return cached review coaching |
@@ -83,6 +85,9 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 - **Noor needs no internet.** She records by phone call. Coaching, Google listing progress, approval receipts, community notices and the weekly digest reach her as plain SMS (GSM-7 letters, at most three parts, opt-out line always kept). She can text `COACH`, `LISTING`, `WEEK` or `HELP` (`EN` for English). Wolof SMS text is machine-written and unverified.
 - **Google listing:** `LISTING` (helper, on WhatsApp) builds a Google Business Profile pack from approved answers only: description inside Google's 750-character limit, services, meeting point, booking, what is missing, which question card to record next, what only the helper can add, and claim steps. Nothing is sent to Google.
 - **Community Circle:** a community champion (`COMMUNITY <PIN>`, demo PIN) posts notices with `ALERT` (flood, closed road, storm, boats paused, tours closed, all clear), sees them with `ALERTS`, checks translations with `BILINGUAL` and sees an overview with `PULSE`. Notices are fixed templates in English, German, Dutch and Wolof, last 24 hours, are sent to members by SMS and appear under every visitor answer, always labeled as a community notice, not an official warning. Visitors can send `STATUS` to see them. Members other than Noor are simulated in the demo.
+
+- **Weekly sync (`SYNC`, `/api/public/weekly-sync`):** re-reads public Google reviews, compares them with the previous run (themes whose share moved by 5 points or more), adds what visitors asked and marked "not clear" this week, and turns it into up to three plain actions (counts only, no AI). It does not yet scan news sources: none was reachable from our environment to test, so that is a next step.
+- **SMS first:** everything Noor and the community champion do works over voice and SMS; WhatsApp is the household helper's weekly smartphone session and a convenience for visitors. US SMS delivery waits for carrier registration, so the live demo uses WhatsApp plus the simulator on the home page ("Try SMS").
 
 ## Landing page statistics
 

@@ -45,7 +45,7 @@ export const STEPS = [
   },
   {
     title: "Noor gets coaching in Wolof",
-    body: "From real public Google Maps reviews: what visitors praise, what they complain about, and what to do next. If there isn’t enough data, it says so.",
+    body: "From real public Google Maps reviews: what visitors praise, what they complain about, and what to do next. Every week the sync re-reads the reviews, adds what visitors asked and found unclear, and refines the advice. If there isn’t enough data, it says so.",
   },
 ];
 
@@ -103,22 +103,22 @@ export const EXTRAS = [
 ];
 
 export const OFFLINE_INTRO =
-  "Noor never needs the internet. Her whole loop runs on a phone call and plain text messages.";
+  "Everything Noor and her community need works over a phone call and plain text messages. WhatsApp is the household helper’s weekly smartphone session, and a convenience for visitors.";
 export const OFFLINE_ROWS = [
   {
     who: "Noor, on a basic phone",
-    does: "Records her answers by phone call. Keeps her coaching, Google listing progress, approval receipts, community notices and weekly digest as plain SMS in Wolof. Can text COACH, LISTING, WEEK or HELP to get them again.",
+    does: "Records her answers by phone call. Keeps her coaching, Google listing progress, approval receipts, community notices and weekly learning as plain SMS in Wolof. Can text COACH, LISTING, WEEK or HELP to get them again.",
     net: "No internet",
   },
   {
     who: "Her household helper",
-    does: "Reviews and approves the answers on a smartphone, about once a week when in town.",
+    does: "Reviews and approves the answers in the weekly smartphone session on WhatsApp, when in town. The weekly sync re-reads public reviews and adds what visitors asked and found unclear.",
     net: "Weekly",
   },
   {
     who: "The community champion",
-    does: "Posts a notice or checks a translation on WhatsApp. Members receive the notice by SMS.",
-    net: "To post. Members need none",
+    does: "Logs in and posts or checks community notices by SMS, so notices still go out when mobile data does not. Checks translations on WhatsApp. Members receive notices by SMS.",
+    net: "None for notices",
   },
   {
     who: "Visitors",
@@ -127,7 +127,7 @@ export const OFFLINE_ROWS = [
   },
 ];
 export const OFFLINE_NOTE =
-  "US carrier registration for SMS is still in review, so in the demo the same texts arrive on WhatsApp. They are written for feature phones: plain letters, at most three parts, and always an opt-out line.";
+  "US carrier registration for SMS is still in review, so the live demo runs on WhatsApp and the simulator on this page shows the same texts. Once registered, nothing changes in the code. The texts are written for feature phones: plain letters, at most three parts, and always an opt-out line.";
 export const OFFLINE_EXAMPLE_NOTE = "Examples built by the same code, with sample inputs:";
 
 export const COMMUNITY_TITLE = "A champion in every household. A champion in every community.";
