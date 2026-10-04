@@ -125,3 +125,14 @@ describe("the data we say we analysed", () => {
     for (const d of DATA_ANALYSED) { expect(h).toContain(`>${d.figure}<`); expect(h).toContain(d.detail.slice(0, 30).replace(/’/g, "&#x27;")); }
   });
 });
+
+import { DEMO_CHANNEL_NOTE, DEMO_CHANNEL_TITLE } from "@/lib/landing-content";
+describe("demo channel note", () => {
+  it("says on the front page that WhatsApp stands in for SMS until the carrier approves it", () => {
+    const h = html("real");
+    expect(h).toContain("Demo note");
+    expect(h).toContain(DEMO_CHANNEL_TITLE);
+    expect(DEMO_CHANNEL_NOTE).toContain("carrier registration for SMS is still in review");
+    expect(DEMO_CHANNEL_NOTE).toContain("Tourists use WhatsApp by design");
+  });
+});

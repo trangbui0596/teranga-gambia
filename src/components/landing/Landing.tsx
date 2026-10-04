@@ -22,6 +22,8 @@ import {
   REAL_LIMITS,
   REAL_LIVE,
   COACHING_PROMISE,
+  DEMO_CHANNEL_NOTE,
+  DEMO_CHANNEL_TITLE,
   DATA_ANALYSED,
   REPO_URL,
   SCREENS,
@@ -91,6 +93,18 @@ function Stat({ id, className }: { id: string; className?: string }) {
     <Ext href={e.href} className={className ?? linkCls}>
       {e.value}
     </Ext>
+  );
+}
+
+function DemoChannelNote() {
+  return (
+    <aside
+      aria-label="Demo note"
+      className="mx-auto max-w-5xl rounded-xl border-2 border-dashed border-foreground bg-highlight p-3 text-foreground sm:p-4"
+    >
+      <p className="text-sm font-bold">{DEMO_CHANNEL_TITLE}</p>
+      <p className="mt-1 text-sm leading-snug">{DEMO_CHANNEL_NOTE}</p>
+    </aside>
   );
 }
 
@@ -850,6 +864,7 @@ export function Landing({ initialTab = null }: { initialTab?: TabId | null }) {
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 pb-12">
         <Hero />
+        <DemoChannelNote />
         <Chain />
         <Storybook />
         <Explore initialTab={initialTab} />

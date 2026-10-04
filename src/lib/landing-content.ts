@@ -75,6 +75,9 @@ export const CHANNELS = [
     use: "Tourists ask by voice or text. The champion syncs once a week.",
   },
 ];
+export const DEMO_CHANNEL_TITLE = "Demo note: WhatsApp stands in for SMS, for testing";
+export const DEMO_CHANNEL_NOTE =
+  "Noor and the champions are built for SMS and voice, so they work with no internet. US carrier registration for SMS is still in review, so until it is approved this demo runs the same commands on WhatsApp. The Try SMS box below shows the exact SMS texts. Tourists use WhatsApp by design: they have data, and it carries voice.";
 export const OFFLINE_INTRO =
   "Noor never needs the internet. Her household champion needs it about once a week, and tourists need it to ask.";
 export const OFFLINE_NOTE =

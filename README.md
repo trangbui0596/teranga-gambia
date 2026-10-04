@@ -186,7 +186,7 @@ Details and what the data did not show: [docs/DATA_INSIGHTS.md](https://github.c
 - **ElevenLabs**: Scribe speech-to-text (Wolof recordings, tourist voice notes) and text-to-speech (English, German, Dutch).
 - **Google Maps Platform (Places)**: public reviews for weekly coaching.
 - **World Bank WDI API**: every statistic, re-checked by `scripts/verify-evidence.mjs`.
-- TanStack Start, React, TypeScript, Tailwind CSS; 508 unit and smoke tests.
+- TanStack Start, React, TypeScript, Tailwind CSS; 509 unit and smoke tests.
 
 ## Docs
 
