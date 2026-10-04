@@ -812,7 +812,8 @@ async function applyReview(id: string, status: "approved" | "rerecord" | "needs_
   // Voice files are made inside this request (about 10 s) before the confirmation is sent; leftovers via finishAnswers.
   if (status === "approved") {
     try { await ensureAnswerAudio(id, ["en", "de", "nl"], 10000); } catch (e) { console.error("[audio] error step=approve", e); }
-    await notifyApproval(id);
+    // The receipt to Noor must never delay the helper's confirmation (Twilio waits about 15 s): give it 3 s at most.
+    await Promise.race([notifyApproval(id), new Promise<void>((resolve) => setTimeout(resolve, 3000))]);
   }
   return true;
 }
