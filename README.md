@@ -13,7 +13,7 @@ A Gambian tour operator answers visitors in English, German and Dutch with her o
 3. **Answer.** Visitors ask on WhatsApp in English, German or Dutch. They get the approved answer as text plus an AI-generated voice note, labeled machine-translated. If the match is weak the bot says "Not sure, Noor will answer" and never guesses.
 4. **Coach.** Plain advice for Noor in Wolof, built from real public Google Maps reviews (small sample, no raw review text stored).
 
-There is no web UI beyond a status/landing page at `/`. Everything else is WhatsApp, SMS and voice.
+There is no web UI beyond the landing page at `/` (problem and sourced statistics first, then tabs: How it works, AI beyond SMS, Community, What's real, Sources). Everything else is WhatsApp, SMS and voice.
 
 ## What the AI does that plain SMS cannot
 
@@ -76,6 +76,12 @@ Protected by header `x-digest-secret` (value of `DIGEST_TRIGGER_SECRET`):
 - **Voice:** open your Twilio number's Voice Configuration. "A call comes in" goes to `https://<published-url>/api/public/voice-incoming`, and "Call status changes" goes to `https://<published-url>/api/public/voice-status`, both HTTP POST. Only the number in `DEMO_SMS_NUMBER` is accepted.
 - If Twilio signs a different URL than the server sees, set `TWILIO_WEBHOOK_URL` to the exact URL (voice routes use only its origin).
 
+## Landing page statistics
+
+Every number on the landing page lives in `src/lib/evidence.ts` with its World Bank indicator code, year and link; nothing is typed by hand in the page. A test (`src/test/landing-evidence.test.tsx`) fails if a percentage, dollar amount or thousands figure appears that is not listed there, or if a number has no link to its data page. To re-check the values against the live World Bank API run `node scripts/verify-evidence.mjs` (Node 22.18 or newer).
+
+After filming: set `VIDEO_URL` in `src/lib/landing-content.ts` to show a "Watch the demo" button, and add screenshots to `public/screens/` plus entries in `SCREENS` (same file) to show a "Screens" tab.
+
 ## Run the tests
 
 ```sh
@@ -94,7 +100,7 @@ npx tsc --noEmit -p .
 - SMS delivery is pending US carrier registration, so summaries arrive on WhatsApp through Twilio's sandbox.
 - The partner recommendation, the partner list and the Google listing preview are simulated.
 - Google review data is a small real public sample.
-- The WDI figures on the landing page show context (tourism matters, about half the population is offline, phones are everywhere). They do not show lost enquiries or that Teranga fixes anything.
+- The World Bank figures on the landing page show context (tourism is a large share of exports, about half the population is offline, mobile subscriptions outnumber people). They do not show lost enquiries or that Teranga fixes anything.
 
 Privacy: no review gating (the same review link goes to every visitor); visitor voice reviews are deleted on NO or after 24 hours unless the visitor chooses to share. Noor's own recordings are kept until the project owner deletes them; there is no self-serve delete command yet.
 
